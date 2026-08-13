@@ -4,6 +4,7 @@ import { EXAMS, TESTS, theme, type Test } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { TestCard } from '@/components/cards';
 import { Chip, EmptyState, s } from '@/components/ui';
+import { useResponsive } from '@/lib/responsive';
 
 const TYPES: { id: Test['type'] | 'all'; label: { en: string; hi: string } }[] = [
   { id: 'all', label: { en: 'All', hi: 'सभी' } },
@@ -15,6 +16,7 @@ const TYPES: { id: Test['type'] | 'all'; label: { en: string; hi: string } }[] =
 
 export default function TestsScreen() {
   const { lang } = useStore();
+  const r = useResponsive();
   const [type, setType] = useState<Test['type'] | 'all'>('all');
   const [examId, setExamId] = useState('all');
 
@@ -28,7 +30,7 @@ export default function TestsScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        contentContainerStyle={{ paddingHorizontal: theme.space.lg, paddingTop: theme.space.lg }}
+        contentContainerStyle={{ paddingHorizontal: r.gutter, paddingTop: r.gutter }}
       >
         {TYPES.map((x) => (
           <Chip
@@ -43,7 +45,7 @@ export default function TestsScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        contentContainerStyle={{ padding: theme.space.lg }}
+        contentContainerStyle={{ padding: r.gutter }}
       >
         <Chip
           label={lang === 'hi' ? 'सभी परीक्षाएँ' : 'All exams'}
@@ -61,10 +63,23 @@ export default function TestsScreen() {
       </ScrollView>
 
       <FlatList
+        key={'cols-' + r.columns}
+        numColumns={r.columns}
+        columnWrapperStyle={r.columns > 1 ? { gap: theme.space.md } : undefined}
         data={data}
         keyExtractor={(x) => x.id}
-        contentContainerStyle={{ paddingHorizontal: theme.space.lg, paddingBottom: 24 }}
-        renderItem={({ item }) => <TestCard test={item} full />}
+        contentContainerStyle={{
+          paddingHorizontal: r.gutter,
+          paddingBottom: 24,
+          width: '100%',
+          maxWidth: r.maxWidth,
+          alignSelf: 'center',
+        }}
+        renderItem={({ item }) => (
+          <View style={{ flex: 1 }}>
+            <TestCard test={item} full />
+          </View>
+        )}
         ListEmptyComponent={
           <EmptyState
             icon="🎯"

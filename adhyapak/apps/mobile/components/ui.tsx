@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } fro
 import { theme, type ContentAccess } from '@adhyapak/core';
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
+import { useResponsive } from '@/lib/responsive';
 
 /**
  * Navigating touchable.
@@ -90,11 +91,21 @@ export function SectionHeader({
   href?: string;
   action?: string;
 }) {
+  const r = useResponsive();
   return (
     <View
       style={[
         s.row,
-        { justifyContent: 'space-between', paddingHorizontal: theme.space.lg, marginBottom: theme.space.md },
+        {
+          justifyContent: 'space-between',
+          paddingHorizontal: r.gutter,
+          marginBottom: theme.space.md,
+          // Headers share the page's centred column, so they line up with the
+          // cards beneath them instead of hugging the viewport edges.
+          width: '100%',
+          maxWidth: r.maxWidth,
+          alignSelf: 'center',
+        },
       ]}
     >
       <View style={{ flex: 1, paddingRight: theme.space.md }}>
@@ -291,6 +302,64 @@ export function EmptyState({ icon, title, body }: { icon: string; title: string;
       <Text style={{ fontSize: theme.icon.xl }}>{icon}</Text>
       <Text style={[s.h2, { marginTop: 8 }]}>{title}</Text>
       <Text style={[s.muted, { marginTop: 4, textAlign: 'center' }]}>{body}</Text>
+    </View>
+  );
+}
+
+/**
+ * Centres a page's content and applies the responsive gutter.
+ *
+ * Wrapping every screen in this is what keeps a 1920px browser from stretching
+ * phone layouts across the whole viewport: the column stops growing at the
+ * breakpoint's max width and sits in the middle instead.
+ */
+export function Content({
+  children,
+  style,
+  gutter = true,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  gutter?: boolean;
+}) {
+  const r = useResponsive();
+  return (
+    <View
+      style={[
+        {
+          width: '100%',
+          maxWidth: r.maxWidth,
+          alignSelf: 'center',
+          paddingHorizontal: gutter ? r.gutter : 0,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+/**
+ * A grid that reflows by breakpoint — one column on a phone, two on a tablet,
+ * three on a desktop — without any screen having to know the numbers.
+ */
+export function Grid({ children, gap = theme.space.md }: { children: ReactNode[]; gap?: number }) {
+  const r = useResponsive();
+  const items = children.filter(Boolean);
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
+      {items.map((child, i) => (
+        <View
+          key={i}
+          style={{
+            // Subtracting the gaps keeps the last column flush with the edge.
+            width: r.columns === 1 ? '100%' : `${(100 - (r.columns - 1) * 2) / r.columns}%`,
+          }}
+        >
+          {child}
+        </View>
+      ))}
     </View>
   );
 }

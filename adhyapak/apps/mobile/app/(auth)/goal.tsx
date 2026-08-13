@@ -14,6 +14,7 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useSession } from '@/lib/session';
+import { useResponsive } from '@/lib/responsive';
 
 /**
  * Goal selection.
@@ -28,6 +29,7 @@ export default function GoalScreen() {
   const { chooseGoal } = useSession();
   const [examId, setExamId] = useState<string | null>(user.onboarded ? user.goalExamId : null);
   const groups = useMemo(() => groupedExams(), []);
+  const r = useResponsive();
   const hi = lang === 'hi';
 
   const selected = examId ? getExam(examId) : undefined;
@@ -46,7 +48,15 @@ export default function GoalScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.color.bg }} edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
-        <View style={{ paddingHorizontal: theme.space.xl, paddingTop: theme.space.lg }}>
+        <View
+          style={{
+            paddingHorizontal: r.gutter,
+            paddingTop: theme.space.lg,
+            width: '100%',
+            maxWidth: r.maxWidth,
+            alignSelf: 'center',
+          }}
+        >
           <Text
             style={{
               fontSize: theme.font.xxl,
@@ -74,7 +84,14 @@ export default function GoalScreen() {
 
         {groups.map(({ group, exams }) => (
           <View key={group.id} style={{ marginTop: theme.space.xxl }}>
-            <View style={{ paddingHorizontal: theme.space.xl }}>
+            <View
+              style={{
+                paddingHorizontal: r.gutter,
+                width: '100%',
+                maxWidth: r.maxWidth,
+                alignSelf: 'center',
+              }}
+            >
               <Text
                 style={{
                   fontSize: theme.font.md,
@@ -97,9 +114,21 @@ export default function GoalScreen() {
               </Text>
             </View>
 
-            <View style={{ paddingHorizontal: theme.space.xl, marginTop: theme.space.lg, gap: theme.space.md }}>
+            <View
+              style={{
+                paddingHorizontal: r.gutter,
+                marginTop: theme.space.lg,
+                gap: theme.space.md,
+                flexDirection: r.isPhone ? 'column' : 'row',
+                flexWrap: 'wrap',
+                width: '100%',
+                maxWidth: r.maxWidth,
+                alignSelf: 'center',
+              }}
+            >
               {exams.map((exam) => (
                 <ExamOption
+                  width={r.isPhone ? '100%' : r.isDesktop ? '32%' : '48%'}
                   key={exam.id}
                   exam={exam}
                   lang={lang}
@@ -115,7 +144,15 @@ export default function GoalScreen() {
         ))}
 
         {needsPaper && selected ? (
-          <View style={{ marginTop: theme.space.xxl, paddingHorizontal: theme.space.xl }}>
+          <View
+            style={{
+              marginTop: theme.space.xxl,
+              paddingHorizontal: r.gutter,
+              width: '100%',
+              maxWidth: r.maxWidth,
+              alignSelf: 'center',
+            }}
+          >
             <Text
               style={{
                 fontSize: theme.font.md,
@@ -185,6 +222,7 @@ export default function GoalScreen() {
             backgroundColor: theme.color.surface,
             borderTopWidth: 1,
             borderTopColor: theme.color.border,
+            alignItems: 'center',
           }}
         >
           <Pressable
@@ -194,6 +232,8 @@ export default function GoalScreen() {
               borderRadius: theme.radius.md,
               paddingVertical: 17,
               alignItems: 'center',
+              width: '100%',
+              maxWidth: 460,
             }}
           >
             <Text
@@ -215,17 +255,20 @@ function ExamOption({
   lang,
   selected,
   onPress,
+  width = '100%',
 }: {
   exam: Exam;
   lang: 'en' | 'hi';
   selected: boolean;
   onPress: () => void;
+  width?: number | string;
 }) {
   const palette = examTheme(exam.color);
   return (
     <Pressable
       onPress={onPress}
       style={{
+        width: width as never,
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.space.lg,

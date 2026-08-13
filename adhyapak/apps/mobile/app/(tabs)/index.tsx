@@ -21,7 +21,8 @@ import {
 import { useStore } from '@/lib/store';
 import { usePalette } from '@/lib/session';
 import { BatchCard, ExamCard, NoteCard, TestCard, VideoCard } from '@/components/cards';
-import { Badge, SectionHeader, Touch, s } from '@/components/ui';
+import { Badge, Content, SectionHeader, Touch, s } from '@/components/ui';
+import { useResponsive } from '@/lib/responsive';
 
 const QUICK = [
   { href: '/tests', icon: '🎯', label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' }, color: '#4F46E5' },
@@ -39,6 +40,7 @@ export default function HomeScreen() {
   // The hero takes the chosen exam's colour, so the app a CTET aspirant opens
   // does not look like the one an HTET aspirant opens.
   const palette = usePalette();
+  const r = useResponsive();
   const exam = getExam(user.goalExamId);
   const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
   const streak = currentStreak(user.activeDates);
@@ -56,14 +58,11 @@ export default function HomeScreen() {
     <SafeAreaView style={s.screen} edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
         {/* Top bar */}
+        <Content>
         <View
           style={[
             s.row,
-            {
-              justifyContent: 'space-between',
-              paddingHorizontal: theme.space.lg,
-              paddingVertical: theme.space.md,
-            },
+            { justifyContent: 'space-between', paddingVertical: theme.space.md },
           ]}
         >
           <View style={[s.row, { gap: theme.space.sm }]}>
@@ -118,7 +117,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Hero */}
-        <View style={{ paddingHorizontal: theme.space.lg }}>
+        <View>
           <View
             style={{
               backgroundColor: palette.accent,
@@ -179,12 +178,7 @@ export default function HomeScreen() {
 
         {/* Quick actions */}
         <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            paddingHorizontal: theme.space.lg - 4,
-            marginTop: theme.space.xl,
-          }}
+          style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: theme.space.xl }}
         >
           {QUICK.map((q) => (
             <Touch key={q.href} href={q.href as never} style={{ width: '25%', alignItems: 'center', paddingVertical: 10 }}>
@@ -214,6 +208,8 @@ export default function HomeScreen() {
               </Touch>
           ))}
         </View>
+
+        </Content>
 
         {live.length ? (
           <Section title={lang === 'hi' ? 'अभी लाइव' : 'Live right now'}>
@@ -343,6 +339,27 @@ function Pill({ text }: { text: string }) {
   );
 }
 
+/**
+ * A horizontal rail on phones. On wide screens the cards are centred with the
+ * rest of the page instead of starting hard against the left edge.
+ */
+function Rail({ children }: { children: React.ReactNode }) {
+  const r = useResponsive();
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingHorizontal: r.gutter,
+        width: r.isDesktop ? undefined : undefined,
+      }}
+      style={{ width: '100%', maxWidth: r.maxWidth, alignSelf: 'center' }}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
 function Section({
   title,
   href,
@@ -357,13 +374,7 @@ function Section({
   return (
     <View style={{ marginTop: theme.space.xl }}>
       <SectionHeader title={title} href={href} action={action} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: theme.space.lg }}
-      >
-        {children}
-      </ScrollView>
+      <Rail>{children}</Rail>
     </View>
   );
 }

@@ -4,9 +4,11 @@ import { BATCHES, EXAMS, theme } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { BatchCard } from '@/components/cards';
 import { Chip, EmptyState, s } from '@/components/ui';
+import { useResponsive } from '@/lib/responsive';
 
 export default function BatchesScreen() {
   const { lang } = useStore();
+  const r = useResponsive();
   const [examId, setExamId] = useState('all');
   const data = examId === 'all' ? BATCHES : BATCHES.filter((b) => b.examId === examId);
 
@@ -16,7 +18,7 @@ export default function BatchesScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        contentContainerStyle={{ padding: theme.space.lg }}
+        contentContainerStyle={{ padding: r.gutter }}
       >
         <Chip
           label={lang === 'hi' ? 'सभी' : 'All'}
@@ -34,10 +36,23 @@ export default function BatchesScreen() {
       </ScrollView>
 
       <FlatList
+        key={'cols-' + r.columns}
+        numColumns={r.columns}
+        columnWrapperStyle={r.columns > 1 ? { gap: theme.space.md } : undefined}
         data={data}
         keyExtractor={(b) => b.id}
-        contentContainerStyle={{ paddingHorizontal: theme.space.lg, paddingBottom: 24 }}
-        renderItem={({ item }) => <BatchCard batch={item} full />}
+        contentContainerStyle={{
+          paddingHorizontal: r.gutter,
+          paddingBottom: 24,
+          width: '100%',
+          maxWidth: r.maxWidth,
+          alignSelf: 'center',
+        }}
+        renderItem={({ item }) => (
+          <View style={{ flex: 1 }}>
+            <BatchCard batch={item} full />
+          </View>
+        )}
         ListEmptyComponent={
           <EmptyState
             icon="🎥"

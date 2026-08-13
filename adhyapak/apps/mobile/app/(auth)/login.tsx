@@ -14,6 +14,7 @@ import { EXAMS, QUESTIONS, formatCount, theme } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useSession } from '@/lib/session';
 import { s } from '@/components/ui';
+import { useResponsive } from '@/lib/responsive';
 
 /**
  * Sign in.
@@ -26,6 +27,7 @@ import { s } from '@/components/ui';
 export default function LoginScreen() {
   const { lang, toggleLang } = useStore();
   const { signIn, continueAsGuest } = useSession();
+  const r = useResponsive();
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
 
@@ -45,7 +47,14 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, padding: theme.space.xl, justifyContent: 'center' }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            padding: theme.space.xl,
+            justifyContent: 'center',
+            width: '100%',
+            maxWidth: 460,
+            alignSelf: 'center',
+          }}
           keyboardShouldPersistTaps="handled"
         >
           <Pressable
