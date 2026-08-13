@@ -36,13 +36,21 @@ jobs:
         working-directory: adhyapak
         run: npm ci
 
-      # Generates the native android/ project from app.json. Dependencies are
-      # already installed, so skip prebuild's own install step.
+      # Every expo-* package must match the SDK's own matrix. Pinning them by
+      # hand is how the first two builds broke, so ask Expo instead: this
+      # rewrites any mismatched version and reinstalls.
+      - name: Align Expo package versions with the SDK
+        working-directory: adhyapak/apps/mobile
+        env:
+          EXPO_NO_TELEMETRY: '1'
+        run: npx expo install --fix
+
+      # Generates the native android/ project from app.json.
       - name: Generate the native project
         working-directory: adhyapak/apps/mobile
         env:
           EXPO_NO_TELEMETRY: '1'
-        run: npx expo prebuild --platform android --no-install
+        run: npx expo prebuild --platform android --no-install --clean
 
       - name: Build the APK
         working-directory: adhyapak/apps/mobile/android

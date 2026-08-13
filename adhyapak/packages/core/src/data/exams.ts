@@ -1,4 +1,4 @@
-import type { Exam } from '../types';
+import type { Bilingual, Exam } from '../types';
 
 /**
  * Every teaching-recruitment and teaching-eligibility exam Adhyapak covers.
@@ -1026,3 +1026,62 @@ export const getPaper = (paperId: string) =>
 
 /** Popular goals surfaced first on the onboarding screen. */
 export const FEATURED_EXAM_IDS = ['ctet', 'reet', 'uptet', 'htet', 'dsssb', 'kvs', 'bihartet', 'nvs'];
+
+/**
+ * Onboarding groups.
+ *
+ * The goal picker shows every exam, but a fresh learner cannot parse a flat
+ * list of fifteen acronyms. Grouping by what the exam *is* — an eligibility
+ * certificate, a state's own TET, or a direct recruitment drive — matches how
+ * aspirants actually talk about them.
+ */
+export interface ExamGroup {
+  id: string;
+  title: Bilingual;
+  subtitle: Bilingual;
+  examIds: string[];
+}
+
+export const EXAM_GROUPS: ExamGroup[] = [
+  {
+    id: 'national',
+    title: { en: 'National eligibility', hi: 'राष्ट्रीय पात्रता' },
+    subtitle: {
+      en: 'Valid across states and central schools',
+      hi: 'राज्यों एवं केंद्रीय विद्यालयों में मान्य',
+    },
+    examIds: ['ctet'],
+  },
+  {
+    id: 'recruitment',
+    title: { en: 'Direct recruitment', hi: 'सीधी भर्ती' },
+    subtitle: {
+      en: 'These fill actual posts — apply after you qualify',
+      hi: 'ये वास्तविक पद भरती हैं — पात्रता के बाद आवेदन करें',
+    },
+    examIds: ['kvs', 'nvs', 'dsssb', 'hssc-tgt-pgt', 'supertet', 'awes', 'emrs'],
+  },
+  {
+    id: 'state',
+    title: { en: 'State teacher eligibility', hi: 'राज्य शिक्षक पात्रता' },
+    subtitle: {
+      en: 'Required for teaching posts in that state',
+      hi: 'उस राज्य के शिक्षक पदों हेतु आवश्यक',
+    },
+    examIds: ['uptet', 'htet', 'reet', 'bihartet', 'mptet', 'bihar-stet', 'wbtet'],
+  },
+];
+
+/** Every exam, in the order the goal picker shows them. */
+export const groupedExams = (): { group: ExamGroup; exams: Exam[] }[] =>
+  EXAM_GROUPS.map((group) => ({
+    group,
+    exams: group.examIds.map((id) => EXAM_BY_ID.get(id)).filter((e): e is Exam => Boolean(e)),
+  }));
+
+/** Subjects the learner's chosen paper actually tests. Drives the whole home feed. */
+export const subjectsForPaper = (paperId: string | undefined): string[] => {
+  if (!paperId) return [];
+  const found = getPaper(paperId);
+  return found ? found.paper.sections.map((s) => s.subjectId) : [];
+};

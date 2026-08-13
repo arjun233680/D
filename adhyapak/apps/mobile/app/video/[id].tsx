@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Video as ExpoVideo, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import {
   VIDEOS,
   formatCount,
@@ -18,10 +18,13 @@ import { AccessBadge, Badge, EmptyState, s } from '@/components/ui';
 export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { lang, uploadedVideos } = useStore();
-  const player = useRef<ExpoVideo>(null);
   const [active, setActive] = useState(0);
 
   const video = [...uploadedVideos, ...VIDEOS].find((v) => v.id === String(id));
+  // The player is created before the early return so the hook order stays stable.
+  const player = useVideoPlayer(video?.src ?? null, (p) => {
+    p.loop = false;
+  });
   if (!video) {
     return (
       <View style={[s.screen, { padding: theme.space.lg }]}>
@@ -37,12 +40,12 @@ export default function VideoScreen() {
     <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 40 }}>
       <Stack.Screen options={{ title: educator?.name ?? 'Class' }} />
 
-      <ExpoVideo
-        ref={player}
-        source={{ uri: video.src }}
+      <VideoView
+        player={player}
         style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: '#000' }}
-        useNativeControls
-        resizeMode={ResizeMode.CONTAIN}
+        nativeControls
+        fullscreenOptions={{ enable: true }}
+        contentFit="contain"
       />
 
       <View style={{ padding: theme.space.lg }}>
@@ -100,7 +103,7 @@ export default function VideoScreen() {
                 key={c.at}
                 onPress={() => {
                   setActive(i);
-                  player.current?.setPositionAsync(c.at * 1000);
+                  player.currentTime = c.at;
                 }}
                 style={[
                   s.row,
