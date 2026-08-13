@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Adhyapak",
+    "slug": "adhyapak",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "adhyapak",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0B1120",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.adhyapak.app"
+    },
+    "android": {
+      "package": "com.adhyapak.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F9D58"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
