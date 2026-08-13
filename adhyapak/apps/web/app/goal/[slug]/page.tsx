@@ -8,6 +8,7 @@ import {
   TESTS,
   VIDEOS,
   formatCount,
+  formatDate,
   getExamBySlug,
   getSubject,
   t,
@@ -186,6 +187,73 @@ export default function GoalPage({ params }: { params: Promise<{ slug: string }>
             </li>
           ))}
         </ul>
+      </section>
+
+
+      {exam.updates.length ? (
+        <section className="px-4 sm:px-0">
+          <SectionHeader
+            title={lang === 'hi' ? 'इस चक्र की समयरेखा' : 'This cycle'}
+            subtitle={
+              exam.vacancies
+                ? `${exam.vacancies.toLocaleString('en-IN')} ${lang === 'hi' ? 'पद विज्ञापित' : 'posts advertised'}`
+                : undefined
+            }
+          />
+          <ol className="card divide-y divide-[var(--color-line)]">
+            {exam.updates.map((u) => (
+              <li key={`${u.date}-${u.title.en}`} className="flex gap-3 px-4 py-3">
+                <span className="w-[86px] shrink-0 text-[11px] font-bold text-[var(--color-muted)] tabular-nums">
+                  {formatDate(u.date, lang)}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-bold">{t(u.title, lang)}</span>
+                  <span className="mt-0.5 block text-[12px] leading-relaxed text-[var(--color-muted)]">
+                    {t(u.detail, lang)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
+      <section className="px-4 sm:px-0">
+        <SectionHeader
+          title={lang === 'hi' ? 'स्रोत' : 'Sources'}
+          subtitle={
+            lang === 'hi'
+              ? 'ऊपर दिया प्रत्येक तथ्य यहाँ से सत्यापित है'
+              : 'Every fact above was verified against these'
+          }
+        />
+        <ul className="card divide-y divide-[var(--color-line)]">
+          {exam.sources.map((src) => (
+            <li key={src.url}>
+              <a
+                href={src.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-surface-alt)]"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-semibold">{src.label}</span>
+                  <span className="block text-[11px] text-[var(--color-faint)]">
+                    {lang === 'hi' ? 'जाँचा गया' : 'checked'} {formatDate(src.checkedOn, lang)}
+                  </span>
+                </span>
+                <span className="text-[var(--color-faint)]">↗</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        {exam.updates.length === 0 ? (
+          <p className="mt-2 px-1 text-[11px] leading-relaxed text-[var(--color-faint)]">
+            {lang === 'hi'
+              ? 'इस परीक्षा का चालू चक्र अभी सत्यापित नहीं हुआ है — पैटर्न पिछली अधिसूचना पर आधारित है। नवीनतम जानकारी हेतु आधिकारिक साइट देखें।'
+              : 'The current cycle for this exam has not been verified yet — the pattern shown follows the last published notification. Check the official site for the latest.'}
+          </p>
+        ) : null}
       </section>
 
       {batches.length ? (

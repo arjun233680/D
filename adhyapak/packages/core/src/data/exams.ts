@@ -18,7 +18,7 @@ export const EXAMS: Exam[] = [
       en: 'The national eligibility test for teaching posts in KVS, NVS, central schools and most state boards. The certificate is now valid for life.',
       hi: 'KVS, NVS, केंद्रीय विद्यालयों तथा अधिकांश राज्य बोर्डों में शिक्षक पदों हेतु राष्ट्रीय पात्रता परीक्षा। प्रमाणपत्र अब आजीवन मान्य है।',
     },
-    frequency: { en: 'Twice a year — July and December cycles', hi: 'वर्ष में दो बार — जुलाई एवं दिसंबर सत्र' },
+    frequency: { en: 'Notified by CBSE; the 2026 cycle was held in September', hi: 'CBSE द्वारा अधिसूचित; 2026 चक्र सितंबर में आयोजित' },
     color: '#4F46E5',
     emoji: '🇮🇳',
     learners: 2840000,
@@ -31,6 +31,18 @@ export const EXAMS: Exam[] = [
       { en: 'Certificate valid for lifetime', hi: 'प्रमाणपत्र आजीवन मान्य' },
       { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
       { en: 'Accepted by 20+ states', hi: '20+ राज्यों में मान्य' },
+    ],
+    nextExamDate: '2026-09-06',
+    officialSite: 'https://ctet.nic.in',
+    updates: [
+      { date: '2026-05-11', kind: 'notification', title: { en: 'Notification released', hi: 'अधिसूचना जारी' }, detail: { en: 'CBSE opened the CTET September 2026 cycle on ctet.nic.in.', hi: 'CBSE ने ctet.nic.in पर CTET सितंबर 2026 चक्र आरंभ किया।' } },
+      { date: '2026-06-10', kind: 'application', title: { en: 'Application window closed', hi: 'आवेदन विंडो बंद' }, detail: { en: 'Applications ran from 11 May to 10 June 2026, with corrections 15-18 June.', hi: 'आवेदन 11 मई से 10 जून 2026 तक चले, संशोधन 15-18 जून।' } },
+      { date: '2026-09-06', kind: 'exam', title: { en: 'Exam day', hi: 'परीक्षा दिवस' }, detail: { en: 'Paper II 9:30 AM-12:00 noon, Paper I 2:30-5:00 PM. Offline OMR across 132 cities.', hi: 'पेपर II प्रातः 9:30-12:00, पेपर I दोपहर 2:30-5:00। 132 शहरों में ऑफ़लाइन OMR।' } },
+    ],
+    sources: [
+      { label: 'CTET 2026 notification and schedule — Testbook', url: 'https://testbook.com/news/ctet-2026-notification-out/', checkedOn: '2026-08-13' },
+      { label: 'CTET 2026 exam pattern and qualifying marks — Adda247', url: 'https://www.adda247.com/teaching-jobs-exam/ctet-exam-pattern/', checkedOn: '2026-08-13' },
+      { label: 'Official CTET portal, CBSE', url: 'https://ctet.nic.in', checkedOn: '2026-08-13' },
     ],
     papers: [
       {
@@ -100,7 +112,7 @@ export const EXAMS: Exam[] = [
       en: 'Eligibility test for PRT, TGT and PGT posts in Haryana government schools. Uniquely includes a 30-mark General Studies section with Haryana GK.',
       hi: 'हरियाणा राजकीय विद्यालयों में PRT, TGT एवं PGT पदों हेतु पात्रता परीक्षा। इसमें हरियाणा GK सहित 30 अंकों का सामान्य अध्ययन खंड विशेष रूप से होता है।',
     },
-    frequency: { en: 'Once a year — usually December', hi: 'वर्ष में एक बार — प्रायः दिसंबर' },
+    frequency: { en: 'Annual — the 2026 cycle was held on 4-5 July', hi: 'वार्षिक — 2026 चक्र 4-5 जुलाई को आयोजित' },
     color: '#059669',
     emoji: '🌾',
     learners: 640000,
@@ -113,6 +125,17 @@ export const EXAMS: Exam[] = [
       { en: 'Certificate valid for lifetime', hi: 'प्रमाणपत्र आजीवन मान्य' },
       { en: 'Haryana GK carries real weight', hi: 'हरियाणा GK का वास्तविक महत्व' },
       { en: 'Gateway to HSSC TGT/PGT recruitment', hi: 'HSSC TGT/PGT भर्ती का प्रवेश द्वार' },
+    ],
+    officialSite: 'https://bseh.org.in',
+    updates: [
+      { date: '2025-12-24', kind: 'notification', title: { en: 'Notification released', hi: 'अधिसूचना जारी' }, detail: { en: 'BSEH Bhiwani opened the HTET cycle; about 2.45 lakh candidates registered.', hi: 'BSEH भिवानी ने HTET चक्र आरंभ किया; लगभग 2.45 लाख अभ्यर्थी पंजीकृत।' } },
+      { date: '2026-07-04', kind: 'exam', title: { en: 'Level 3 (PGT) exam', hi: 'स्तर 3 (PGT) परीक्षा' }, detail: { en: 'Held 3:00-5:30 PM on 4 July 2026.', hi: '4 जुलाई 2026 को अपराह्न 3:00-5:30 बजे आयोजित।' } },
+      { date: '2026-07-05', kind: 'exam', title: { en: 'Level 2 and Level 1 exams', hi: 'स्तर 2 एवं स्तर 1 परीक्षा' }, detail: { en: 'Level 2 (TGT) 10:00 AM-12:30 PM and Level 1 (PRT) 3:00-5:30 PM on 5 July 2026.', hi: '5 जुलाई 2026 को स्तर 2 (TGT) प्रातः 10:00-12:30 तथा स्तर 1 (PRT) अपराह्न 3:00-5:30।' } },
+    ],
+    sources: [
+      { label: 'HTET 2026 schedule — Testbook', url: 'https://testbook.com/news/htet-notification-2026-out/', checkedOn: '2026-08-13' },
+      { label: 'HTET 2026 exam dates — PW', url: 'https://www.pw.live/teaching/exams/htet-exam-date-2026', checkedOn: '2026-08-13' },
+      { label: 'Official BSEH portal', url: 'https://bseh.org.in', checkedOn: '2026-08-13' },
     ],
     papers: [
       {
@@ -178,7 +201,7 @@ export const EXAMS: Exam[] = [
     slug: 'uptet',
     name: { en: 'UPTET — Uttar Pradesh Teacher Eligibility Test', hi: 'UPTET — उत्तर प्रदेश शिक्षक पात्रता परीक्षा' },
     shortName: 'UPTET',
-    authority: { en: 'Examination Regulatory Authority, Uttar Pradesh', hi: 'परीक्षा नियामक प्राधिकारी, उत्तर प्रदेश' },
+    authority: { en: 'UP Education Service Selection Commission (UPESSC)', hi: 'उत्तर प्रदेश शिक्षा सेवा चयन आयोग (UPESSC)' },
     scope: 'state',
     state: { en: 'Uttar Pradesh', hi: 'उत्तर प्रदेश' },
     about: {
@@ -198,6 +221,17 @@ export const EXAMS: Exam[] = [
       { en: 'Mandatory for Super TET', hi: 'सुपर TET हेतु अनिवार्य' },
       { en: 'Language II: English, Urdu or Sanskrit', hi: 'भाषा II: अंग्रेज़ी, उर्दू या संस्कृत' },
       { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
+    ],
+    officialSite: 'https://upessc.up.gov.in',
+    updates: [
+      { date: '2026-03-20', kind: 'notification', title: { en: 'Notification released after four years', hi: 'चार वर्ष बाद अधिसूचना जारी' }, detail: { en: 'UPESSC reopened UPTET on 20 March 2026; applications ran 27 March to 26 April.', hi: 'UPESSC ने 20 मार्च 2026 को UPTET पुनः आरंभ किया; आवेदन 27 मार्च से 26 अप्रैल तक।' } },
+      { date: '2026-07-02', kind: 'exam', title: { en: 'Exam held over three days', hi: 'तीन दिन परीक्षा आयोजित' }, detail: { en: 'Conducted 2, 3 and 4 July 2026 in offline OMR mode, two shifts each day.', hi: '2, 3 एवं 4 जुलाई 2026 को ऑफ़लाइन OMR मोड में, प्रतिदिन दो पालियों में आयोजित।' } },
+      { date: '2026-07-08', kind: 'result', title: { en: 'Response sheet released', hi: 'उत्तर पत्रक जारी' }, detail: { en: 'Provisional response sheet out 8 July; objections accepted 8-14 July 2026.', hi: 'अनंतिम उत्तर पत्रक 8 जुलाई को जारी; आपत्तियाँ 8-14 जुलाई 2026 तक।' } },
+    ],
+    sources: [
+      { label: 'UPTET 2026 schedule — Adda247', url: 'https://www.adda247.com/teaching-jobs-exam/uptet-notification-2026-out/', checkedOn: '2026-08-13' },
+      { label: 'UPTET 2026 pattern and timing — Career Power', url: 'https://www.careerpower.in/uptet.html', checkedOn: '2026-08-13' },
+      { label: 'Official UPESSC portal', url: 'https://upessc.up.gov.in', checkedOn: '2026-08-13' },
     ],
     papers: [
       {
@@ -264,6 +298,18 @@ export const EXAMS: Exam[] = [
       { en: 'Negative marking in TRE', hi: 'TRE में नकारात्मक अंकन' },
       { en: 'Bihar-specific GK section', hi: 'बिहार विशिष्ट GK खंड' },
     ],
+    nextExamDate: '2026-09-22',
+    officialSite: 'https://bpsc.bihar.gov.in',
+    vacancies: 32388,
+    updates: [
+      { date: '2026-08-04', kind: 'vacancy', title: { en: 'TRE 4.0 vacancies announced', hi: 'TRE 4.0 रिक्तियाँ घोषित' }, detail: { en: '32,388 teacher posts across Classes 1-12 — among the largest drives in Bihar.', hi: 'कक्षा 1-12 हेतु 32,388 शिक्षक पद — बिहार के सबसे बड़े अभियानों में से एक।' } },
+      { date: '2026-09-22', kind: 'exam', title: { en: 'TRE 4.0 examination', hi: 'TRE 4.0 परीक्षा' }, detail: { en: 'Scheduled 22-27 September 2026; results expected November 2026.', hi: '22-27 सितंबर 2026 को निर्धारित; परिणाम नवंबर 2026 अपेक्षित।' } },
+    ],
+    sources: [
+      { label: 'BPSC TRE 4.0 vacancies and schedule — Organiser', url: 'https://organiser.org/2026/08/04/373422/bharat/bihar-bpsc-tre-4-2026-32388-teacher-vacancies-exam-schedule-released/', checkedOn: '2026-08-13' },
+      { label: 'BPSC TRE 4.0 notification — Testbook', url: 'https://testbook.com/bihar-teacher', checkedOn: '2026-08-13' },
+      { label: 'Official BPSC portal', url: 'https://bpsc.bihar.gov.in', checkedOn: '2026-08-13' },
+    ],
     papers: [
       {
         id: 'bihartet-p1',
@@ -319,7 +365,7 @@ export const EXAMS: Exam[] = [
     color: '#0F766E',
     emoji: '🏛️',
     learners: 890000,
-    nextExamDate: '2026-10-12',
+    nextExamDate: '2026-09-21',
     eligibility: [
       { en: 'PRT: 12th with 50% + D.El.Ed + CTET Paper 1', hi: 'PRT: 12वीं 50% + D.El.Ed + CTET पेपर 1' },
       { en: 'TGT: Graduation with 50% + B.Ed + CTET Paper 2', hi: 'TGT: स्नातक 50% + B.Ed + CTET पेपर 2' },
@@ -329,6 +375,17 @@ export const EXAMS: Exam[] = [
       { en: 'Negative marking of 0.25 per wrong answer', hi: 'प्रत्येक गलत उत्तर पर 0.25 ऋणात्मक अंकन' },
       { en: 'Central pay scale posts', hi: 'केंद्रीय वेतनमान पद' },
       { en: '200 marks in 2 hours', hi: '2 घंटे में 200 अंक' },
+    ],
+    officialSite: 'https://dsssbonline.nic.in',
+    vacancies: 1348,
+    updates: [
+      { date: '2026-04-12', kind: 'exam', title: { en: 'PGT computer-based exam', hi: 'PGT कंप्यूटर आधारित परीक्षा' }, detail: { en: 'PGT CBT ran 12-17 April 2026 for 510 posts across 33 categories, 300 marks.', hi: '510 पदों (33 श्रेणियाँ) हेतु PGT CBT 12-17 अप्रैल 2026, 300 अंक।' } },
+      { date: '2026-06-16', kind: 'application', title: { en: 'TGT applications opened', hi: 'TGT आवेदन आरंभ' }, detail: { en: '838 TGT vacancies; applications ran 16 June to 15 July 2026.', hi: '838 TGT रिक्तियाँ; आवेदन 16 जून से 15 जुलाई 2026 तक।' } },
+    ],
+    sources: [
+      { label: 'DSSSB TGT 2026 vacancies — Testbook', url: 'https://testbook.com/dsssb-tgt', checkedOn: '2026-08-13' },
+      { label: 'DSSSB PGT 2026 exam dates — Career Power', url: 'https://www.careerpower.in/dsssb-pgt-recruitment.html', checkedOn: '2026-08-13' },
+      { label: 'Official DSSSB portal', url: 'https://dsssbonline.nic.in', checkedOn: '2026-08-13' },
     ],
     papers: [
       {
@@ -395,6 +452,17 @@ export const EXAMS: Exam[] = [
       { en: 'All-India transferable central job', hi: 'अखिल भारतीय स्थानांतरणीय केंद्रीय नौकरी' },
       { en: 'Interview + performance test for some posts', hi: 'कुछ पदों हेतु साक्षात्कार + प्रदर्शन परीक्षा' },
       { en: 'Computer literacy section is scoring', hi: 'कंप्यूटर साक्षरता खंड स्कोरिंग है' },
+    ],
+    officialSite: 'https://kvsangathan.nic.in',
+    vacancies: 9921,
+    updates: [
+      { date: '2025-11-13', kind: 'notification', title: { en: 'Notification released', hi: 'अधिसूचना जारी' }, detail: { en: '9,921 posts: 3,630 PRT, 3,069 TGT and 1,606 PGT.', hi: '9,921 पद: 3,630 PRT, 3,069 TGT तथा 1,606 PGT।' } },
+      { date: '2026-01-10', kind: 'exam', title: { en: 'Tier 1 screening test', hi: 'टियर 1 स्क्रीनिंग परीक्षा' }, detail: { en: 'Two-tier CBT introduced this cycle; Tier 1 held 10-11 January 2026 for 100 marks.', hi: 'इस चक्र में दो-स्तरीय CBT लागू; टियर 1 100 अंकों हेतु 10-11 जनवरी 2026 को।' } },
+    ],
+    sources: [
+      { label: 'KVS 2026 vacancies and two-tier pattern — Testbook', url: 'https://testbook.com/kvs', checkedOn: '2026-08-13' },
+      { label: 'KVS 2025-26 cycle guide — TaiyarHo', url: 'https://www.taiyarho.in/exams/kvs-prt-tgt-pgt/', checkedOn: '2026-08-13' },
+      { label: 'Official KVS portal', url: 'https://kvsangathan.nic.in', checkedOn: '2026-08-13' },
     ],
     papers: [
       {
@@ -464,6 +532,15 @@ export const EXAMS: Exam[] = [
       { en: 'Teaching aptitude is a full section', hi: 'शिक्षण अभिरुचि एक पूर्ण खंड है' },
       { en: 'Regional language competency tested', hi: 'क्षेत्रीय भाषा दक्षता की परीक्षा' },
     ],
+    officialSite: 'https://navodaya.gov.in',
+    vacancies: 5841,
+    updates: [
+      { date: '2026-01-10', kind: 'exam', title: { en: 'Computer-based test', hi: 'कंप्यूटर आधारित परीक्षा' }, detail: { en: 'CBT held 10-11 January 2026 for 5,841 teaching and non-teaching posts.', hi: '5,841 शिक्षण एवं गैर-शिक्षण पदों हेतु CBT 10-11 जनवरी 2026 को आयोजित।' } },
+    ],
+    sources: [
+      { label: 'NVS 2026 vacancies and exam dates — Testbook', url: 'https://testbook.com/navodaya-vidyalaya-samiti', checkedOn: '2026-08-13' },
+      { label: 'Official NVS portal', url: 'https://navodaya.gov.in', checkedOn: '2026-08-13' },
+    ],
     papers: [
       {
         id: 'nvs-prt',
@@ -512,6 +589,17 @@ export const EXAMS: Exam[] = [
       { en: 'Certificate valid for lifetime', hi: 'प्रमाणपत्र आजीवन मान्य' },
       { en: '2.5 hours for 150 questions', hi: '150 प्रश्नों हेतु 2.5 घंटे' },
       { en: 'Level 2 has Maths-Science and SST streams', hi: 'स्तर 2 में गणित-विज्ञान एवं SST वर्ग' },
+    ],
+    officialSite: 'https://rajeduboard.rajasthan.gov.in',
+    vacancies: 10208,
+    updates: [
+      { date: '2026-01-17', kind: 'exam', title: { en: 'REET held over four days', hi: 'चार दिन REET आयोजित' }, detail: { en: 'Level 1 and Level 2 conducted 17-20 January 2026 by BSER Ajmer.', hi: 'BSER अजमेर द्वारा स्तर 1 एवं स्तर 2 की परीक्षा 17-20 जनवरी 2026 को आयोजित।' } },
+      { date: '2026-01-20', kind: 'vacancy', title: { en: 'REET Mains vacancies announced', hi: 'REET मुख्य परीक्षा रिक्तियाँ घोषित' }, detail: { en: 'The follow-on REET Mains recruitment carries 10,208 third-grade teacher posts.', hi: 'आगामी REET मुख्य भर्ती में 10,208 तृतीय श्रेणी अध्यापक पद।' } },
+    ],
+    sources: [
+      { label: 'REET 2026 dates and pattern — Testbook', url: 'https://testbook.com/reet', checkedOn: '2026-08-13' },
+      { label: 'REET Mains 2026 vacancies — Career Power', url: 'https://www.careerpower.in/blog/reet-mains-notification-2025', checkedOn: '2026-08-13' },
+      { label: 'Official BSER portal', url: 'https://rajeduboard.rajasthan.gov.in', checkedOn: '2026-08-13' },
     ],
     papers: [
       {
@@ -577,6 +665,18 @@ export const EXAMS: Exam[] = [
       { en: '100 questions in 90 minutes', hi: '90 मिनट में 100 प्रश्न' },
       { en: 'Socio-economic criteria removed', hi: 'सामाजिक-आर्थिक मानदंड हटाए गए' },
     ],
+    nextExamDate: '2026-09-21',
+    officialSite: 'https://hssc.gov.in',
+    vacancies: 8394,
+    updates: [
+      { date: '2026-08-21', kind: 'application', title: { en: 'TGT and PGT applications open', hi: 'TGT एवं PGT आवेदन आरंभ' }, detail: { en: '8,394 HSSC vacancies; apply 21 August to 21 September 2026. Fee Rs 500 general, Rs 125 reserved.', hi: '8,394 HSSC रिक्तियाँ; आवेदन 21 अगस्त से 21 सितंबर 2026। शुल्क सामान्य ₹500, आरक्षित ₹125।' } },
+      { date: '2026-08-21', kind: 'vacancy', title: { en: 'State-wide teacher drive', hi: 'राज्यव्यापी शिक्षक भर्ती' }, detail: { en: 'Haryana announced 15,659 PRT, TGT and PGT posts across HSSC, HPSC and HKRN.', hi: 'हरियाणा ने HSSC, HPSC एवं HKRN के माध्यम से 15,659 PRT, TGT एवं PGT पद घोषित किए।' } },
+    ],
+    sources: [
+      { label: 'Haryana 15,659 teacher vacancies — Adda247', url: 'https://www.adda247.com/teaching-jobs-exam/haryana-govt-to-release-15600-vacancies-for-prt-tgt-and-pgt-posts/', checkedOn: '2026-08-13' },
+      { label: 'HSSC TGT 2026 recruitment — Testbook', url: 'https://testbook.com/haryana-tgt', checkedOn: '2026-08-13' },
+      { label: 'Official HSSC portal', url: 'https://hssc.gov.in', checkedOn: '2026-08-13' },
+    ],
     papers: [
       {
         id: 'hssc-tgt',
@@ -638,6 +738,11 @@ export const EXAMS: Exam[] = [
       { en: '150 marks written + 10 marks academic weightage', hi: '150 अंक लिखित + 10 अंक शैक्षणिक भारांक' },
       { en: 'Includes teaching aptitude and information tech', hi: 'शिक्षण अभिरुचि एवं सूचना तकनीक सम्मिलित' },
     ],
+    officialSite: 'https://upbasiceduboard.gov.in',
+    updates: [],
+    sources: [
+      { label: 'Official UP Basic Education Board portal', url: 'https://upbasiceduboard.gov.in', checkedOn: '2026-08-13' },
+    ],
     papers: [
       {
         id: 'supertet-p1',
@@ -685,6 +790,11 @@ export const EXAMS: Exam[] = [
       { en: 'MP GK section in the recruitment stage', hi: 'भर्ती चरण में MP GK खंड' },
       { en: 'Certificate validity for lifetime', hi: 'प्रमाणपत्र आजीवन मान्य' },
     ],
+    officialSite: 'https://esb.mp.gov.in',
+    updates: [],
+    sources: [
+      { label: 'Official MP Employee Selection Board portal', url: 'https://esb.mp.gov.in', checkedOn: '2026-08-13' },
+    ],
     papers: [
       {
         id: 'mptet-varg3',
@@ -730,6 +840,11 @@ export const EXAMS: Exam[] = [
       { en: '100 subject + 50 teaching aptitude marks', hi: '100 विषय + 50 शिक्षण अभिरुचि अंक' },
       { en: 'Gateway to BPSC TRE secondary posts', hi: 'BPSC TRE माध्यमिक पदों का प्रवेश द्वार' },
     ],
+    officialSite: 'https://secondary.biharboardonline.com',
+    updates: [],
+    sources: [
+      { label: 'Official Bihar School Examination Board portal', url: 'https://secondary.biharboardonline.com', checkedOn: '2026-08-13' },
+    ],
     papers: [
       {
         id: 'stet-p1',
@@ -771,6 +886,11 @@ export const EXAMS: Exam[] = [
     highlights: [
       { en: '150 questions, 2.5 hours', hi: '150 प्रश्न, 2.5 घंटे' },
       { en: 'Bengali/Hindi as Language I', hi: 'भाषा I के रूप में बांग्ला/हिंदी' },
+    ],
+    officialSite: 'https://wbbpe.org',
+    updates: [],
+    sources: [
+      { label: 'Official West Bengal Board of Primary Education portal', url: 'https://wbbpe.org', checkedOn: '2026-08-13' },
     ],
     papers: [
       {
@@ -816,6 +936,11 @@ export const EXAMS: Exam[] = [
       { en: 'Score card valid for lifetime', hi: 'स्कोर कार्ड आजीवन मान्य' },
       { en: 'Negative marking of 0.25', hi: '0.25 ऋणात्मक अंकन' },
     ],
+    officialSite: 'https://awesindia.com',
+    updates: [],
+    sources: [
+      { label: 'Official Army Welfare Education Society portal', url: 'https://awesindia.com', checkedOn: '2026-08-13' },
+    ],
     papers: [
       {
         id: 'awes-prt',
@@ -858,6 +983,11 @@ export const EXAMS: Exam[] = [
     highlights: [
       { en: 'Residential campus posting', hi: 'आवासीय परिसर पदस्थापन' },
       { en: 'Central government pay scale', hi: 'केंद्र सरकार वेतनमान' },
+    ],
+    officialSite: 'https://emrs.tribal.gov.in',
+    updates: [],
+    sources: [
+      { label: 'Official EMRS / NESTS portal', url: 'https://emrs.tribal.gov.in', checkedOn: '2026-08-13' },
     ],
     papers: [
       {
