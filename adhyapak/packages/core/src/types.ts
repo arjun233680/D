@@ -373,6 +373,10 @@ export interface User {
   /** ISO dates the learner practised — drives the streak calendar. */
   activeDates: string[];
   subscription: ContentAccess;
+  /** Set once the learner signs in or continues without an account. */
+  signedIn?: boolean;
+  /** Set once a goal exam has been chosen. Gates the app behind onboarding. */
+  onboarded?: boolean;
   bookmarkedQuestionIds: string[];
   savedNoteIds: string[];
   enrolledBatchIds: string[];

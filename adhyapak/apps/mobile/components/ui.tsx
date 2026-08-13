@@ -37,13 +37,46 @@ export const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.color.border,
   },
-  h1: { fontSize: theme.font.xl, fontWeight: '800', color: theme.color.text },
-  h2: { fontSize: theme.font.md, fontWeight: '700', color: theme.color.text },
-  body: { fontSize: theme.font.base, color: theme.color.text, lineHeight: 22 },
-  muted: { fontSize: theme.font.sm, color: theme.color.textMuted },
-  faint: { fontSize: theme.font.xs, color: theme.color.textFaint },
+  h1: {
+    fontSize: theme.font.xl,
+    lineHeight: theme.line.xl,
+    fontFamily: theme.family.displayBold,
+    color: theme.color.text,
+  },
+  h2: {
+    fontSize: theme.font.md,
+    lineHeight: theme.line.md,
+    fontFamily: theme.family.display,
+    color: theme.color.text,
+  },
+  title: {
+    fontSize: theme.font.base,
+    lineHeight: theme.line.base,
+    fontFamily: theme.family.bodySemi,
+    color: theme.color.text,
+  },
+  body: {
+    fontSize: theme.font.base,
+    lineHeight: theme.line.base,
+    fontFamily: theme.family.body,
+    color: theme.color.text,
+  },
+  muted: {
+    fontSize: theme.font.sm,
+    lineHeight: theme.line.sm,
+    fontFamily: theme.family.body,
+    color: theme.color.textMuted,
+  },
+  faint: {
+    fontSize: theme.font.xs,
+    lineHeight: theme.line.xs,
+    fontFamily: theme.family.body,
+    color: theme.color.textFaint,
+  },
+  /** Digits that line up in columns — scores, timers, ranks. */
+  numeric: { fontFamily: theme.family.displayBold, fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', alignItems: 'center' },
-  pad: { paddingHorizontal: theme.space.lg },
+  pad: { paddingHorizontal: theme.space.xl },
 });
 
 export function SectionHeader({
@@ -111,13 +144,15 @@ export function Badge({
         {
           backgroundColor: c.bg,
           borderRadius: theme.radius.pill,
-          paddingHorizontal: 8,
-          paddingVertical: 3,
+          paddingHorizontal: 10,
+          paddingVertical: 5,
         },
         style,
       ]}
     >
-      <Text style={{ color: c.fg, fontSize: theme.font.xs, fontWeight: '700' }}>{children}</Text>
+      <Text style={{ color: c.fg, fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
+        {children}
+      </Text>
     </View>
   );
 }
@@ -138,9 +173,9 @@ export function Stat({
   color?: string;
 }) {
   return (
-    <View style={[s.card, { flex: 1, paddingVertical: 12, alignItems: 'center' }]}>
-      <Text style={{ fontSize: theme.font.lg, fontWeight: '800', color }}>{value}</Text>
-      <Text style={[s.faint, { marginTop: 2 }]} numberOfLines={1}>
+    <View style={[s.card, { flex: 1, paddingVertical: theme.space.lg, alignItems: 'center' }]}>
+      <Text style={[s.numeric, { fontSize: theme.font.lg, color }]}>{value}</Text>
+      <Text style={[s.faint, { marginTop: 4 }]} numberOfLines={1}>
         {label}
       </Text>
     </View>
@@ -199,14 +234,18 @@ export function Button({
           borderColor: v.border,
           borderWidth: 1,
           borderRadius: theme.radius.md,
-          paddingVertical: 13,
+          paddingVertical: 16,
           alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 52,
           opacity: disabled ? 0.4 : 1,
         },
         style,
       ]}
     >
-      <Text style={{ color: v.fg, fontWeight: '700', fontSize: theme.font.base }}>{label}</Text>
+      <Text style={{ color: v.fg, fontFamily: theme.family.display, fontSize: theme.font.base }}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -228,15 +267,15 @@ export function Chip({
         borderColor: active ? 'transparent' : theme.color.border,
         borderWidth: 1,
         borderRadius: theme.radius.pill,
-        paddingHorizontal: 13,
-        paddingVertical: 7,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         marginRight: theme.space.sm,
       }}
     >
       <Text
         style={{
           color: active ? '#fff' : theme.color.textMuted,
-          fontWeight: '600',
+          fontFamily: theme.family.bodyMedium,
           fontSize: theme.font.sm,
         }}
       >
@@ -249,7 +288,7 @@ export function Chip({
 export function EmptyState({ icon, title, body }: { icon: string; title: string; body: string }) {
   return (
     <View style={[s.card, { alignItems: 'center', paddingVertical: 44, paddingHorizontal: 24 }]}>
-      <Text style={{ fontSize: 34 }}>{icon}</Text>
+      <Text style={{ fontSize: theme.icon.xl }}>{icon}</Text>
       <Text style={[s.h2, { marginTop: 8 }]}>{title}</Text>
       <Text style={[s.muted, { marginTop: 4, textAlign: 'center' }]}>{body}</Text>
     </View>

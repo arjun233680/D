@@ -52,6 +52,8 @@ interface Store extends PersistedState {
   toggleBookmark: (questionId: string) => void;
   toggleSavedNote: (noteId: string) => void;
   toggleEnrolment: (batchId: string) => void;
+  /** Shallow-merges fields onto the signed-in learner. */
+  patchUser: (patch: Partial<User>) => void;
   saveAttempt: (attempt: TestAttempt) => void;
   saveResult: (result: TestResult) => void;
   addVideo: (video: Video) => void;
@@ -123,6 +125,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const patchUser = useCallback((patch: Partial<User>) => {
+    setState((s) => ({ ...s, user: { ...s.user, ...patch } }));
+  }, []);
+
   const saveAttempt = useCallback((attempt: TestAttempt) => {
     setState((s) => ({ ...s, attempts: { ...s.attempts, [attempt.testId]: attempt } }));
   }, []);
@@ -158,6 +164,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toggleBookmark,
       toggleSavedNote,
       toggleEnrolment,
+      patchUser,
       saveAttempt,
       saveResult,
       addVideo,
@@ -173,6 +180,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toggleBookmark,
       toggleSavedNote,
       toggleEnrolment,
+      patchUser,
       saveAttempt,
       saveResult,
       addVideo,

@@ -19,6 +19,7 @@ import {
   UI,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { usePalette } from '@/lib/session';
 import { BatchCard, ExamCard, NoteCard, TestCard, VideoCard } from '@/components/cards';
 import { Badge, SectionHeader, Touch, s } from '@/components/ui';
 
@@ -35,6 +36,9 @@ const QUICK = [
 
 export default function HomeScreen() {
   const { lang, user, toggleLang } = useStore();
+  // The hero takes the chosen exam's colour, so the app a CTET aspirant opens
+  // does not look like the one an HTET aspirant opens.
+  const palette = usePalette();
   const exam = getExam(user.goalExamId);
   const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
   const streak = currentStreak(user.activeDates);
@@ -43,7 +47,9 @@ export default function HomeScreen() {
   const goalTests = TESTS.filter((x) => x.examId === user.goalExamId);
   const goalVideos = VIDEOS.filter((v) => v.examIds.includes(user.goalExamId));
   const goalNotes = NOTES.filter((n) => n.examIds.includes(user.goalExamId));
-  const live = liveVideos();
+  const allLive = liveVideos();
+  const goalLive = allLive.filter((v) => v.examIds.includes(user.goalExamId));
+  const live = goalLive.length ? goalLive : [];
   const subjectIds = paper ? paper.sections.map((x) => x.subjectId) : ['cdp', 'math', 'evs'];
 
   return (
@@ -115,7 +121,7 @@ export default function HomeScreen() {
         <View style={{ paddingHorizontal: theme.space.lg }}>
           <View
             style={{
-              backgroundColor: exam?.color ?? theme.color.ink,
+              backgroundColor: palette.accent,
               borderRadius: theme.radius.xl,
               padding: theme.space.xl,
             }}
@@ -184,17 +190,25 @@ export default function HomeScreen() {
             <Touch key={q.href} href={q.href as never} style={{ width: '25%', alignItems: 'center', paddingVertical: 10 }}>
                 <View
                   style={{
-                    width: 44,
-                    height: 44,
+                    width: theme.icon.xxl,
+                    height: theme.icon.xxl,
                     borderRadius: theme.radius.md,
                     backgroundColor: `${q.color}1a`,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 19 }}>{q.icon}</Text>
+                  <Text style={{ fontSize: theme.icon.md }}>{q.icon}</Text>
                 </View>
-                <Text style={{ fontSize: 10, fontWeight: '600', marginTop: 6 }} numberOfLines={1}>
+                <Text
+                  style={{
+                    fontSize: theme.font.xs,
+                    fontFamily: theme.family.bodyMedium,
+                    color: theme.color.text,
+                    marginTop: 8,
+                  }}
+                  numberOfLines={1}
+                >
                   {t(q.label, lang)}
                 </Text>
               </Touch>

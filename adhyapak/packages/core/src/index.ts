@@ -20,7 +20,8 @@ export * from './engine/test-engine';
 export * from './engine/practice';
 export * from './engine/format';
 
-export { theme } from './theme';
+export { theme, examTheme } from './theme';
+export type { Theme, ExamTheme } from './theme';
 
 // Backend access. Screens call these instead of importing seed arrays directly
 // once credentials are present; without them the same calls serve bundled content.

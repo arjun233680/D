@@ -184,6 +184,8 @@ export const DEMO_USER: User = {
     '2026-08-12', '2026-08-13',
   ],
   subscription: 'free',
+  signedIn: false,
+  onboarded: false,
   bookmarkedQuestionIds: ['q-cdp-007', 'q-math-007'],
   savedNoteIds: ['note-cdp-01', 'note-gk-01'],
   enrolledBatchIds: ['batch-ctet-p1-foundation'],
