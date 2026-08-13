@@ -2,48 +2,88 @@ import type { CurrentAffair, Doubt, User } from '../types';
 
 export const CURRENT_AFFAIRS: CurrentAffair[] = [
   {
-    id: 'ca-001',
-    title: { en: 'NCTE releases revised norms for the 4-year ITEP programme', hi: 'NCTE ने 4 वर्षीय ITEP कार्यक्रम हेतु संशोधित मानदंड जारी किए' },
-    summary: {
-      en: 'The Integrated Teacher Education Programme is set to become the minimum qualification for school teaching by 2030 under NEP 2020. Expect questions on its duration, stages covered and entrance route.',
-      hi: 'NEP 2020 के अंतर्गत एकीकृत शिक्षक शिक्षा कार्यक्रम 2030 तक विद्यालयी शिक्षण की न्यूनतम योग्यता बनने जा रहा है। इसकी अवधि, कवर की गई अवस्थाओं तथा प्रवेश मार्ग पर प्रश्न अपेक्षित हैं।',
+    id: 'ca-nipun-class5',
+    title: {
+      en: 'NIPUN Bharat set to be extended up to Class 5',
+      hi: 'निपुण भारत मिशन कक्षा 5 तक बढ़ाए जाने की तैयारी',
     },
-    date: '2026-08-11',
-    tags: [{ en: 'Education Policy', hi: 'शिक्षा नीति' }],
-    examIds: ['ctet', 'kvs', 'nvs', 'dsssb', 'htet', 'reet'],
-  },
-  {
-    id: 'ca-002',
-    title: { en: 'ASER-style survey reports gains in foundational numeracy', hi: 'ASER शैली सर्वेक्षण में आधारभूत संख्यात्मकता में सुधार' },
     summary: {
-      en: 'Foundational Literacy and Numeracy under NIPUN Bharat continues to be a favourite source for pedagogy and policy questions across TET papers.',
-      hi: 'निपुण भारत के अंतर्गत आधारभूत साक्षरता एवं संख्यात्मकता TET पेपरों में शिक्षाशास्त्र एवं नीति संबंधी प्रश्नों का प्रिय स्रोत बनी हुई है।',
+      en: 'The Education Ministry proposes extending the foundational literacy and numeracy mission — currently ending in 2026-27 — up to Class 5, so children who missed the early grades are covered. PARAKH is running the Foundational Learning Study 2026; the PARAKH Rashtriya Sarvekshan 2024 placed literacy and numeracy at about 60%. Expect questions on the mission timeline, PARAKH and the FLN goal.',
+      hi: 'शिक्षा मंत्रालय आधारभूत साक्षरता एवं संख्यात्मकता मिशन — जो अभी 2026-27 में समाप्त हो रहा है — को कक्षा 5 तक बढ़ाने का प्रस्ताव कर रहा है, ताकि प्रारंभिक कक्षाएँ छूट जाने वाले बालक भी सम्मिलित हों। PARAKH आधारभूत अधिगम अध्ययन 2026 संचालित कर रहा है; PARAKH राष्ट्रीय सर्वेक्षण 2024 में साक्षरता एवं संख्यात्मकता लगभग 60% रही। मिशन की समय-सीमा, PARAKH तथा FLN लक्ष्य पर प्रश्न अपेक्षित हैं।',
     },
-    date: '2026-08-09',
+    date: '2026-08-06',
     tags: [{ en: 'NIPUN Bharat', hi: 'निपुण भारत' }, { en: 'FLN', hi: 'FLN' }],
-    examIds: ['ctet', 'reet', 'uptet', 'bihartet', 'mptet'],
+    examIds: ['ctet', 'reet', 'uptet', 'bihartet', 'mptet', 'kvs', 'nvs'],
   },
   {
-    id: 'ca-003',
-    title: { en: 'CTET certificate validity confirmed as lifetime', hi: 'CTET प्रमाणपत्र की वैधता आजीवन पुष्ट' },
+    id: 'ca-pmshri-budget',
+    title: {
+      en: 'PM SHRI gets Rs 7,500 crore; Samagra Shiksha Rs 42,100 crore',
+      hi: 'PM श्री को ₹7,500 करोड़; समग्र शिक्षा को ₹42,100 करोड़',
+    },
     summary: {
-      en: 'The seven-year validity was extended to lifetime with retrospective effect from 2011. A direct one-mark question in several state TETs.',
-      hi: 'सात वर्ष की वैधता को 2011 से पूर्वप्रभावी रूप से आजीवन कर दिया गया। कई राज्य TET में यह सीधा एक अंक का प्रश्न है।',
+      en: 'The 2026-27 union budget earmarks Rs 7,500 crore for PM SHRI model schools and Rs 42,100 crore for Samagra Shiksha Abhiyan. PM SHRI is also set to expand into West Bengal, Tamil Nadu and Kerala. Scheme names, their ministries and allocations are standard General Awareness material for DSSSB, KVS and NVS.',
+      hi: '2026-27 के केंद्रीय बजट में PM श्री आदर्श विद्यालयों हेतु ₹7,500 करोड़ तथा समग्र शिक्षा अभियान हेतु ₹42,100 करोड़ आवंटित। PM श्री का विस्तार पश्चिम बंगाल, तमिलनाडु एवं केरल तक होने जा रहा है। योजनाओं के नाम, मंत्रालय एवं आवंटन DSSSB, KVS तथा NVS के सामान्य ज्ञान खंड की सामान्य सामग्री हैं।',
+    },
+    date: '2026-08-01',
+    tags: [{ en: 'Schemes', hi: 'योजनाएँ' }, { en: 'Budget', hi: 'बजट' }],
+    examIds: ['dsssb', 'kvs', 'nvs', 'emrs', 'hssc-tgt-pgt', 'awes'],
+  },
+  {
+    id: 'ca-ncf-npst',
+    title: {
+      en: 'NCF-SE 2023 rollout paired with National Professional Standards for Teachers',
+      hi: 'NCF-SE 2023 क्रियान्वयन के साथ शिक्षकों हेतु राष्ट्रीय व्यावसायिक मानक',
+    },
+    summary: {
+      en: 'Teacher orientation programmes on NEP 2020 and the National Curriculum Framework for School Education 2023 are running alongside the proposed National Professional Standards for Teachers (NPST) and a National Mentoring Mission. Continuous professional development has shifted from one-off workshops to structured online and hybrid training.',
+      hi: 'NEP 2020 तथा राष्ट्रीय पाठ्यचर्या रूपरेखा (विद्यालयी शिक्षा) 2023 पर शिक्षक अभिविन्यास कार्यक्रम, प्रस्तावित राष्ट्रीय व्यावसायिक शिक्षक मानक (NPST) एवं राष्ट्रीय मेंटरिंग मिशन के साथ चल रहे हैं। सतत व्यावसायिक विकास अब एकबारगी कार्यशालाओं के स्थान पर संरचित ऑनलाइन एवं हाइब्रिड प्रशिक्षण बन गया है।',
+    },
+    date: '2026-07-28',
+    tags: [{ en: 'NEP 2020', hi: 'NEP 2020' }, { en: 'NCF-SE', hi: 'NCF-SE' }],
+    examIds: ['ctet', 'htet', 'uptet', 'reet', 'kvs', 'nvs', 'dsssb', 'emrs'],
+  },
+  {
+    id: 'ca-ctet-sept',
+    title: {
+      en: 'CTET September 2026 held on 6 September across 132 cities',
+      hi: 'CTET सितंबर 2026 परीक्षा 6 सितंबर को 132 शहरों में',
+    },
+    summary: {
+      en: 'CBSE notified the cycle on 11 May 2026 with applications from 11 May to 10 June. Paper II runs 9:30 AM to 12:00 noon and Paper I from 2:30 to 5:00 PM, offline on OMR sheets. Qualifying marks stay at 90/150 for General and 82/150 for OBC, SC and ST.',
+      hi: 'CBSE ने 11 मई 2026 को चक्र अधिसूचित किया, आवेदन 11 मई से 10 जून तक। पेपर II प्रातः 9:30 से 12:00 तथा पेपर I अपराह्न 2:30 से 5:00 बजे तक, OMR शीट पर ऑफ़लाइन। अर्हक अंक सामान्य हेतु 90/150 तथा OBC, SC एवं ST हेतु 82/150 यथावत।',
+    },
+    date: '2026-05-11',
+    tags: [{ en: 'CTET', hi: 'CTET' }, { en: 'Exam dates', hi: 'परीक्षा तिथि' }],
+    examIds: ['ctet'],
+  },
+  {
+    id: 'ca-bpsc-tre4',
+    title: {
+      en: 'BPSC TRE 4.0 opens 32,388 teacher posts in Bihar',
+      hi: 'BPSC TRE 4.0 में बिहार के 32,388 शिक्षक पद',
+    },
+    summary: {
+      en: 'One of the largest teacher recruitment drives in Bihar\'s history, covering Classes 1-12. The examination is scheduled for 22-27 September 2026 with results expected in November. Each paper carries 150 questions for 150 marks in 2.5 hours across Language, General Studies and the subject.',
+      hi: 'बिहार के इतिहास के सबसे बड़े शिक्षक भर्ती अभियानों में से एक, जो कक्षा 1-12 को कवर करता है। परीक्षा 22-27 सितंबर 2026 को निर्धारित है, परिणाम नवंबर में अपेक्षित। प्रत्येक पेपर में भाषा, सामान्य अध्ययन एवं विषय हेतु 2.5 घंटे में 150 अंकों के 150 प्रश्न।',
     },
     date: '2026-08-04',
-    tags: [{ en: 'CTET', hi: 'CTET' }],
-    examIds: ['ctet', 'htet', 'uptet'],
+    tags: [{ en: 'Recruitment', hi: 'भर्ती' }, { en: 'Bihar', hi: 'बिहार' }],
+    examIds: ['bihartet', 'bihar-stet'],
   },
   {
-    id: 'ca-004',
-    title: { en: 'PM SHRI schools expanded to more districts', hi: 'PM श्री विद्यालयों का और जिलों में विस्तार' },
-    summary: {
-      en: 'PM SHRI (PM Schools for Rising India) upgrades existing schools as exemplar NEP-aligned institutions. Scheme names and launch years are standard GK questions.',
-      hi: 'PM श्री (PM Schools for Rising India) विद्यमान विद्यालयों को NEP आधारित आदर्श संस्थानों के रूप में उन्नत करता है। योजनाओं के नाम एवं आरंभ वर्ष सामान्य GK प्रश्न हैं।',
+    id: 'ca-haryana-drive',
+    title: {
+      en: 'Haryana announces 15,659 PRT, TGT and PGT posts',
+      hi: 'हरियाणा में 15,659 PRT, TGT एवं PGT पद घोषित',
     },
-    date: '2026-07-29',
-    tags: [{ en: 'Schemes', hi: 'योजनाएँ' }],
-    examIds: ['kvs', 'nvs', 'dsssb', 'emrs', 'hssc-tgt-pgt'],
+    summary: {
+      en: 'Recruitment runs through HSSC, HPSC and HKRN. The HSSC share is 8,394 TGT and PGT vacancies, with applications from 21 August to 21 September 2026 and a fee of Rs 500 for General and Rs 125 for reserved categories.',
+      hi: 'भर्ती HSSC, HPSC एवं HKRN के माध्यम से होगी। HSSC का हिस्सा 8,394 TGT एवं PGT रिक्तियाँ हैं, आवेदन 21 अगस्त से 21 सितंबर 2026 तक तथा शुल्क सामान्य ₹500 एवं आरक्षित वर्ग ₹125।',
+    },
+    date: '2026-08-10',
+    tags: [{ en: 'Recruitment', hi: 'भर्ती' }, { en: 'Haryana', hi: 'हरियाणा' }],
+    examIds: ['htet', 'hssc-tgt-pgt'],
   },
 ];
 

@@ -50,6 +50,23 @@ export interface ExamSection {
   marks: number;
 }
 
+/** A citation. Every factual claim about an exam carries one. */
+export interface Source {
+  label: string;
+  url: string;
+  /** ISO date the fact was last checked against the source. */
+  checkedOn: string;
+}
+
+/** A dated, cited fact — notification released, exam held, result out. */
+export interface ExamUpdate {
+  /** ISO date the event happens or happened. */
+  date: string;
+  title: Bilingual;
+  detail: Bilingual;
+  kind: 'notification' | 'application' | 'exam' | 'result' | 'vacancy';
+}
+
 export interface Exam {
   id: string;
   slug: string;
@@ -71,6 +88,14 @@ export interface Exam {
   eligibility: Bilingual[];
   /** Ordered highlights shown on the goal page. */
   highlights: Bilingual[];
+  /** Official conducting-body website. */
+  officialSite: string;
+  /** Posts advertised in the current cycle, where the body has published a figure. */
+  vacancies?: number;
+  /** Cycle timeline, newest last. Rendered on the goal page. */
+  updates: ExamUpdate[];
+  /** Where each of the above was verified. Shown to the learner. */
+  sources: Source[];
 }
 
 /* --------------------------------------------------------------- subjects */

@@ -21,3 +21,8 @@ export * from './engine/practice';
 export * from './engine/format';
 
 export { theme } from './theme';
+
+// Backend access. Screens call these instead of importing seed arrays directly
+// once credentials are present; without them the same calls serve bundled content.
+export * from './api/client';
+export * from './api/repository';

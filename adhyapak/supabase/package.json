@@ -1,0 +1,19 @@
+{
+  "name": "@adhyapak/backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Postgres schema, row-level security, grading functions and seed generator for Adhyapak",
+  "scripts": {
+    "seed:generate": "tsx seed/generate-seed.ts",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset"
+  },
+  "dependencies": {
+    "@adhyapak/core": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

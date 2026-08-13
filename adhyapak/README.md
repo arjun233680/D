@@ -33,7 +33,8 @@ adhyapak/
 │   │                         notes, batches, tests, feeds
 │   └── src/engine/           test engine, practice engine, formatters
 ├── apps/web/             Next.js 16 + React 19 + Tailwind v4 (the website / PWA)
-└── apps/mobile/          Expo SDK 57 + React Native 0.82 + Expo Router (the app)
+├── apps/mobile/          Expo SDK 57 + React Native 0.82 + Expo Router (the app)
+└── supabase/             Postgres schema, row-level security, grading, seed
 ```
 
 **The web app and the mobile app share `@adhyapak/core` completely** — the same
@@ -115,17 +116,39 @@ backgrounded app resumes the paper with the clock honest.
 
 ---
 
-## Connecting a real backend
+## The backend
 
-Seed data implements the same interfaces a server would return, so the swap is
-contained:
+Postgres on Supabase, in `supabase/` — schema, row-level security, server-side
+grading and a seed generator. See [`supabase/README.md`](supabase/README.md) for
+setup; it is four SQL files and two environment variables.
 
-1. Replace the exported arrays in `packages/core/src/data/` with fetches.
-2. Point `src` on `Video` and `fileUrl` on `Note` at object storage — the
-   Educator Studio already produces exactly that shape from a picked file.
-3. Replace `simulateRank` in the test engine with real cohort statistics.
-4. Swap the store's persistence layer for authenticated API calls; the store's
-   action names (`saveAttempt`, `saveResult`, `toggleBookmark`, …) are already
-   the API surface.
+The app runs in either of two modes and no screen can tell them apart:
 
-No screen changes in any of the four steps.
+- **configured** — reads and writes go to Postgres, papers are marked in the
+  database, and rank is computed against everyone else who sat that test.
+- **offline** — with no credentials, the content bundled into the app is served
+  instead. Useful in development, and it means an aspirant on a patchy
+  connection still gets the whole question bank.
+
+`packages/core/src/api/repository.ts` is the only place either app touches data,
+and it degrades from the first mode to the second on any failure.
+
+Grading lives in the database on purpose: the client cannot fake a score, the
+answer key never has to reach the device before submission, and the percentile
+is real rather than simulated.
+
+## Where the data comes from
+
+Exam patterns, dates, vacancies, eligibility and cut-offs were researched from
+published notifications and reporting, and every exam carries its citations in
+`sources` — rendered on the goal page with the date each fact was checked. Exams
+whose current cycle has not been verified show that plainly rather than implying
+freshness.
+
+MCQs are original questions written to the published syllabus and marking
+scheme, with worked explanations — not verbatim reproductions of any paper.
+Where a question mirrors a pattern a board has repeated, it carries a
+`previousYear` tag naming that paper.
+
+Educators are illustrative profiles, not real people. Replace them with your
+faculty before launch.
