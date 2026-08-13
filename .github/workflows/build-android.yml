@@ -1,0 +1,84 @@
+name: Build Android APK
+
+# Produces a sideloadable APK and attaches it to a release, so the app can be
+# installed on a phone straight from the browser — no Play Store, no Expo
+# account, no developer tooling on the user's machine.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['android-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: adhyapak/package-lock.json
+
+      # React Native 0.82 needs JDK 17 or newer.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        working-directory: adhyapak
+        run: npm ci
+
+      # Generates the native android/ project from app.json. Dependencies are
+      # already installed, so skip prebuild's own install step.
+      - name: Generate the native project
+        working-directory: adhyapak/apps/mobile
+        env:
+          EXPO_NO_TELEMETRY: '1'
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build the APK
+        working-directory: adhyapak/apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Collect the APK
+        id: apk
+        working-directory: adhyapak/apps/mobile
+        run: |
+          set -euo pipefail
+          src=$(find android/app/build/outputs/apk/release -name '*.apk' | head -n1)
+          test -n "$src"
+          out="adhyapak-v1.0.${{ github.run_number }}.apk"
+          cp "$src" "$out"
+          echo "path=adhyapak/apps/mobile/$out" >> "$GITHUB_OUTPUT"
+          echo "name=$out" >> "$GITHUB_OUTPUT"
+          ls -lh "$out"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ steps.apk.outputs.path }}
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-v1.0.${{ github.run_number }}
+          name: Adhyapak ${{ steps.apk.outputs.name }}
+          files: ${{ steps.apk.outputs.path }}
+          body: |
+            Android build of Adhyapak — teaching-exam preparation for CTET, HTET,
+            UPTET, REET, DSSSB, KVS, NVS, Bihar TRE, HSSC and more.
+
+            **To install:** download the `.apk` below on your phone and open it.
+            Android will ask you to allow installs from your browser the first
+            time — that is expected for an app installed outside the Play Store.
+
+            The build is signed with the standard debug key, which is fine for
+            sideloading. Generate an upload key before publishing to the Play Store.
