@@ -1,3 +1,6 @@
+// The site is a static export, so the manifest is generated at build time.
+export const dynamic = 'force-static';
+
 import type { MetadataRoute } from 'next';
 
 /** Makes the website installable — the "app" experience on any phone. */

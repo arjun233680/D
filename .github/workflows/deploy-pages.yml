@@ -46,12 +46,22 @@ jobs:
           EXPO_NO_TELEMETRY: '1'
         run: npx expo export --platform web --output-dir dist
 
+      # The website is a separate Next.js app and carries the Studio — bulk
+      # import, draft review and PYQ analytics. It is published under /web/ so
+      # both halves of the product are reachable from one Pages site.
+      - name: Export the website
+        working-directory: adhyapak/apps/web
+        env:
+          NEXT_PUBLIC_BASE_PATH: /D/web
+        run: npx next build
+
       - name: Prepare the site
         working-directory: adhyapak/apps/mobile
         run: |
           # Client-side routes must survive a refresh, and Jekyll would eat _expo/.
           cp dist/index.html dist/404.html
           touch dist/.nojekyll
+          cp -r ../web/out dist/web
 
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
