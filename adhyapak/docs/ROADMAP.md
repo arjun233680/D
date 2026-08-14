@@ -27,11 +27,19 @@ detection below title rows, a downloadable starter workbook, bilingual parse
 errors. 20,000 rows parse and validate in ~1.2 s — measured, see
 [IMPORTING.md](IMPORTING.md).
 
-## Blocked on credentials
+**Phase 6 — HTET accuracy.** The blueprint corrected against the real pattern
+(150/150/150, no negative marking, the 10+10+10 split the old data merged into
+one "gk" block), an elective model so Levels 2 and 3 can be the twelve and
+twenty-one different papers they actually are (migration 0009), the fabricated
+statistics removed, three importer bugs that rejected the real HTET sheet
+outright, and CI that runs the linter and the tests rather than typecheck alone.
 
-The live site still runs on bundled content. Everything needed is in place and
-verified against Postgres 16; what is missing is a Supabase project and two
-repository secrets. `docs/BACKEND-SETUP.md`, ten minutes.
+## Next, applying the migration
+
+The backend is live. Migration `0009_electives.sql` is written to be pasted
+whole into the Supabase SQL editor and has not been applied there yet; run
+`supabase/verify.sql` afterwards, which now covers the elective tables and
+asserts the fabricated columns are gone.
 
 ## Next, in rough priority
 
