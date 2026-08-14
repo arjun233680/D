@@ -289,11 +289,8 @@ export function PracticeRunner({
               <Text style={{ fontSize: theme.font.sm, lineHeight: 21, marginTop: 6 }}>
                 {t(question.explanation, lang)}
               </Text>
-              <Text style={[s.faint, { marginTop: 8 }]}>
-                {Math.round(question.accuracy * 100)}%{' '}
-                {lang === 'hi' ? 'ने सही किया' : 'got this right'} ·{' '}
-                {question.avgTimeSeconds}s {lang === 'hi' ? 'औसत' : 'avg'}
-              </Text>
+              {/* A cohort line sat here, reading off seed values. No
+                  cohort has answered these questions yet. */}
             </View>
           ) : null}
         </View>

@@ -28,7 +28,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'Notified by CBSE; the 2026 cycle was held in September', hi: 'CBSE द्वारा अधिसूचित; 2026 चक्र सितंबर में आयोजित' },
     color: '#4F46E5',
     emoji: '🇮🇳',
-    learners: 2840000,
     eligibility: [
       { en: 'Paper 1: Senior Secondary (50%) + 2-year D.El.Ed / 4-year B.El.Ed', hi: 'पेपर 1: 12वीं (50%) + 2 वर्षीय D.El.Ed / 4 वर्षीय B.El.Ed' },
       { en: 'Paper 2: Graduation (50%) + B.Ed / D.El.Ed as applicable', hi: 'पेपर 2: स्नातक (50%) + B.Ed / D.El.Ed यथालागू' },
@@ -122,7 +121,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'Annual — the 2026 cycle was held on 4-5 July', hi: 'वार्षिक — 2026 चक्र 4-5 जुलाई को आयोजित' },
     color: '#059669',
     emoji: '🌾',
-    learners: 640000,
     eligibility: [
       { en: 'Level 1 (PRT): 12th with 50% + D.El.Ed', hi: 'स्तर 1 (PRT): 12वीं 50% अंकों के साथ + D.El.Ed' },
       { en: 'Level 2 (TGT): Graduation + B.Ed', hi: 'स्तर 2 (TGT): स्नातक + B.Ed' },
@@ -280,7 +278,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'Announced by ERA, UP — typically annual', hi: 'ERA, UP द्वारा घोषित — प्रायः वार्षिक' },
     color: '#DC2626',
     emoji: '🕌',
-    learners: 1960000,
     eligibility: [
       { en: 'Primary Level: 12th with 50% + D.El.Ed / BTC', hi: 'प्राथमिक स्तर: 12वीं 50% + D.El.Ed / BTC' },
       { en: 'Upper Primary: Graduation + B.Ed / BTC', hi: 'उच्च प्राथमिक: स्नातक + B.Ed / BTC' },
@@ -356,7 +353,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'TRE cycles announced by BPSC through the year', hi: 'BPSC द्वारा वर्ष भर TRE चक्र घोषित' },
     color: '#EA580C',
     emoji: '🪷',
-    learners: 1240000,
     eligibility: [
       { en: 'Paper 1: 12th with 50% + D.El.Ed', hi: 'पेपर 1: 12वीं 50% + D.El.Ed' },
       { en: 'Paper 2: Graduation + B.Ed', hi: 'पेपर 2: स्नातक + B.Ed' },
@@ -433,7 +429,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'Post-wise notifications through the year', hi: 'वर्ष भर पदवार अधिसूचनाएँ' },
     color: '#0F766E',
     emoji: '🏛️',
-    learners: 890000,
     nextExamDate: '2026-09-21',
     eligibility: [
       { en: 'PRT: 12th with 50% + D.El.Ed + CTET Paper 1', hi: 'PRT: 12वीं 50% + D.El.Ed + CTET पेपर 1' },
@@ -511,7 +506,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'As per KVS vacancy notification', hi: 'KVS रिक्ति अधिसूचना के अनुसार' },
     color: '#1D4ED8',
     emoji: '🏫',
-    learners: 1120000,
     eligibility: [
       { en: 'PRT: 12th with 50% + D.El.Ed + CTET Paper 1', hi: 'PRT: 12वीं 50% + D.El.Ed + CTET पेपर 1' },
       { en: 'TGT: Graduation with 50% in subject + B.Ed + CTET Paper 2', hi: 'TGT: विषय में 50% सहित स्नातक + B.Ed + CTET पेपर 2' },
@@ -590,7 +584,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'As per NVS vacancy notification', hi: 'NVS रिक्ति अधिसूचना के अनुसार' },
     color: '#7C2D12',
     emoji: '🌳',
-    learners: 720000,
     eligibility: [
       { en: 'PRT: 12th with 50% + D.El.Ed + CTET Paper 1', hi: 'PRT: 12वीं 50% + D.El.Ed + CTET पेपर 1' },
       { en: 'TGT: Graduation with 50% + B.Ed + CTET Paper 2', hi: 'TGT: स्नातक 50% + B.Ed + CTET पेपर 2' },
@@ -648,7 +641,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'As notified by BSER — recent cycles annual', hi: 'BSER द्वारा अधिसूचित — हाल के चक्र वार्षिक' },
     color: '#9333EA',
     emoji: '🐪',
-    learners: 1580000,
     eligibility: [
       { en: 'Level 1: 12th with 50% + D.El.Ed', hi: 'स्तर 1: 12वीं 50% + D.El.Ed' },
       { en: 'Level 2: Graduation + B.Ed', hi: 'स्तर 2: स्नातक + B.Ed' },
@@ -723,7 +715,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'Advertisement-wise, after CET screening', hi: 'CET स्क्रीनिंग के बाद विज्ञापनवार' },
     color: '#065F46',
     emoji: '🎓',
-    learners: 470000,
     eligibility: [
       { en: 'Valid HTET certificate for the relevant level', hi: 'संबंधित स्तर हेतु वैध HTET प्रमाणपत्र' },
       { en: 'Haryana CET qualification where applicable', hi: 'यथालागू हरियाणा CET अर्हता' },
@@ -798,7 +789,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'As per UPBEB recruitment cycle', hi: 'UPBEB भर्ती चक्र के अनुसार' },
     color: '#BE123C',
     emoji: '⭐',
-    learners: 810000,
     eligibility: [
       { en: 'UPTET or CTET qualified', hi: 'UPTET अथवा CTET उत्तीर्ण' },
       { en: 'Graduation + D.El.Ed / B.Ed', hi: 'स्नातक + D.El.Ed / B.Ed' },
@@ -850,7 +840,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'As notified by MPESB', hi: 'MPESB द्वारा अधिसूचित' },
     color: '#0369A1',
     emoji: '🐅',
-    learners: 690000,
     eligibility: [
       { en: 'Varg 3: 12th with 50% + D.El.Ed', hi: 'वर्ग 3: 12वीं 50% + D.El.Ed' },
       { en: 'Varg 2: Graduation + B.Ed', hi: 'वर्ग 2: स्नातक + B.Ed' },
@@ -900,7 +889,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'As notified by BSEB', hi: 'BSEB द्वारा अधिसूचित' },
     color: '#7E22CE',
     emoji: '📜',
-    learners: 430000,
     eligibility: [
       { en: 'Paper 1: Graduation with 50% + B.Ed', hi: 'पेपर 1: स्नातक 50% + B.Ed' },
       { en: 'Paper 2: Post Graduation with 50% + B.Ed', hi: 'पेपर 2: स्नातकोत्तर 50% + B.Ed' },
@@ -947,7 +935,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'As notified by WBBPE', hi: 'WBBPE द्वारा अधिसूचित' },
     color: '#B91C1C',
     emoji: '🐟',
-    learners: 520000,
     eligibility: [
       { en: '12th with 50% + D.El.Ed for primary', hi: 'प्राथमिक हेतु 12वीं 50% + D.El.Ed' },
       { en: 'Graduation + B.Ed for upper primary', hi: 'उच्च प्राथमिक हेतु स्नातक + B.Ed' },
@@ -996,7 +983,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'Annual — usually November', hi: 'वार्षिक — प्रायः नवंबर' },
     color: '#166534',
     emoji: '🎖️',
-    learners: 310000,
     eligibility: [
       { en: 'B.Ed mandatory for all posts', hi: 'सभी पदों हेतु B.Ed अनिवार्य' },
       { en: 'Age below 40 for fresh candidates', hi: 'नए अभ्यर्थियों हेतु आयु 40 वर्ष से कम' },
@@ -1044,7 +1030,6 @@ export const EXAMS: Exam[] = [
     frequency: { en: 'As per NESTS notification', hi: 'NESTS अधिसूचना के अनुसार' },
     color: '#7C3AED',
     emoji: '🏞️',
-    learners: 280000,
     eligibility: [
       { en: 'TGT: Graduation + B.Ed + CTET Paper 2', hi: 'TGT: स्नातक + B.Ed + CTET पेपर 2' },
       { en: 'PGT: Post Graduation + B.Ed', hi: 'PGT: स्नातकोत्तर + B.Ed' },

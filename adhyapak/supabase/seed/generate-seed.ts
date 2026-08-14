@@ -95,13 +95,13 @@ out.push(
     'exams',
     [
       'id', 'slug', 'name', 'short_name', 'authority', 'scope', 'state', 'about',
-      'frequency', 'color', 'emoji', 'learners', 'next_exam_date', 'eligibility',
+      'frequency', 'color', 'emoji', 'next_exam_date', 'eligibility',
       'highlights', 'official_site', 'vacancies',
     ],
     EXAMS.map((e) => [
       s(e.id), s(e.slug), j(e.name), s(e.shortName), j(e.authority), s(e.scope),
       e.state ? j(e.state) : 'null', j(e.about), j(e.frequency), s(e.color), s(e.emoji),
-      n(e.learners), e.nextExamDate ? `${s(e.nextExamDate)}::date` : 'null',
+      e.nextExamDate ? `${s(e.nextExamDate)}::date` : 'null',
       j(e.eligibility), j(e.highlights), s(e.officialSite), n(e.vacancies),
     ]),
   ),

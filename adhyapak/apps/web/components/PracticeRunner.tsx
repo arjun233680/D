@@ -276,11 +276,10 @@ export function PracticeRunner({
               {t(UI.explanation, lang)}
             </p>
             <p className="mt-1.5 text-[13px] leading-relaxed">{t(question.explanation, lang)}</p>
-            <p className="mt-2 text-[11px] text-[var(--color-faint)]">
-              {Math.round(question.accuracy * 100)}%{' '}
-              {lang === 'hi' ? 'शिक्षार्थियों ने सही किया' : 'of learners got this right'} ·{' '}
-              {lang === 'hi' ? 'औसत समय' : 'avg time'} {question.avgTimeSeconds}s
-            </p>
+            {/* A cohort line sat here — "68% of learners got this right · avg
+                time 47s" — reading off seed values. No cohort has answered
+                these questions, so there is nothing to report until
+                attempt_answers has enough rows to aggregate. */}
           </div>
         ) : null}
       </article>

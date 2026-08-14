@@ -46,7 +46,6 @@ interface ExamRow {
   frequency: Bilingual;
   color: string;
   emoji: string;
-  learners: number;
   next_exam_date: string | null;
   eligibility: Bilingual[];
   highlights: Bilingual[];
@@ -70,7 +69,6 @@ const toExam = (row: ExamRow, seed?: Exam): Exam => ({
   frequency: row.frequency,
   color: row.color,
   emoji: row.emoji,
-  learners: row.learners,
   nextExamDate: row.next_exam_date ?? undefined,
   eligibility: row.eligibility,
   highlights: row.highlights,
@@ -96,7 +94,9 @@ export const listExams = (): Promise<Exam[]> =>
     const { data, error } = await db
       .from('exams')
       .select('*, exam_updates(*), exam_sources(*)')
-      .order('learners', { ascending: false });
+      // Was ordered by a seeded "learners" count. Short name is arbitrary but
+      // at least stable, and the goal picker groups them properly anyway.
+      .order('short_name', { ascending: true });
     if (error || !data) throw error ?? new Error('no exams');
     return (data as ExamRow[]).map((row) => toExam(row, seedExam(row.id)));
   }, () => EXAMS);

@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   examTheme,
-  formatCount,
   getExam,
   getSubject,
   groupedExams,
@@ -324,7 +323,6 @@ function ExamOption({
             marginTop: 2,
           }}
         >
-          {formatCount(exam.learners)} {lang === 'hi' ? 'शिक्षार्थी' : 'learners'}
           {exam.vacancies
             ? `  ·  ${exam.vacancies.toLocaleString('en-IN')} ${lang === 'hi' ? 'पद' : 'posts'}`
             : ''}

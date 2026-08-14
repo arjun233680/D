@@ -139,7 +139,6 @@ export interface Exam {
   /** Brand accent used across cards and headers. */
   color: string;
   emoji: string;
-  learners: number;
   /** ISO date of the next notification/exam, when announced. */
   nextExamDate?: string;
   eligibility: Bilingual[];

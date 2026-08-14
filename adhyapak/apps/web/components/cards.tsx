@@ -41,7 +41,6 @@ export function ExamCard({ exam, compact = false }: { exam: Exam; compact?: bool
           {t(exam.name, lang)}
         </p>
         <p className="mt-2 text-[11px] text-[var(--color-muted)]">
-          {formatCount(exam.learners)} {lang === 'hi' ? 'शिक्षार्थी' : 'learners'} ·{' '}
           {exam.papers.length} {lang === 'hi' ? 'पेपर' : 'papers'}
         </p>
       </div>

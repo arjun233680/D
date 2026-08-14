@@ -95,6 +95,11 @@ alter table topics drop column if exists question_count;
 -- column has to admit "not measured" rather than force a number.
 alter table topics alter column weightage drop not null;
 
+-- `exams.learners` was rendered on every exam card as "6.4L learners", which
+-- states that 640,000 people prepare for HTET on Adhyapak. Nobody does yet.
+-- (educators.learners is a different column and is left alone.)
+alter table exams drop column if exists learners;
+
 -- --------------------------------------------------------------------- RLS
 
 -- Same shape as every other reference table in 0002: world-readable, written

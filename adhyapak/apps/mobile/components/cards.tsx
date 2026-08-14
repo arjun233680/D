@@ -61,7 +61,6 @@ export function ExamCard({ exam }: { exam: Exam }) {
             {t(exam.name, lang)}
           </Text>
           <Text style={[s.faint, { marginTop: 6 }]}>
-            {formatCount(exam.learners)} {lang === 'hi' ? 'शिक्षार्थी' : 'learners'}
           </Text>
         </View>
       </Touch>

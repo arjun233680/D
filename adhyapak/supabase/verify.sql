@@ -166,6 +166,13 @@ with checks as (
   from information_schema.columns
   where table_schema = 'public' and table_name = 'topics'
     and column_name = 'question_count'
+
+  union all
+  select 26, 'the fabricated exam learner count is gone',
+         count(*)::text, '0', count(*) = 0
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'exams'
+    and column_name = 'learners'
 )
 select
   case when ok then 'PASS' else 'FAIL' end as status,

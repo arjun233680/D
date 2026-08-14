@@ -345,11 +345,11 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                     </p>
                   </div>
 
+                  {/* Only the learner's own time, which was actually
+                      measured. The cohort average and "% got it right" beside
+                      it were seed values. */}
                   <p className="mt-2 text-[11px] text-[var(--color-faint)]">
-                    {lang === 'hi' ? 'आपका समय' : 'Your time'}: {Math.round(row.timeSpentMs / 1000)}s ·{' '}
-                    {lang === 'hi' ? 'औसत' : 'avg'} {row.question.avgTimeSeconds}s ·{' '}
-                    {Math.round(row.question.accuracy * 100)}%{' '}
-                    {lang === 'hi' ? 'ने सही किया' : 'got it right'}
+                    {lang === 'hi' ? 'आपका समय' : 'Your time'}: {Math.round(row.timeSpentMs / 1000)}s
                   </p>
                 </article>
               );

@@ -7,7 +7,6 @@ import {
   NOTES,
   TESTS,
   VIDEOS,
-  formatCount,
   formatDate,
   getExamBySlug,
   getSubject,
@@ -51,9 +50,7 @@ export default function GoalPage({ params }: { params: Promise<{ slug: string }>
                     : 'National'
                   : t(exam.state ?? { en: 'State', hi: 'राज्य' }, lang)}
               </Badge>
-              <Badge tone="neutral" className="!border-white/25 !bg-white/15 !text-white">
-                {formatCount(exam.learners)} {lang === 'hi' ? 'शिक्षार्थी' : 'learners'}
-              </Badge>
+              {/* A "6.4L learners" badge sat here. Nobody uses Adhyapak yet. */}
             </div>
             <h1 className="mt-3 text-2xl leading-tight font-extrabold sm:text-3xl">
               {t(exam.name, lang)}

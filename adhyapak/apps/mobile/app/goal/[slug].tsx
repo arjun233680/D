@@ -6,7 +6,6 @@ import {
   NOTES,
   TESTS,
   VIDEOS,
-  formatCount,
   getExamBySlug,
   getSubject,
   t,
@@ -53,7 +52,6 @@ export default function GoalScreen() {
             {t(exam.about, lang)}
           </Text>
           <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: theme.font.xs, marginTop: 10 }}>
-            {formatCount(exam.learners)} {lang === 'hi' ? 'शिक्षार्थी' : 'learners'} ·{' '}
             {t(exam.frequency, lang)}
           </Text>
           <Button

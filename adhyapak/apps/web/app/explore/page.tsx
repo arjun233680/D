@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { EXAMS, SUBJECTS, countQuestions, formatCount, listNotes, listTests, listVideos, t, UI } from '@adhyapak/core';
+import { EXAMS, SUBJECTS, countQuestions, listNotes, listTests, listVideos, t, UI } from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { Badge, EmptyState, SectionHeader } from '@/components/ui';
