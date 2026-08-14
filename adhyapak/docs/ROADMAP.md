@@ -21,7 +21,11 @@ fingerprint, draft review with bulk publish through the database's own
 fixes: favicon, chip-rail clipping, sticky test CTA. ESLint replaced the
 removed `next lint`.
 
-**Phase 5 — Excel import.** `.xlsx` workbooks through the same pipeline as CSV.
+**Phase 5 — Excel import.** `.xlsx` workbooks through the same pipeline as CSV,
+via a dependency-free reader in `@adhyapak/core`. Multi-sheet picker, header
+detection below title rows, a downloadable starter workbook, bilingual parse
+errors. 20,000 rows parse and validate in ~1.2 s — measured, see
+[IMPORTING.md](IMPORTING.md).
 
 ## Blocked on credentials
 
@@ -36,7 +40,8 @@ repository secrets. `docs/BACKEND-SETUP.md`, ten minutes.
 2. **Import history screen.** Batches are recorded and queryable; nothing
    displays them.
 3. **PDF import.** The pipeline takes plain rows, so a PDF extractor plugs in
-   where the parsers do. Extraction quality is the hard part, not the wiring.
+   exactly where the CSV and `.xlsx` parsers do. Extraction quality is the hard
+   part, not the wiring.
 4. **Batch scheduling backend.** The one feature still served from bundled
    content on both branches.
 5. **Bundle size.** The learner app is a single ~1.8 MB JS bundle; on a slow

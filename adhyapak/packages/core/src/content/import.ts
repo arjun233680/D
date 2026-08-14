@@ -115,10 +115,12 @@ export const DEFAULT_COLUMNS: ColumnMap = {
   subtopic: ['subtopic', 'subtopicid', 'concept'],
   question: ['question', 'questionen', 'questiontext', 'questiontexten', 'q'],
   questionHi: ['questionhi', 'questionhindi', 'prashn', 'questiontexthi'],
-  optionA: ['optiona', 'a', 'opt1', 'option1'],
-  optionB: ['optionb', 'b', 'opt2', 'option2'],
-  optionC: ['optionc', 'c', 'opt3', 'option3'],
-  optionD: ['optiond', 'd', 'opt4', 'option4'],
+  // The `…en` spellings matter in a bilingual file: a contributor who writes
+  // "Option A HI" writes "Option A EN" beside it, and the pair has to resolve.
+  optionA: ['optiona', 'optionaen', 'a', 'aen', 'opt1', 'option1', 'option1en'],
+  optionB: ['optionb', 'optionben', 'b', 'ben', 'opt2', 'option2', 'option2en'],
+  optionC: ['optionc', 'optioncen', 'c', 'cen', 'opt3', 'option3', 'option3en'],
+  optionD: ['optiond', 'optionden', 'd', 'den', 'opt4', 'option4', 'option4en'],
   optionAHi: ['optionahi', 'ahi', 'option1hi'],
   optionBHi: ['optionbhi', 'bhi', 'option2hi'],
   optionCHi: ['optionchi', 'chi', 'option3hi'],

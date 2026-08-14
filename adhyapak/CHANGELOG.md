@@ -1,5 +1,76 @@
 # Changelog
 
+## Phase 5 — Excel import
+
+Studio accepts `.xlsx` workbooks. Not as a second import path: the workbook
+reader produces the same `Row` — a plain `Record<string, string>` — that the CSV
+parser produces, and everything after it (column mapping, validation, duplicate
+detection, staging, draft, review, publish) is the code that was already there.
+An Excel import cannot drift away from a CSV import because there is nothing
+downstream to drift.
+
+### The reader — `packages/core/src/content/xlsx.ts`
+
+Written against the file format rather than added as a dependency.
+`@adhyapak/core` stays dependency-free, which is the property that lets both
+apps import it as source with no build step; a general-purpose spreadsheet
+library would have brought a megabyte of formula, styling and chart code that a
+question bank never executes. Decompression uses the platform's own
+`DecompressionStream`, which every browser and Node 18+ ship.
+
+Handled: multi-sheet workbooks, shared and inline strings, rich-text runs,
+numbers, booleans, dates, gaps mid-row, blank spacer rows, XML entities and
+numeric character references, a ZIP archive comment, and relationship ids that
+do not match file order. Formulas are read as their cached value; styling is
+otherwise ignored.
+
+Dates are resolved through `styles.xml` — style index → `cellXfs` → `numFmtId`,
+then a built-in date slot or a custom format code containing date fields. The
+obvious shortcut, treating any styled number in the serial range as a date,
+turns a bold `45292` into 1 January 2024, and question banks contain numbers.
+
+Two bugs the tests caught before any of this shipped:
+
+- `elements()` never matched self-closing tags, so `<sheet …/>` — how every
+  workbook declares its sheets — and `<row r="2"/>` were invisible. The
+  attribute run was greedy and swallowed the trailing slash.
+- `Option A EN` matched no column alias, while `Option A HI` did. In a bilingual
+  file those headers come in pairs, so half of every such pair was silently
+  dropped. Fixed for CSV at the same time, since they share the alias table.
+
+### Studio
+
+The upload step takes `.xlsx` alongside CSV and offers a **downloadable starter
+workbook** — every column correctly named, one filled-in bilingual example.
+`.xls` is refused by name with instructions rather than failing later with a ZIP
+error nobody can act on.
+
+A workbook with several sheets gets a worksheet picker showing each sheet's row
+count, defaulting to the first sheet with data. A table that starts below a
+title row is found rather than rejected, and the wizard prints which row it
+decided was the header — so the row numbers on rejected rows point at the row
+the educator sees in Excel, not at an offset from it.
+
+Parse failures are bilingual. `@adhyapak/core` throws English-only technical
+errors, which is right for a library, so they are translated at the boundary
+where a human starts reading them.
+
+### Measured, not asserted
+
+A 20,000-row deflate-compressed workbook with a shared string table parses and
+validates in ~1.2 s (1,045 ms read, 145 ms validate); 1,000 rows take 66 ms.
+Reproduce with `npx tsx scripts/make-test-workbook.mts`. Numbers and method are
+in [docs/IMPORTING.md](docs/IMPORTING.md).
+
+### Tests
+
+15 new tests, 113 total. Most build workbooks the way Excel does — deflated
+parts, shared strings, styles, out-of-order relationship ids — rather than
+round-tripping our own writer, which could only prove the writer and reader
+agree with each other. One fixture was written by **openpyxl**, so the reader is
+tested against a file it did not produce, and the generated template and sample
+were both verified to load in openpyxl with Devanagari intact.
+
 ## Phase 3 — Studio import, duplicate protection and PYQ analytics
 
 Phase 2 made the app read through the repository. This makes the library

@@ -175,9 +175,16 @@ reason for each rejection with its spreadsheet line number, so a 4,000-row file
 with 12 bad rows does not become 12 bad questions — and does not block the other
 3,988 either. Imports land as drafts; publishing is a separate, deliberate act.
 
-Excel and PDF are deliberately out of scope for `@adhyapak/core`, which has no
-dependencies by design. Convert to CSV, or hand `importQuestions()` rows from
-whatever parser you already have — a row is a plain `Record<string, string>`.
+`.xlsx` workbooks are read too, by `packages/core/src/content/xlsx.ts` — a
+reader written against the file format rather than pulled in as a dependency, so
+`@adhyapak/core` stays dependency-free and both apps keep importing it as source
+with no build step. It handles multi-sheet workbooks, shared and inline strings,
+dates, gaps and Devanagari; formulas arrive as their cached value and styling is
+ignored. See [docs/IMPORTING.md](docs/IMPORTING.md).
+
+PDF remains out of scope. Convert it, or hand `importQuestions()` rows from
+whatever parser you already have — a row is a plain `Record<string, string>`,
+and that is the whole extension point.
 
 ### Validation
 
@@ -193,10 +200,16 @@ do not:
 
 ### Importing from the Studio
 
-`/studio/import` is the same pipeline with a UI on it: upload a CSV, confirm or
-change the column mapping, review, import. Rejected rows are listed by
-spreadsheet line with the field, the problem and a suggested fix; possible
+`/studio/import` is the same pipeline with a UI on it: upload an `.xlsx`
+workbook or a CSV, confirm or change the column mapping, review, import. A
+workbook with several sheets gets a worksheet picker, and a table that starts
+below a title row is found rather than rejected. Rejected rows are listed by
+spreadsheet row number with the field, the problem and a suggested fix; possible
 duplicates are shown with a reason and skipped only if you tick them.
+
+The upload step also offers a starter workbook with every column correctly
+named and one filled-in example, which is the shortest path from a blank
+spreadsheet to a valid import.
 
 Everything lands as a draft — the status is forced by the database function, not
 by the client — and `/studio/drafts` is where they are published in bulk. Every

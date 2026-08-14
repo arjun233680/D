@@ -13,8 +13,10 @@ import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import {
   MAPPABLE_FIELDS,
+  parseErrorText,
   parseFile,
   runImport,
+  templateBlob,
   validateImport,
   type ParsedFile,
   type Step,
@@ -71,16 +73,52 @@ export default function ImportPage() {
   const [outcome, setOutcome] = useState<{ ok: boolean; text: string } | null>(null);
   const [page, setPage] = useState(0);
   const [tab, setTab] = useState<'accepted' | 'rejected' | 'duplicates'>('accepted');
+  const [parseError, setParseError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Kept so a different worksheet can be read without asking for the file again.
+  const uploadRef = useRef<File | null>(null);
 
-  const onFile = async (file: File | null) => {
-    if (!file) return;
-    const text = await file.text();
-    const next = parseFile(file.name, text);
-    setParsed(next);
-    setMapping(next.autoMapping);
-    setLabel(file.name.replace(/\.[^.]+$/, ''));
-    setStep('map');
+  const load = async (file: File, sheetName?: string) => {
+    setBusy(true);
+    setParseError(null);
+    try {
+      const next = await parseFile(file, sheetName);
+      uploadRef.current = file;
+      setParsed(next);
+      setMapping(next.autoMapping);
+      setLabel(file.name.replace(/\.[^.]+$/, ''));
+      setStep('map');
+    } catch (error) {
+      // A file that cannot be read is the educator's problem to fix, so the
+      // reason says what to do about it rather than collapsing to "upload failed".
+      setParseError(parseErrorText(error, hi));
+      setParsed(null);
+      setStep('upload');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onFile = (file: File | null) => {
+    if (file) void load(file);
+  };
+
+  const onSheetChange = (sheetName: string) => {
+    if (uploadRef.current) void load(uploadRef.current, sheetName);
+  };
+
+  const downloadTemplate = () => {
+    const url = URL.createObjectURL(templateBlob());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'adhyapak-question-template.xlsx';
+    // Firefox ignores a click on an anchor that is not in the document, and
+    // revoking the URL in the same tick can cancel the download before it
+    // starts — hence the append and the deferred revoke.
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   };
 
   const onValidate = async () => {
@@ -161,8 +199,8 @@ export default function ImportPage() {
         </h1>
         <p className="mt-1 text-[13px] text-[var(--color-muted)]">
           {hi
-            ? 'CSV अपलोड करें। हर पंक्ति जाँची जाएगी और ड्राफ़्ट के रूप में सहेजी जाएगी — कुछ भी सीधे प्रकाशित नहीं होता।'
-            : 'Upload a CSV. Every row is checked and saved as a draft — nothing is published directly.'}
+            ? 'Excel (.xlsx) या CSV अपलोड करें। हर पंक्ति जाँची जाएगी और ड्राफ़्ट के रूप में सहेजी जाएगी — कुछ भी सीधे प्रकाशित नहीं होता।'
+            : 'Upload an Excel workbook (.xlsx) or a CSV. Every row is checked and saved as a draft — nothing is published directly.'}
         </p>
       </header>
 
@@ -180,19 +218,46 @@ export default function ImportPage() {
       {step === 'upload' ? (
         <section className="card p-6">
           <label className="block text-[13px] font-bold">
-            {hi ? 'CSV फ़ाइल चुनें' : 'Choose a CSV file'}
+            {hi ? 'Excel या CSV फ़ाइल चुनें' : 'Choose an Excel or CSV file'}
           </label>
           <input
             ref={fileRef}
             type="file"
-            accept=".csv,text/csv,text/plain"
+            accept=".xlsx,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain"
             onChange={(e) => onFile(e.target.files?.[0] ?? null)}
             className="mt-3 block w-full text-[13px] file:mr-3 file:rounded-full file:border-0 file:bg-[var(--color-ink)] file:px-4 file:py-2 file:text-[13px] file:font-bold file:text-white"
           />
+
+          {busy ? (
+            <p className="mt-3 text-[13px] font-semibold">{hi ? 'फ़ाइल पढ़ रहे हैं…' : 'Reading the file…'}</p>
+          ) : null}
+
+          {parseError ? (
+            <p
+              role="alert"
+              className="mt-3 rounded-xl border border-[var(--color-danger)] px-4 py-3 text-[13px]"
+            >
+              ✕ {parseError}
+            </p>
+          ) : null}
+
           <p className="mt-3 text-[12px] leading-relaxed text-[var(--color-muted)]">
             {hi
-              ? 'कॉलम के नाम कुछ भी हों — "Question", "question_text", "Question Text" सब पहचाने जाते हैं। अगले चरण में आप इन्हें बदल भी सकते हैं।'
-              : 'Column names can be anything — "Question", "question_text" and "Question Text" are all recognised, and you can change the mapping in the next step.'}
+              ? '.xlsx वर्कबुक और CSV दोनों चलते हैं। कॉलम के नाम कुछ भी हों — "Question", "question_text", "Question Text" सब पहचाने जाते हैं। अगले चरण में आप इन्हें बदल भी सकते हैं।'
+              : '.xlsx workbooks and CSVs both work. Column names can be anything — "Question", "question_text" and "Question Text" are all recognised, and you can change the mapping in the next step.'}
+          </p>
+
+          <button
+            type="button"
+            onClick={downloadTemplate}
+            className="mt-4 rounded-full border border-[var(--color-line)] px-4 py-2 text-[12px] font-bold"
+          >
+            ⬇ {hi ? 'Excel टेम्पलेट डाउनलोड करें' : 'Download the Excel template'}
+          </button>
+          <p className="mt-2 text-[12px] text-[var(--color-muted)]">
+            {hi
+              ? 'हर कॉलम सही नाम के साथ, और एक भरा हुआ उदाहरण — उसे मिटाकर अपने प्रश्न भरें।'
+              : 'Every column, correctly named, with one filled-in example — delete it and add your own questions.'}
           </p>
         </section>
       ) : null}
@@ -228,9 +293,38 @@ export default function ImportPage() {
                 </select>
               </div>
             </div>
+            {/* Only worth showing for a workbook that actually has a choice —
+                a single-sheet file has nothing to decide. */}
+            {parsed.sheets.length > 1 ? (
+              <div className="mt-3">
+                <label className="text-[12px] font-bold" htmlFor="sheet">
+                  {hi ? 'वर्कशीट' : 'Worksheet'}
+                </label>
+                <select
+                  id="sheet"
+                  value={parsed.sheetName ?? ''}
+                  onChange={(e) => onSheetChange(e.target.value)}
+                  disabled={busy}
+                  className="mt-1 w-full rounded-lg border border-[var(--color-line)] px-3 py-2 text-[13px] sm:max-w-xs"
+                >
+                  {parsed.sheets.map((s) => (
+                    <option key={s.name} value={s.name}>
+                      {s.name} ({s.rowCount.toLocaleString('en-IN')} {hi ? 'पंक्तियाँ' : 'rows'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
             <p className="mt-3 text-[12px] text-[var(--color-muted)]">
               {parsed.rows.length.toLocaleString('en-IN')} {hi ? 'पंक्तियाँ' : 'rows'} ·{' '}
               {parsed.headers.length} {hi ? 'कॉलम' : 'columns'} · {parsed.filename}
+              {parsed.sheetName ? ` · ${parsed.sheetName}` : ''}
+              {parsed.headerRow > 1
+                ? hi
+                  ? ` · हेडर पंक्ति ${parsed.headerRow} पर मिला`
+                  : ` · header found on row ${parsed.headerRow}`
+                : ''}
             </p>
           </div>
 
@@ -239,7 +333,7 @@ export default function ImportPage() {
               <thead className="bg-[var(--color-surface-alt)] text-left text-[11px] font-bold uppercase text-[var(--color-muted)]">
                 <tr>
                   <th className="px-4 py-2">{hi ? 'फ़ील्ड' : 'Field'}</th>
-                  <th className="px-4 py-2">{hi ? 'CSV कॉलम' : 'CSV column'}</th>
+                  <th className="px-4 py-2">{hi ? 'फ़ाइल का कॉलम' : 'Column in your file'}</th>
                   <th className="px-4 py-2">{hi ? 'नमूना' : 'Sample'}</th>
                 </tr>
               </thead>
@@ -313,6 +407,7 @@ export default function ImportPage() {
           onImport={onImport}
           busy={busy}
           canWrite={canWrite}
+          rowOffset={parsed ? parsed.headerRow - 1 : 0}
         />
       ) : null}
 
@@ -417,6 +512,7 @@ function ReviewStep({
   onImport,
   busy,
   canWrite,
+  rowOffset,
 }: {
   validated: ValidatedImport;
   hi: boolean;
@@ -430,6 +526,8 @@ function ReviewStep({
   onImport: () => void;
   busy: boolean;
   canWrite: boolean;
+  /** Rows above the header, so a line number points at the right spreadsheet row. */
+  rowOffset: number;
 }) {
   const { report, duplicates, skipped } = validated;
   const willWrite = report.accepted.length - skipped.size;
@@ -512,7 +610,7 @@ function ReviewStep({
                   </>
                 ) : tab === 'rejected' ? (
                   <>
-                    <th className="px-3 py-2">{hi ? 'पंक्ति' : 'Line'}</th>
+                    <th className="px-3 py-2">{hi ? 'पंक्ति' : 'Row'}</th>
                     <th className="px-3 py-2">{hi ? 'फ़ील्ड' : 'Field'}</th>
                     <th className="px-3 py-2">{hi ? 'समस्या' : 'Problem'}</th>
                     <th className="px-3 py-2">{hi ? 'सुझाव' : 'Suggested'}</th>
@@ -565,7 +663,7 @@ function ReviewStep({
                           className="border-t border-[var(--color-line)] align-top"
                         >
                           <td className="px-3 py-2 font-bold tabular-nums">
-                            {i === 0 ? r.row : ''}
+                            {i === 0 ? r.row + rowOffset : ''}
                           </td>
                           <td className="px-3 py-2">{issue.field}</td>
                           <td className="px-3 py-2">✕ {issue.message}</td>

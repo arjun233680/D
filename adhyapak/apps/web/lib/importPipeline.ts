@@ -11,13 +11,17 @@ import {
   fingerprint,
   importQuestions,
   parseDelimited,
+  readWorkbook,
   refsFrom,
   resolveColumns,
+  sheetToRows,
+  templateWorkbook,
   type ColumnMap,
   type ContentQuestion,
   type DuplicateMatch,
   type ImportReport,
   type Row,
+  type Worksheet,
 } from '@adhyapak/core';
 
 /**
@@ -33,8 +37,10 @@ import {
  *
  *   file → parser → Row[] → mapping → validation → preview → draft import
  *
- * `Row` is a plain `Record<string, string>`, so an Excel or PDF extractor added
- * later plugs in at the parser and inherits everything downstream unchanged.
+ * `Row` is a plain `Record<string, string>`, so a format is added by teaching
+ * the parser to produce rows and nothing else. CSV, TSV and .xlsx all arrive
+ * that way today; a PDF extractor would plug in at the same place and inherit
+ * everything downstream unchanged.
  */
 
 export type Step = 'upload' | 'map' | 'review' | 'importing' | 'done';
@@ -88,13 +94,112 @@ export interface ParsedFile {
   rows: Row[];
   /** Canonical field → the header the aliases matched, or undefined. */
   autoMapping: Record<string, string | undefined>;
+  /** Every sheet in the workbook, so the educator can switch. Empty for CSV. */
+  sheets: Worksheet[];
+  /** Which sheet these rows came from. */
+  sheetName?: string;
+  /** Spreadsheet row the header was found on — what row numbers below refer to. */
+  headerRow: number;
 }
 
-export const parseFile = (filename: string, text: string): ParsedFile => {
-  const rows = parseDelimited(text);
+const rowsToParsed = (
+  filename: string,
+  rows: Row[],
+  extra: Partial<ParsedFile> = {},
+): ParsedFile => {
   const headers = Object.keys(rows[0] ?? {});
-  return { filename, headers, rows, autoMapping: resolveColumns(headers, DEFAULT_COLUMNS) };
+  return {
+    filename,
+    headers,
+    rows,
+    autoMapping: resolveColumns(headers, DEFAULT_COLUMNS),
+    sheets: [],
+    headerRow: 1,
+    ...extra,
+  };
 };
+
+const isWorkbook = (filename: string) => /\.xlsx?$/i.test(filename);
+
+/**
+ * A parse failure the educator is meant to read and act on.
+ *
+ * Carries both languages because it is shown on screen, and every user-facing
+ * string in this product is bilingual. `@adhyapak/core` throws English-only
+ * technical errors — appropriate for a library — so they are translated here,
+ * at the boundary where a human starts reading.
+ */
+export class ParseError extends Error {
+  readonly hi: string;
+  constructor(en: string, hi: string) {
+    super(en);
+    this.name = 'ParseError';
+    this.hi = hi;
+  }
+}
+
+/** Picks the right half of an error for the current language. */
+export const parseErrorText = (error: unknown, hi: boolean): string => {
+  if (error instanceof ParseError) return hi ? error.hi : error.message;
+  const message = error instanceof Error ? error.message : String(error);
+  return hi ? `फ़ाइल पढ़ी नहीं जा सकी: ${message}` : `The file could not be read: ${message}`;
+};
+
+/**
+ * Parses an uploaded file into rows.
+ *
+ * This is the only step that knows what a file format is. A workbook and a CSV
+ * both leave here as `Row[]`, so mapping, validation, duplicate detection,
+ * staging and publishing are one code path — an Excel import cannot drift away
+ * from a CSV import because there is nothing downstream to drift.
+ *
+ * `.xls` is the old binary format, not a workbook; it is rejected by name
+ * rather than failing later with a ZIP error nobody can act on.
+ */
+export const parseFile = async (file: File, sheetName?: string): Promise<ParsedFile> => {
+  if (/\.xls$/i.test(file.name)) {
+    throw new ParseError(
+      'That is the older .xls format. Open it in Excel, choose “Save As → .xlsx”, then upload again.',
+      'यह पुराना .xls प्रारूप है। इसे Excel में खोलकर “Save As → .xlsx” करें, फिर दोबारा अपलोड करें।',
+    );
+  }
+
+  if (!isWorkbook(file.name)) return rowsToParsed(file.name, parseDelimited(await file.text()));
+
+  const workbook = await readWorkbook(new Uint8Array(await file.arrayBuffer())).catch(() => {
+    throw new ParseError(
+      'That file is not a readable .xlsx workbook. If it was renamed to .xlsx, open it in Excel and save it again as a real workbook.',
+      'यह फ़ाइल पढ़ी जा सकने वाली .xlsx वर्कबुक नहीं है। यदि इसका नाम बदलकर .xlsx किया गया है, तो इसे Excel में खोलकर वास्तविक वर्कबुक के रूप में दोबारा सहेजें।',
+    );
+  });
+
+  if (workbook.sheets.length === 0) {
+    throw new ParseError('That workbook has no sheets.', 'इस वर्कबुक में कोई शीट नहीं है।');
+  }
+
+  // Default to the first sheet with data — a workbook often opens on an empty
+  // "Sheet1" left over from the template it was made from.
+  const chosen =
+    workbook.sheets.find((s) => s.name === sheetName) ??
+    workbook.sheets.find((s) => s.rowCount > 1) ??
+    workbook.sheets[0]!;
+
+  const { headers, rows, headerRow } = sheetToRows(workbook.read(chosen.name));
+  return {
+    ...rowsToParsed(file.name, rows),
+    headers: rows.length > 0 ? Object.keys(rows[0]!) : headers,
+    autoMapping: resolveColumns(headers, DEFAULT_COLUMNS),
+    sheets: workbook.sheets,
+    sheetName: chosen.name,
+    headerRow,
+  };
+};
+
+/** The starter workbook offered on the upload step, as a downloadable blob. */
+export const templateBlob = (): Blob =>
+  new Blob([templateWorkbook() as BlobPart], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
 
 /**
  * Turns the educator's mapping choices into a column map the core importer
