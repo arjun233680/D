@@ -20,6 +20,8 @@ export * from './engine/test-engine';
 export * from './engine/practice';
 export * from './engine/format';
 
+export * from './pdf';
+
 export { theme, examTheme } from './theme';
 export type { Theme, ExamTheme } from './theme';
 

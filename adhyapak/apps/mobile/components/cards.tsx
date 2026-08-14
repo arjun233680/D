@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 import {
+  buildNoteDocument,
   formatCount,
   formatDuration,
   getEducator,
@@ -162,6 +163,8 @@ export function VideoCard({ video, full }: { video: Video; full?: boolean }) {
 export function NoteCard({ note, full }: { note: Note; full?: boolean }) {
   const { lang } = useStore();
   const subject = getSubject(note.subjectId);
+  // The card promises the same page count the PDF actually opens with.
+  const pages = buildNoteDocument(note, lang).totalPages;
 
   return (
     <Touch href={`/note/${note.id}`} style={[
@@ -191,12 +194,14 @@ export function NoteCard({ note, full }: { note: Note; full?: boolean }) {
               {t(note.title, lang)}
             </Text>
             <Text style={[s.faint, { marginTop: 3 }]}>
-              {note.pages} {lang === 'hi' ? 'पृष्ठ' : 'pages'} · {formatCount(note.downloads)}
+              {pages} {lang === 'hi' ? 'पृष्ठ' : 'pages'} · {formatCount(note.downloads)}
             </Text>
           </View>
         </View>
-        <View style={{ marginTop: theme.space.md, flexDirection: 'row' }}>
+        <View style={{ marginTop: theme.space.md, flexDirection: 'row', gap: 6 }}>
           <AccessBadge access={note.access} lang={lang} />
+          {/* Says up front what opens on tap. */}
+          <Badge tone="danger">PDF</Badge>
         </View>
       </Touch>
   );

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import {
+  buildNoteDocument,
   formatCount,
   formatDuration,
   getEducator,
@@ -135,6 +136,8 @@ export function VideoCard({ video, width = 'w-[250px]' }: { video: Video; width?
 export function NoteCard({ note, width = 'w-[240px]' }: { note: Note; width?: string }) {
   const { lang } = useStore();
   const subject = getSubject(note.subjectId);
+  // The card promises the same page count the PDF actually opens with.
+  const pages = buildNoteDocument(note, lang).totalPages;
   return (
     <Link
       href={`/notes/${note.id}`}
@@ -150,13 +153,15 @@ export function NoteCard({ note, width = 'w-[240px]' }: { note: Note; width?: st
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-[13px] leading-snug font-bold">{t(note.title, lang)}</p>
           <p className="mt-1 text-[11px] text-[var(--color-muted)]">
-            {note.pages} {lang === 'hi' ? 'पृष्ठ' : 'pages'} · {formatCount(note.downloads)}{' '}
+            {pages} {lang === 'hi' ? 'पृष्ठ' : 'pages'} · {formatCount(note.downloads)}{' '}
             {lang === 'hi' ? 'डाउनलोड' : 'downloads'}
           </p>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">
         <AccessBadge access={note.access} lang={lang} />
+        {/* Says up front what opens on click. */}
+        <Badge tone="danger">PDF</Badge>
         {note.tags.slice(0, 1).map((tag) => (
           <Badge key={tag.en} tone="info">
             {t(tag, lang)}
