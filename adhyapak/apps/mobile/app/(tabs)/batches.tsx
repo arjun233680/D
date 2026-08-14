@@ -20,7 +20,7 @@ export default function BatchesScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
+        style={{ flexGrow: 0, flexShrink: 0 }}
         contentContainerStyle={{ padding: r.gutter }}
       >
         <Chip

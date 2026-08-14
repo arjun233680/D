@@ -40,10 +40,17 @@ jobs:
         working-directory: adhyapak
         run: npm run typecheck
 
+      # Supabase credentials are compiled into the client bundles at build time.
+      # With the secrets unset both apps fall back to bundled content — the same
+      # offline mode they run in today — so this is safe to merge before the
+      # database exists. Set SUPABASE_URL and SUPABASE_ANON_KEY as repository
+      # secrets (Settings → Secrets and variables → Actions) to activate it.
       - name: Export the app for the web
         working-directory: adhyapak/apps/mobile
         env:
           EXPO_NO_TELEMETRY: '1'
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npx expo export --platform web --output-dir dist
 
       # The website is a separate Next.js app and carries the Studio — bulk
@@ -53,6 +60,8 @@ jobs:
         working-directory: adhyapak/apps/web
         env:
           NEXT_PUBLIC_BASE_PATH: /D/web
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npx next build
 
       - name: Prepare the site

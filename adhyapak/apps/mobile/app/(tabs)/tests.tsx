@@ -30,7 +30,7 @@ export default function TestsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
+        style={{ flexGrow: 0, flexShrink: 0 }}
         contentContainerStyle={{ paddingHorizontal: r.gutter, paddingTop: r.gutter }}
       >
         {TYPES.map((x) => (
@@ -45,7 +45,7 @@ export default function TestsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
+        style={{ flexGrow: 0, flexShrink: 0 }}
         contentContainerStyle={{ padding: r.gutter }}
       >
         <Chip

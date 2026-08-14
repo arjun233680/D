@@ -33,7 +33,8 @@ export default function TestIntroScreen() {
   const count = testQuestionCount(test);
 
   return (
-    <ScrollView style={s.screen} contentContainerStyle={{ padding: theme.space.lg, paddingBottom: 40 }}>
+    <View style={s.screen}>
+    <ScrollView contentContainerStyle={{ padding: theme.space.lg, paddingBottom: 120 }}>
       <Stack.Screen options={{ title: exam?.shortName ?? 'Test' }} />
 
       <View style={[s.card, { padding: theme.space.xl }]}>
@@ -126,11 +127,29 @@ export default function TestIntroScreen() {
         </View>
       ) : null}
 
+    </ScrollView>
+
+    {/* The one action this screen exists for stays reachable at every scroll
+        position — on a 1440px display the sections list pushed it below the
+        fold with nothing hinting there was more page. */}
+    <View
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        padding: theme.space.lg,
+        paddingBottom: theme.space.xl,
+        backgroundColor: theme.color.surface,
+        borderTopWidth: 1,
+        borderTopColor: theme.color.border,
+      }}
+    >
       <Button
         label={inProgress ? t(UI.resumeTest, lang) : t(UI.startTest, lang)}
         onPress={() => router.push(`/test/${test.id}/attempt`)}
-        style={{ marginTop: theme.space.xl }}
       />
-    </ScrollView>
+    </View>
+    </View>
   );
 }
