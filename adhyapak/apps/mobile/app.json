@@ -19,8 +19,7 @@
       "package": "com.adhyapak.app",
       "adaptiveIcon": {
         "backgroundColor": "#0F9D58"
-      },
-      "edgeToEdgeEnabled": true
+      }
     },
     "web": {
       "bundler": "metro",
