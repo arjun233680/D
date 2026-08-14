@@ -104,15 +104,121 @@ backgrounded app resumes the paper with the clock honest.
 
 ---
 
-## Adding content
+## The content library
+
+Screens render `Question` and `Note` from `packages/core/src/types.ts` — the
+minimum a practice card or a PDF reader needs. Behind them sits the *library*
+model in `packages/core/src/content/`, which is what a real question bank
+actually requires: where a question sits in the syllabus, which paper it came
+from, and whether anyone has reviewed it.
+
+```
+exam → level → subject → unit → topic → subtopic → question | note | video
+```
+
+Unit and subtopic are optional at every level, because syllabi differ in depth
+and forcing one shape would mean a special case per exam.
+
+**Nothing reaches a learner unreviewed.** Every piece of content moves through
+
+```
+draft → review → published → archived
+```
+
+`toQuestion()` refuses to render anything that is not `published`, and the
+database enforces the same rule in `set_question_status()` — the client is not
+trusted, because anything that can reach Postgres can bypass TypeScript.
+Archived is terminal: a question that turned out to be wrong is still evidence
+about what an exam asked, so nothing is ever destroyed.
+
+### Previous-year questions
+
+PYQ provenance is structured, never prose:
+
+```ts
+pyq: { examId: 'htet', year: 2024, paperLabel: 'Paper 1', shift: '1', questionNumber: 27 }
+```
+
+A string like `"HTET 2024 Paper 1"` reads fine and answers nothing — you cannot
+filter by year, separate two shifts, or chart topic frequency without parsing
+English back apart. With the structured form, `pyq_topic_frequency` in the
+database does the analysis in SQL, so web, mobile and any admin tool report the
+same numbers.
+
+### Bulk import
+
+```bash
+# check a file without writing anything
+npx tsx supabase/seed/import-questions.ts bank.csv --exam htet --dry-run
+
+# generate the SQL, review it, then apply it
+npx tsx supabase/seed/import-questions.ts bank.csv --exam htet > import.sql
+psql "$DATABASE_URL" -f import.sql
+```
+
+Columns are matched case-insensitively and ignore spaces, underscores and
+hyphens, so `Option A`, `option_a` and `OPTIONA` are the same column. Recognised
+names are in `DEFAULT_COLUMNS` (`packages/core/src/content/import.ts`):
+
+| Column | Notes |
+| --- | --- |
+| `Exam`, `Level`, `Subject`, `Unit`, `Topic`, `Subtopic` | placement; ids, not display names |
+| `Question`, `Question Hi` | English is required, Hindi is required to publish |
+| `Option A`–`Option D`, `Option A Hi`–… | at least two options |
+| `Correct Answer` | `B`, `b`, `2` and `Option B` all work; `A and C` for multiple |
+| `Explanation`, `Explanation Hi` | wanted, never required |
+| `Year`, `Paper`, `Shift`, `Q No` | any year present makes the row a PYQ |
+| `Difficulty`, `Marks`, `Negative Marks`, `Source`, `Tags` | optional |
+
+The importer **writes nothing**. It returns accepted rows, rejected rows and the
+reason for each rejection with its spreadsheet line number, so a 4,000-row file
+with 12 bad rows does not become 12 bad questions — and does not block the other
+3,988 either. Imports land as drafts; publishing is a separate, deliberate act.
+
+Excel and PDF are deliberately out of scope for `@adhyapak/core`, which has no
+dependencies by design. Convert to CSV, or hand `importQuestions()` rows from
+whatever parser you already have — a row is a plain `Record<string, string>`.
+
+### Validation
+
+`packages/core/src/content/validation.ts` is the single gate, used by the
+importer, by the Studio before a save, and by the tests. Errors block, warnings
+do not:
+
+- **blocks** — no English text, no correct answer, an answer pointing outside the
+  options, fewer than two options, an unknown subject/topic/exam id, a duplicate
+  id in the same file, an implausible exam year, publishing without Hindi
+- **warns** — no explanation, a repeated option, no exam attached, negative
+  marking larger than the marks on offer
+
+### Adding content by hand
 
 | To add… | Edit |
 | --- | --- |
 | an exam | `packages/core/src/data/exams.ts` |
 | a subject or topic | `packages/core/src/data/subjects.ts` |
-| questions | `packages/core/src/data/questions.ts` (one `QuestionSeed` per question) |
-| a mock test | `packages/core/src/data/tests.ts` — composed from the bank, so new questions deepen existing mocks automatically |
+| questions | import a CSV, or add a `QuestionSeed` to `packages/core/src/data/questions.ts` |
+| a mock test | `packages/core/src/data/tests.ts` — composed from the bank, so new questions deepen existing mocks |
 | a batch, video or note | the matching file in `packages/core/src/data/` |
+
+---
+
+## Testing
+
+```bash
+npm test          # every workspace
+npm run typecheck # every workspace
+```
+
+`packages/core/test/` covers what is expensive to get wrong: scoring, negative
+marking (including that a blank is never penalised and a score never goes
+negative), palette accounting, mark-for-review, clear-response, immutability of
+attempt state, the cut-off boundary, then the whole import path — CSV quoting,
+answer-letter parsing, every validation rule, and the refusal to render a draft.
+
+Seed integrity is tested too: every test references questions that exist, every
+question's answer is inside its own options, and every question carries both
+languages.
 
 ---
 

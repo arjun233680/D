@@ -2,7 +2,7 @@
   "name": "adhyapak",
   "version": "1.0.0",
   "private": true,
-  "description": "Adhyapak \u2014 India's dedicated prep platform for teaching exams (CTET, HTET, UPTET, REET, DSSSB, KVS, NVS and more)",
+  "description": "Adhyapak — India's dedicated prep platform for teaching exams (CTET, HTET, UPTET, REET, DSSSB, KVS, NVS and more)",
   "workspaces": [
     "packages/*",
     "apps/*",
@@ -16,7 +16,8 @@
     "build:core": "npm run build --workspace=@adhyapak/core",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "seed:generate": "npm run seed:generate --workspace=@adhyapak/backend"
+    "seed:generate": "npm run seed:generate --workspace=@adhyapak/backend",
+    "test": "npm run test --workspaces --if-present"
   },
   "engines": {
     "node": ">=20"

@@ -22,6 +22,12 @@ export * from './engine/format';
 
 export * from './pdf';
 
+// The content library: how content is stored, checked and imported. Screens use
+// `Question`/`Note` from ./types; these shapes sit behind the repository.
+export * from './content/types';
+export * from './content/validation';
+export * from './content/import';
+
 export { theme, examTheme } from './theme';
 export type { Theme, ExamTheme } from './theme';
 
