@@ -1,7 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    // DOM is here for its type declarations only. `uploadMedia` takes a File or
+    // a Blob — both apps hand it one — and nothing in this package touches the
+    // document, the window, or any other browser API. Before TypeScript 6 these
+    // two names arrived ambiently through @types/node, which was luck, not a
+    // contract.
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
