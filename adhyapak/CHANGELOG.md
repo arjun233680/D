@@ -1,5 +1,65 @@
 # Changelog
 
+## The backend could never have been activated
+
+`fromEnv()` read credentials by copying `globalThis.process?.env` into a local
+and taking properties off that. Next's DefinePlugin and Expo's Metro transform
+activate a build by substituting the **literal source text**
+`process.env.NEXT_PUBLIC_SUPABASE_URL` for its value — so reading through a
+local left them nothing to match. Nothing was inlined. In a browser
+`globalThis.process` is `undefined`, the local was `{}`, and `fromEnv()`
+returned null forever: both apps were pinned to offline mode no matter what
+secrets were set.
+
+Confirmed in the deployed bundle before the fix — it contained
+`globalThis.process?.env??{}` followed by live property lookups, and neither a
+project URL nor a key appeared anywhere in the output. Checked the Expo side
+separately, since Metro does ship a `process` shim: its `process.env` holds
+`NODE_ENV` and nothing else, so the old code read `undefined` there too.
+
+Each variable is now read as a literal `process.env.<NAME>` member expression,
+which is the only form the bundlers replace. Two traps avoided:
+
+- **No `typeof process !== 'undefined'` guard.** After substitution the read is
+  a string literal, but `process` still does not exist in the browser, so the
+  guard would be false and the literal would be thrown away — the same bug from
+  the other side.
+- **The reads are wrapped one at a time, not in one shared `try`.** A build
+  always contains a mix: Next inlines `NEXT_PUBLIC_*` and leaves the rest as
+  live references. Where one of those survives as a bare `process` in a runtime
+  without one, a shared block would throw on it and discard the successfully
+  inlined names alongside it.
+
+An empty value now counts as absent, because an unset GitHub Actions secret
+interpolates to `''` rather than to nothing, which would otherwise mask the
+next name in the fallback chain.
+
+### Proven, not assumed
+
+Built both apps with dummy credentials and grepped the output:
+
+| Build | Dummy host in JS | Dummy key in JS | Name left as a lookup |
+| --- | --- | --- | --- |
+| `next build` | 1 | 1 | 0 |
+| `expo export` | 1 | 1 | 0 |
+
+Then loaded both in a real browser. With `typeof globalThis.process ===
+'undefined'`, the website logs `backend connected — dummyproj12345.supabase.co`;
+the app logs `backend connected — dummyexpo67890.supabase.co`. Rebuilt with no
+credentials: `backend offline`, no page errors, the existing bilingual banner
+unchanged.
+
+### An honest runtime signal
+
+The app now says once, in the console, which mode it came up in — connected
+(naming the host, never the key) or offline (naming the fix). A misconfigured
+build used to be indistinguishable from a working one; it just quietly served
+bundled content, which is exactly how this survived a deploy.
+
+`docs/BACKEND-SETUP.md` gains the grep that would have caught it, including the
+caveat that a variable which is genuinely unset legitimately still appears by
+name.
+
 ## Backend activation — verification, and a fingerprint that was quietly wrong
 
 Preparing the live database turned up two real defects in duplicate detection.

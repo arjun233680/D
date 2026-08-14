@@ -91,11 +91,70 @@ the audit log writable by nobody, publishing only through
 `set_question_status`. All were verified against Postgres 16 in CI-equivalent
 runs; re-verify on the live project with the queries in step 6.
 
-## 6. Deploy and smoke-test
+## 6. Confirm the credentials reached the bundle
+
+Do this before testing anything in the browser. Next and Expo activate the
+backend by **substituting the literal text `process.env.NEXT_PUBLIC_SUPABASE_URL`
+for its value at build time** — nothing is read at runtime, because a browser has
+no environment. So the credentials are either compiled into the JavaScript or
+they are not, and grepping the build tells you which:
+
+```bash
+# website
+cd apps/web
+NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \
+NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" npx next build
+grep -rc "$(echo "$SUPABASE_URL" | sed 's#https://##')" out --include=*.js
+
+# app
+cd ../mobile
+EXPO_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \
+EXPO_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+  npx expo export --platform web --output-dir dist
+grep -rc "$(echo "$SUPABASE_URL" | sed 's#https://##')" dist
+```
+
+Your project host must appear at least once in each. That is the check that
+matters, and it is enough on its own.
+
+As a second signal, when the variable *is* set its name should no longer appear
+as a runtime lookup — this returns nothing in a build that picked the value up:
+
+```bash
+grep -ro "NEXT_PUBLIC_SUPABASE_URL" out --include=*.js
+```
+
+Read that one carefully: a build with the variable **unset** legitimately still
+contains the name, because a bundler only substitutes variables that exist. So
+the name surviving is only evidence of a problem when you set the variable and
+it is *still* there — which means the expression was never substituted and the
+app will run offline forever, whatever the secrets say.
+
+This check exists because that is exactly what happened. `fromEnv()` used to
+copy `globalThis.process?.env` into a local and read properties off *that*, which
+left the bundlers no literal to match: nothing was inlined, `process` does not
+exist in a browser, and both apps were permanently offline. The unit tests
+passed throughout, because they run in Node where `process` is real. Only the
+built output shows it.
+
+The app now says which mode it came up in, once, in the browser console:
+
+```
+[adhyapak] backend connected — <ref>.supabase.co
+[adhyapak] backend offline — no credentials in this build, serving bundled content. …
+```
+
+If you see `offline` on the live site after setting the secrets, the deploy
+workflow ran before the secrets existed — re-run it.
+
+## 7. Deploy and smoke-test
 
 Re-run the **Deploy Adhyapak to GitHub Pages** workflow (Actions → the workflow
 → Run workflow), or push any commit. Then:
 
+0. **The console says connected**: open the live site and check for
+   `[adhyapak] backend connected — <ref>.supabase.co`. If it says `offline`, stop
+   here and go back to step 6 — nothing below can pass.
 1. **Learner reads the database**: open the live site in a private window,
    onboard as a guest. If the test dataset is loaded, search practice for
    `[TEST]` — exactly the *published* demo questions should appear, never the
@@ -110,7 +169,10 @@ Re-run the **Deploy Adhyapak to GitHub Pages** workflow (Actions → the workflo
 ## Troubleshooting
 
 - **Still "no database" after setting secrets** — secrets are read at *build*
-  time; re-run the deploy workflow so a new bundle is compiled.
+  time; re-run the deploy workflow so a new bundle is compiled. If it persists
+  after a fresh deploy, grep the built output as in step 6: the credentials are
+  either compiled into the JavaScript or they are not, and that check answers it
+  in one command.
 - **Educator sees no drafts** — confirm `profiles.role` is `educator` for the
   signed-in user (`select role from profiles where id = auth.uid();`).
 - **Import button disabled** — the banner above it states the reason: either
