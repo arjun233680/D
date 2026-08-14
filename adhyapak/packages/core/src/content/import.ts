@@ -19,10 +19,10 @@ import { validateQuestion, type ContentRefs, type Issue, type ValidationResult }
  *   Every rejection says which row and which column. An import of 4,000 rows
  *   that reports "invalid" is not usable by the person who has to fix it.
  *
- * Excel and PDF are deliberately out of scope: both need a parser this package
- * cannot carry (core has no dependencies, by design). Convert to CSV, or hand
- * `importQuestions` rows from whatever parser the caller already has — the row
- * shape is a plain `Record<string, string>`.
+ * The row shape is a plain `Record<string, string>`, which is the whole
+ * extension point: `parseDelimited` here and `readWorkbook` in ./xlsx both
+ * produce it, so CSV and .xlsx share every stage after parsing. PDF would plug
+ * in at the same place.
  */
 
 export type Row = Record<string, string>;
@@ -98,8 +98,9 @@ export function parseDelimited(input: string, delimiter = ','): Row[] {
  *
  * Every entry accepts several spellings because the header a contributor types
  * is not a thing this package gets to choose. Matching is case-insensitive and
- * ignores spaces, underscores and hyphens, so "Option A", "option_a" and
- * "OPTIONA" are one column.
+ * ignores spaces, underscores, hyphens, dots and brackets, so "Option A",
+ * "option_a", "Opt-A" and "OPTIONA" are one column — and "Q (English)" reaches
+ * the field it names.
  */
 export interface ColumnMap {
   [canonical: string]: string[];
@@ -108,23 +109,25 @@ export interface ColumnMap {
 export const DEFAULT_COLUMNS: ColumnMap = {
   id: ['id', 'questionid', 'qid'],
   exam: ['exam', 'examid', 'exams'],
-  level: ['level', 'post', 'examlevel'],
+  // 'htet' because the real HTET sheet heads this column with the exam name
+  // and fills it with the level.
+  level: ['level', 'post', 'examlevel', 'htet'],
   subject: ['subject', 'subjectid'],
   unit: ['unit', 'chapter', 'unitid', 'chapterid'],
   topic: ['topic', 'topicid'],
   subtopic: ['subtopic', 'subtopicid', 'concept'],
-  question: ['question', 'questionen', 'questiontext', 'questiontexten', 'q'],
-  questionHi: ['questionhi', 'questionhindi', 'prashn', 'questiontexthi'],
+  question: ['question', 'questionen', 'questiontext', 'questiontexten', 'q', 'qenglish'],
+  questionHi: ['questionhi', 'questionhindi', 'prashn', 'questiontexthi', 'qhindi'],
   // The `…en` spellings matter in a bilingual file: a contributor who writes
   // "Option A HI" writes "Option A EN" beside it, and the pair has to resolve.
-  optionA: ['optiona', 'optionaen', 'a', 'aen', 'opt1', 'option1', 'option1en'],
-  optionB: ['optionb', 'optionben', 'b', 'ben', 'opt2', 'option2', 'option2en'],
-  optionC: ['optionc', 'optioncen', 'c', 'cen', 'opt3', 'option3', 'option3en'],
-  optionD: ['optiond', 'optionden', 'd', 'den', 'opt4', 'option4', 'option4en'],
-  optionAHi: ['optionahi', 'ahi', 'option1hi'],
-  optionBHi: ['optionbhi', 'bhi', 'option2hi'],
-  optionCHi: ['optionchi', 'chi', 'option3hi'],
-  optionDHi: ['optiondhi', 'dhi', 'option4hi'],
+  optionA: ['optiona', 'optionaen', 'opta', 'optaen', 'a', 'aen', 'opt1', 'option1', 'option1en'],
+  optionB: ['optionb', 'optionben', 'optb', 'optben', 'b', 'ben', 'opt2', 'option2', 'option2en'],
+  optionC: ['optionc', 'optioncen', 'optc', 'optcen', 'c', 'cen', 'opt3', 'option3', 'option3en'],
+  optionD: ['optiond', 'optionden', 'optd', 'optden', 'd', 'den', 'opt4', 'option4', 'option4en'],
+  optionAHi: ['optionahi', 'optahi', 'optionahindi', 'optahindi', 'ahi', 'option1hi'],
+  optionBHi: ['optionbhi', 'optbhi', 'optionbhindi', 'optbhindi', 'bhi', 'option2hi'],
+  optionCHi: ['optionchi', 'optchi', 'optionchindi', 'optchindi', 'chi', 'option3hi'],
+  optionDHi: ['optiondhi', 'optdhi', 'optiondhindi', 'optdhindi', 'dhi', 'option4hi'],
   answer: ['correctanswer', 'answer', 'correct', 'ans', 'key'],
   explanation: ['explanation', 'explanationen', 'solution', 'reason'],
   explanationHi: ['explanationhi', 'solutionhi', 'vyakhya'],
@@ -141,7 +144,16 @@ export const DEFAULT_COLUMNS: ColumnMap = {
   syllabusRef: ['syllabusref', 'syllabus', 'syllabuscode'],
 };
 
-const normalise = (s: string): string => s.toLowerCase().replace(/[\s_\-.]/g, '');
+/**
+ * Reduces a header to something comparable.
+ *
+ * Brackets are stripped as well as spacing and punctuation, because a real
+ * bilingual sheet labels its columns "Q (English)" and "Q (Hindi)". Without
+ * that, those normalised to "q(english)" and matched no alias at all, so the
+ * question text — the one genuinely required field — was silently unmapped and
+ * every row in the file was rejected for having no English text.
+ */
+const normalise = (s: string): string => s.toLowerCase().replace(/[\s_\-.()[\]{}]/g, '');
 
 /** Resolves the canonical field names to the actual headers present in a file. */
 export function resolveColumns(headers: string[], map: ColumnMap = DEFAULT_COLUMNS) {
@@ -193,20 +205,57 @@ export interface ImportReport {
 
 const LETTERS = ['a', 'b', 'c', 'd', 'e', 'f'];
 
-/** "B" / "b" / "2" / "Option B" all mean the second option. */
+/**
+ * "B" / "b" / "2" / "Option B" / "Opt-B" all mean the second option.
+ *
+ * The `Opt-` spelling matters: it is what the real HTET sheet uses, and the
+ * previous pass stripped only the whole word "option", so "opt-b" reduced to
+ * "opt-b", matched no letter and no number, and came back empty. Every row in
+ * that file would have been rejected for having no correct answer marked.
+ */
 export function parseAnswer(raw: string, optionCount: number): number[] {
-  const cleaned = raw.trim().toLowerCase().replace(/option/g, '').trim();
+  const cleaned = raw
+    .trim()
+    .toLowerCase()
+    // "option", "opt", and whatever separator follows: "Option B", "Opt-B",
+    // "opt. c", "OPT_D". The longer alternative comes first so "option" is not
+    // matched as "opt" with a stray "ion" left behind, and there is no trailing
+    // `\b` because an underscore is a word character and "opt_d" would not
+    // match one.
+    .replace(/\b(?:option|opt)[\s._-]*/g, '')
+    .trim();
   if (!cleaned) return [];
   // Multiple correct answers arrive as "A,C" or "A and C".
-  const parts = cleaned.split(/[,;/&]|\band\b/).map((p) => p.trim()).filter(Boolean);
+  const parts = cleaned
+    .split(/[,;/&]|\band\b/)
+    // A trailing full stop or bracket is punctuation, not part of the answer.
+    .map((p) => p.trim().replace(/^[.)\]]+|[.)\]]+$/g, '').trim())
+    .filter(Boolean);
   const indices = parts.map((part) => {
     const letter = LETTERS.indexOf(part);
     if (letter >= 0 && letter < optionCount) return letter;
-    const num = Number(part);
-    if (Number.isInteger(num) && num >= 1 && num <= optionCount) return num - 1;
+    const num = integerFrom(part);
+    if (num !== undefined && num >= 1 && num <= optionCount) return num - 1;
     return -1;
   });
   return indices.filter((i) => i >= 0);
+}
+
+/**
+ * An integer from a cell that may have come back from a spreadsheet as a float.
+ *
+ * Google Sheets exports a numeric column as "2020.0" and "22.0", so a year and
+ * a question number arrive with a decimal point attached. `Number` already
+ * copes with the simple cases, but this refuses genuinely fractional values
+ * rather than silently truncating them — a year of "2020.5" is a broken cell,
+ * not the year 2020, and should be visible as such.
+ */
+export function integerFrom(raw: string | undefined): number | undefined {
+  const value = (raw ?? '').trim();
+  if (!value) return undefined;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return undefined;
+  return Number.isInteger(num) ? num : undefined;
 }
 
 const DIFFICULTIES: QuestionDifficulty[] = ['easy', 'medium', 'hard'];
@@ -270,7 +319,7 @@ export function importQuestions(rows: Row[], options: ImportOptions = {}): Impor
     ].filter((o) => o.en || o.hi);
 
     const yearRaw = get(row, 'year');
-    const year = yearRaw ? Number(yearRaw) : undefined;
+    const year = integerFrom(yearRaw);
     const examIds = splitList(get(row, 'exam'));
     const resolvedExams = examIds.length ? examIds : defaultExamIds;
 
@@ -281,9 +330,7 @@ export function importQuestions(rows: Row[], options: ImportOptions = {}): Impor
         year,
         paperLabel: get(row, 'paper') || undefined,
         shift: get(row, 'shift') || undefined,
-        questionNumber: get(row, 'questionNumber')
-          ? Number(get(row, 'questionNumber'))
-          : undefined,
+        questionNumber: integerFrom(get(row, 'questionNumber')),
       };
     }
 
