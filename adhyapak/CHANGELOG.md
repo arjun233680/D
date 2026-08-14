@@ -1,5 +1,135 @@
 # Changelog
 
+## Phase 3 — Studio import, duplicate protection and PYQ analytics
+
+Phase 2 made the app read through the repository. This makes the library
+writable from a browser: an educator can hand Adhyapak a real HTET CSV and get
+it into the question bank without anyone editing source code.
+
+### Import wizard — `/studio/import`
+
+Five steps: upload, map columns, review, import, publish. Column names are
+matched by alias (`Question`, `question_text` and `Question Text` are one
+column) and every mapping can be overridden by hand, so a file whose headers
+match nothing at all still imports.
+
+Nothing in the wizard validates anything itself. Parsing, mapping, validation
+and duplicate detection are the same `@adhyapak/core` functions the CLI uses —
+if the screen and the command line disagreed about what a valid file is, that
+would be the bug this indirection prevents.
+
+The review step shows the four tallies, then three tabs. Rejected rows are
+listed by **spreadsheet line number, field, problem and a suggested fix**:
+
+```
+12  correctIndices  ✕ No correct answer marked        —
+13  subjectId       ✕ Unknown subject "maths"         math
+14  text.en         ✕ text has no English text        —
+```
+
+Status is a symbol plus a word (`✓ Ready`, `⚠ Duplicate?`, `⊘ Skipped`), never
+colour alone.
+
+**Everything lands as `draft`.** The status is forced by `commit_import_batch`
+in the database, not by an argument the client passes — import is not a
+publishing route, and that rule belongs where it cannot be talked out of.
+
+### Duplicate protection
+
+`content/duplicates.ts` fingerprints the normalised question text: case,
+punctuation, quote style, spacing and the Devanagari danda are all noise, and a
+file assembled from several sources repeats questions with exactly those
+differences. Both languages participate, so a corrected Hindi translation is a
+different question — worth an editor's eye, not a silent skip.
+
+Detection **never merges or deletes**. It reports, with a confidence and a
+reason, and the educator ticks which rows to skip. Matches are found inside the
+file and against the library, via `find_duplicate_fingerprints` — fingerprints
+go to Postgres, the bank never comes to the browser.
+
+The same edit-distance routine powers the "did you mean" suggestions, and stays
+silent when a value resembles nothing: a confident wrong suggestion gets
+accepted, and the question lands under the wrong subject.
+
+### PYQ analytics — `/analytics/pyq`
+
+Topic frequency and a per-year trend, both counted from questions carrying
+structured PYQ metadata. Filters for exam, subject and topic.
+
+Two rules the screen states in its own text. **A year with no questions is
+absent, never drawn as zero** — a gap means the paper has not been collected,
+and a zero would claim the topic was not asked. And **frequency bands are
+derived from the selected data**, not hardcoded: the top third of the observed
+range is High, the bottom third Low, and the range is printed underneath so the
+label can be checked. Nothing says "most important"; it says "18 questions in
+this dataset".
+
+### Database — 0007
+
+`fingerprint` column and index; `commit_import_batch` (chunked, transactional,
+forces draft, idempotent on re-run); `set_question_status_bulk`, which delegates
+to the existing `set_question_status` per row so the publish-time checks apply
+to every question and the audit trigger fires for each — failures come back with
+their reason instead of being dropped; `find_duplicate_fingerprints`; and the
+`pyq_year_counts` view.
+
+Every function is `SECURITY DEFINER` and re-checks `is_staff()` itself, because
+a client that can call an RPC can call it with any arguments it likes. No RLS
+was weakened.
+
+### Found by testing
+
+Two UX bugs my own QA caught, both the same mistake: the Studio said **"Educators
+only"** when the real reason was **"no database configured"**. That sends someone
+to ask for a permission that would not have helped. The two cases now read
+differently, and — since parsing, mapping, validation and duplicate detection
+are entirely client-side — a file can now be checked offline, with the import
+button disabled and a tooltip explaining why.
+
+### Verified
+
+98 tests pass, typecheck clean, Next.js production build, Expo web export, and
+no console errors at 390px or 1440px on any screen.
+
+End to end against Postgres 16 with all seven migrations, using a 15-row HTET
+dataset (10 valid, 3 invalid, 2 near-duplicates, six years, three topics,
+bilingual throughout):
+
+```
+parse+validate : 15 rows → 12 accepted, 3 rejected (by line, with a suggestion)
+duplicates     : 2 flagged (exact, likely) — nothing removed
+educator skips : importing 10 of 12
+committed      : 10 rows written as drafts
+learner sees   : 0     anon sees: 0     educator sees: 10
+learner publish: denied
+educator publish: 10 published
+learner sees   : 10    rejected rows reaching a learner: 0
+audit rows     : 11
+frequency      : cdp-piaget=4, cdp-inclusive=3, cdp-learning=3
+year trend     : 2020→2  2021→2  2022→2  2023→2  2024→2
+```
+
+Scale is tested rather than claimed: 10,000 rows parse and validate in one pass,
+and duplicate detection over 5,000 rows finds all 4,900 repeats without pairwise
+comparison. Both have time bounds in the suite to catch an accidental quadratic.
+The largest import actually written to Postgres in testing was 10 rows.
+
+### Known limitations
+
+- **Excel and PDF import are not implemented.** The pipeline is
+  `file → parser → Row[] → mapping → validation → preview → draft import`, and
+  `Row` is a plain `Record<string, string>`, so a future parser plugs in at the
+  first step. Nothing downstream would change. No such parser exists today.
+- The Studio import UI is web-only, by design. Learner analytics is responsive
+  and works on a phone.
+- Editing an individual draft question is not built; drafts can be published,
+  archived or left alone.
+- Import batches are recorded and listed by the repository, but there is no
+  screen showing import history yet.
+- Batch scheduling remains untouched and still has no backend.
+
+---
+
 ## Phase 2 — the UI now reads through the repository
 
 Phase 1 built the content library and left one gap, recorded honestly at the

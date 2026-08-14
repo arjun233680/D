@@ -22,6 +22,8 @@ import { BATCHES } from '../data/batches';
 import { CURRENT_AFFAIRS } from '../data/feeds';
 import { buildPracticeSet, type PracticeFilter } from '../engine/practice';
 import { formatPyq } from '../content/types';
+import type { ContentQuestion, ContentStatus, PyqRef } from '../content/types';
+import { fingerprint } from '../content/duplicates';
 
 /**
  * The one place either app talks to data.
@@ -645,3 +647,387 @@ export const markActiveTodayRemote = async (): Promise<void> => {
   if (!db) return;
   await db.rpc('mark_active_today');
 };
+
+/* ------------------------------------------------------- studio: importing */
+
+/**
+ * The educator-side half of the repository.
+ *
+ * Everything below writes, so everything below needs a backend: there is no
+ * offline fallback for publishing a question, and pretending otherwise would
+ * let the Studio report success while nothing was saved. Each function returns
+ * a discriminated result rather than throwing, because the caller is a wizard
+ * that has to show the educator what happened at every step.
+ */
+
+export type StudioResult<T> = { ok: true; value: T } | { ok: false; error: string };
+
+const needBackend = (): SupabaseClient | { ok: false; error: string } => {
+  const db = getBackend();
+  if (!db) {
+    return {
+      ok: false,
+      error:
+        'No database is configured. Import writes to Postgres, so it needs Supabase credentials — offline mode is read-only.',
+    };
+  }
+  return db;
+};
+
+const isFailure = (v: unknown): v is { ok: false; error: string } =>
+  typeof v === 'object' && v !== null && 'ok' in v && (v as { ok: boolean }).ok === false;
+
+/** Am I allowed to open the Studio at all? Confirmed server-side, never assumed. */
+export const isStaff = async (): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  const { data: auth } = await db.auth.getUser();
+  if (!auth.user) return false;
+  const { data } = await db.from('profiles').select('role').eq('id', auth.user.id).maybeSingle();
+  const role = (data as { role?: string } | null)?.role;
+  return role === 'educator' || role === 'admin';
+};
+
+export interface ImportBatch {
+  id: string;
+  label: string | null;
+  filename: string | null;
+  examId: string | null;
+  status: 'pending' | 'validated' | 'committed' | 'discarded';
+  totalRows: number;
+  acceptedRows: number;
+  rejectedRows: number;
+  duplicateRows: number;
+  createdAt: string;
+  committedAt: string | null;
+}
+
+const toBatch = (r: Record<string, unknown>): ImportBatch => ({
+  id: r.id as string,
+  label: (r.label as string) ?? null,
+  filename: (r.filename as string) ?? null,
+  examId: (r.exam_id as string) ?? null,
+  status: r.status as ImportBatch['status'],
+  totalRows: Number(r.total_rows ?? 0),
+  acceptedRows: Number(r.accepted_rows ?? 0),
+  rejectedRows: Number(r.rejected_rows ?? 0),
+  duplicateRows: Number(r.duplicate_rows ?? 0),
+  createdAt: r.created_at as string,
+  committedAt: (r.committed_at as string) ?? null,
+});
+
+/** Records an upload before anything is written to the question bank. */
+export const createImportBatch = async (input: {
+  label: string;
+  filename: string;
+  examId?: string;
+  totalRows: number;
+  rejectedRows: number;
+  duplicateRows: number;
+  report: unknown;
+}): Promise<StudioResult<ImportBatch>> => {
+  const db = needBackend();
+  if (isFailure(db)) return db;
+
+  const { data: auth } = await db.auth.getUser();
+  if (!auth.user) return { ok: false, error: 'You are signed out. Sign in as an educator to import.' };
+
+  const { data, error } = await db
+    .from('import_batches')
+    .insert({
+      label: input.label,
+      filename: input.filename,
+      exam_id: input.examId ?? null,
+      kind: 'questions',
+      status: 'validated',
+      total_rows: input.totalRows,
+      accepted_rows: 0,
+      rejected_rows: input.rejectedRows,
+      duplicate_rows: input.duplicateRows,
+      report: input.report as never,
+      created_by: auth.user.id,
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) return { ok: false, error: error?.message ?? 'Could not record the import.' };
+  return { ok: true, value: toBatch(data as Record<string, unknown>) };
+};
+
+export const listImportBatches = (): Promise<ImportBatch[]> =>
+  withFallback(
+    async (db) => {
+      const { data, error } = await db
+        .from('import_batches')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error || !data) throw error ?? new Error('no batches');
+      return (data as Record<string, unknown>[]).map(toBatch);
+    },
+    // Nothing has ever been imported offline, because import needs a database.
+    () => [],
+  );
+
+/**
+ * Which of these questions the library already has.
+ *
+ * Fingerprints go in, matches come out — the bank stays in Postgres. Chunked so
+ * a 20,000-row file does not build a single enormous array parameter.
+ */
+export const findLibraryDuplicates = async (
+  fingerprints: string[],
+): Promise<{ fingerprint: string; id: string; pyq?: PyqRef }[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const found: { fingerprint: string; id: string; pyq?: PyqRef }[] = [];
+
+  for (const chunk of chunked(fingerprints, 500)) {
+    const { data, error } = await db.rpc('find_duplicate_fingerprints', {
+      p_fingerprints: chunk,
+    });
+    if (error || !data) continue;
+    for (const r of data as Record<string, unknown>[]) {
+      found.push({
+        fingerprint: r.fingerprint as string,
+        id: r.question_id as string,
+        pyq: r.pyq_year
+          ? {
+              examId: (r.pyq_exam_id as string) ?? '',
+              year: r.pyq_year as number,
+              paperLabel: (r.pyq_paper_label as string) ?? undefined,
+              shift: (r.pyq_shift as string) ?? undefined,
+            }
+          : undefined,
+      });
+    }
+  }
+  return found;
+};
+
+/** Splits work into batches the database can swallow in one statement. */
+function* chunked<T>(items: T[], size: number): Generator<T[]> {
+  for (let i = 0; i < items.length; i += size) yield items.slice(i, i + size);
+}
+
+export interface ImportProgress {
+  /** Rows written so far. */
+  done: number;
+  total: number;
+}
+
+/**
+ * Writes accepted rows as drafts, in chunks, reporting progress as it goes.
+ *
+ * Status is forced to draft by the database function, not by this argument
+ * list: import is not a publishing route, and that rule belongs where it cannot
+ * be talked out of.
+ *
+ * A chunk that fails stops the run and reports how many rows had already been
+ * written. Continuing past a failure would leave the educator with a partial
+ * import they believe is complete.
+ */
+export const commitImport = async (
+  batchId: string,
+  questions: ContentQuestion[],
+  onProgress?: (p: ImportProgress) => void,
+  chunkSize = 250,
+): Promise<StudioResult<number>> => {
+  const db = needBackend();
+  if (isFailure(db)) return db;
+
+  let written = 0;
+  for (const chunk of chunked(questions, chunkSize)) {
+    const payload = chunk.map((q) => ({
+      id: q.id,
+      kind: q.kind,
+      subject_id: q.subjectId,
+      unit_id: q.unitId ?? null,
+      topic_id: q.topicId,
+      subtopic_id: q.subtopicId ?? null,
+      exam_ids: q.examIds,
+      levels: q.levels,
+      text: q.text,
+      options: q.options,
+      correct_index: q.correctIndices[0] ?? 0,
+      correct_indices: q.correctIndices,
+      explanation: q.explanation,
+      difficulty: q.difficulty,
+      marks: q.marks ?? null,
+      negative_marks: q.negativeMarks ?? null,
+      pyq_exam_id: q.pyq?.examId ?? null,
+      pyq_year: q.pyq?.year ?? null,
+      pyq_session: q.pyq?.session ?? null,
+      pyq_paper_label: q.pyq?.paperLabel ?? null,
+      pyq_shift: q.pyq?.shift ?? null,
+      pyq_question_number: q.pyq?.questionNumber ?? null,
+      source: q.source ?? null,
+      tags: q.tags,
+      concept_tags: q.conceptTags,
+      syllabus_ref: q.syllabusRef ?? null,
+      fingerprint: fingerprint(q.text),
+    }));
+
+    const { data, error } = await db.rpc('commit_import_batch', {
+      p_batch_id: batchId,
+      p_questions: payload,
+    });
+
+    if (error) {
+      return {
+        ok: false,
+        error: `Stopped after ${written} of ${questions.length} questions: ${error.message}`,
+      };
+    }
+    written += Number(data ?? chunk.length);
+    onProgress?.({ done: written, total: questions.length });
+  }
+
+  return { ok: true, value: written };
+};
+
+/* -------------------------------------------------------- studio: review */
+
+export interface DraftFilter {
+  status?: ContentStatus;
+  batchId?: string;
+  subjectId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface DraftQuestion {
+  id: string;
+  status: ContentStatus;
+  text: Bilingual;
+  options: Bilingual[];
+  correctIndex: number;
+  subjectId: string;
+  topicId: string;
+  examIds: string[];
+  pyq?: PyqRef;
+  createdAt: string;
+}
+
+/**
+ * Questions awaiting review.
+ *
+ * Deliberately not `listQuestions`: that one pins `status = 'published'` for
+ * learners, and loosening it there would be exactly the mistake the pin exists
+ * to prevent. RLS still decides what comes back — a learner calling this gets
+ * nothing.
+ */
+export const listDraftQuestions = async (filter: DraftFilter = {}): Promise<DraftQuestion[]> => {
+  const db = getBackend();
+  if (!db) return [];
+
+  let q = db
+    .from('questions')
+    .select('*')
+    .eq('status', filter.status ?? 'draft')
+    .order('created_at', { ascending: false });
+  if (filter.subjectId) q = q.eq('subject_id', filter.subjectId);
+  const limit = filter.limit ?? 100;
+  const offset = filter.offset ?? 0;
+  q = q.range(offset, offset + limit - 1);
+
+  const { data, error } = await q;
+  if (error || !data) return [];
+  return (data as Record<string, unknown>[]).map((r) => ({
+    id: r.id as string,
+    status: r.status as ContentStatus,
+    text: r.text as Bilingual,
+    options: r.options as Bilingual[],
+    correctIndex: r.correct_index as number,
+    subjectId: r.subject_id as string,
+    topicId: r.topic_id as string,
+    examIds: (r.exam_ids as string[]) ?? [],
+    pyq: r.pyq_year
+      ? {
+          examId: (r.pyq_exam_id as string) ?? '',
+          year: r.pyq_year as number,
+          paperLabel: (r.pyq_paper_label as string) ?? undefined,
+          shift: (r.pyq_shift as string) ?? undefined,
+        }
+      : undefined,
+    createdAt: r.created_at as string,
+  }));
+};
+
+export interface BulkStatusOutcome {
+  id: string;
+  ok: boolean;
+  message: string | null;
+}
+
+/**
+ * Publishes or archives a selection.
+ *
+ * Routed through `set_question_status_bulk`, which calls `set_question_status`
+ * per row — so the database's publish-time checks apply to every question and
+ * the audit trigger fires for each. Rows that fail come back with the reason
+ * rather than being dropped.
+ */
+export const setQuestionStatusBulk = async (
+  ids: string[],
+  status: ContentStatus,
+): Promise<StudioResult<BulkStatusOutcome[]>> => {
+  const db = needBackend();
+  if (isFailure(db)) return db;
+
+  const outcomes: BulkStatusOutcome[] = [];
+  for (const chunk of chunked(ids, 200)) {
+    const { data, error } = await db.rpc('set_question_status_bulk', {
+      p_ids: chunk,
+      p_status: status,
+    });
+    if (error) return { ok: false, error: error.message };
+    for (const r of (data ?? []) as Record<string, unknown>[]) {
+      outcomes.push({
+        id: r.id as string,
+        ok: Boolean(r.ok),
+        message: (r.message as string) ?? null,
+      });
+    }
+  }
+  return { ok: true, value: outcomes };
+};
+
+/* ------------------------------------------------------ studio: analytics */
+
+export interface YearCount {
+  year: number;
+  questionCount: number;
+  topicId: string;
+  subjectId: string;
+}
+
+/**
+ * Questions per year, for the trend chart.
+ *
+ * Years with no questions are absent rather than zero: a gap means the paper
+ * has not been collected, and drawing it as a zero would claim the topic was
+ * not asked that year.
+ */
+export const listPyqYearCounts = (filter: {
+  examId?: string;
+  subjectId?: string;
+  topicId?: string;
+} = {}): Promise<YearCount[]> =>
+  withFallback(
+    async (db) => {
+      let q = db.from('pyq_year_counts').select('*').order('year', { ascending: true });
+      if (filter.examId) q = q.eq('exam_id', filter.examId);
+      if (filter.subjectId) q = q.eq('subject_id', filter.subjectId);
+      if (filter.topicId) q = q.eq('topic_id', filter.topicId);
+      const { data, error } = await q;
+      if (error || !data) throw error ?? new Error('no year counts');
+      return (data as Record<string, unknown>[]).map((r) => ({
+        year: Number(r.year),
+        questionCount: Number(r.question_count),
+        topicId: r.topic_id as string,
+        subjectId: r.subject_id as string,
+      }));
+    },
+    () => [],
+  );

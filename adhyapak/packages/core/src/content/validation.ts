@@ -1,5 +1,6 @@
 import type { Bilingual } from '../types';
 import type { ContentNote, ContentQuestion, ContentStatus } from './types';
+import { nearest } from './duplicates';
 
 /**
  * Content validation.
@@ -22,6 +23,14 @@ export interface Issue {
   /** Field the problem is attached to, dotted for nesting: 'options.2.hi'. */
   field: string;
   message: string;
+  /**
+   * The value the importer thinks was meant, when a typo is the likely cause.
+   * A rejection that only says `Unknown subject "chemsitry"` leaves someone to
+   * find the right spelling across a 4,000-row file; naming it makes the fix a
+   * keystroke. Never applied automatically — it is a suggestion, not a guess
+   * acted upon.
+   */
+  suggestion?: string;
 }
 
 export interface ValidationResult {
@@ -37,6 +46,7 @@ export interface ContentRefs {
   topicIds: ReadonlySet<string>;
   unitIds?: ReadonlySet<string>;
   subtopicIds?: ReadonlySet<string>;
+  levels?: ReadonlySet<string>;
 }
 
 export const refsFrom = (ids: {
@@ -45,20 +55,31 @@ export const refsFrom = (ids: {
   topics?: string[];
   units?: string[];
   subtopics?: string[];
+  levels?: string[];
 }): ContentRefs => ({
   examIds: new Set(ids.exams ?? []),
   subjectIds: new Set(ids.subjects ?? []),
   topicIds: new Set(ids.topics ?? []),
   unitIds: new Set(ids.units ?? []),
   subtopicIds: new Set(ids.subtopics ?? []),
+  levels: new Set(ids.levels ?? []),
 });
 
-const err = (code: string, field: string, message: string): Issue => ({
+const err = (code: string, field: string, message: string, suggestion?: string): Issue => ({
   severity: 'error',
   code,
   field,
   message,
+  ...(suggestion ? { suggestion } : {}),
 });
+
+/** An unknown-reference error that names the closest id that does exist. */
+const unknownRef = (
+  field: string,
+  value: string,
+  label: string,
+  known: ReadonlySet<string>,
+): Issue => err('unknown.ref', field, `Unknown ${label} "${value}"`, nearest(value, [...known]));
 
 const warn = (code: string, field: string, message: string): Issue => ({
   severity: 'warning',
@@ -179,22 +200,30 @@ export function validateQuestion(
 
   if (refs) {
     if (q.subjectId && !refs.subjectIds.has(q.subjectId)) {
-      issues.push(err('unknown.ref', 'subjectId', `Unknown subject "${q.subjectId}"`));
+      issues.push(unknownRef('subjectId', q.subjectId, 'subject', refs.subjectIds));
     }
     if (q.topicId && !refs.topicIds.has(q.topicId)) {
-      issues.push(err('unknown.ref', 'topicId', `Unknown topic "${q.topicId}"`));
+      issues.push(unknownRef('topicId', q.topicId, 'topic', refs.topicIds));
     }
     if (q.unitId && refs.unitIds?.size && !refs.unitIds.has(q.unitId)) {
-      issues.push(err('unknown.ref', 'unitId', `Unknown unit "${q.unitId}"`));
+      issues.push(unknownRef('unitId', q.unitId, 'unit', refs.unitIds));
     }
     if (q.subtopicId && refs.subtopicIds?.size && !refs.subtopicIds.has(q.subtopicId)) {
-      issues.push(err('unknown.ref', 'subtopicId', `Unknown subtopic "${q.subtopicId}"`));
+      issues.push(unknownRef('subtopicId', q.subtopicId, 'subtopic', refs.subtopicIds));
     }
     (q.examIds ?? []).forEach((id, i) => {
       if (!refs.examIds.has(id)) {
-        issues.push(err('unknown.ref', `examIds.${i}`, `Unknown exam "${id}"`));
+        issues.push(unknownRef(`examIds.${i}`, id, 'exam', refs.examIds));
       }
     });
+    // Levels are a closed set, so a typo there is catchable the same way.
+    if (refs.levels?.size) {
+      (q.levels ?? []).forEach((level, i) => {
+        if (!refs.levels!.has(level)) {
+          issues.push(unknownRef(`levels.${i}`, level, 'level', refs.levels!));
+        }
+      });
+    }
   }
 
   // ---- marks

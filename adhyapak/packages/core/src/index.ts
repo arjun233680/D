@@ -27,6 +27,7 @@ export * from './pdf';
 export * from './content/types';
 export * from './content/validation';
 export * from './content/import';
+export * from './content/duplicates';
 
 export { theme, examTheme } from './theme';
 export type { Theme, ExamTheme } from './theme';

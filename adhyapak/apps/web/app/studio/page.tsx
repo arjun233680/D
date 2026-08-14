@@ -135,6 +135,46 @@ export default function StudioPage() {
         </p>
       </div>
 
+      {/* The question bank is the other half of the Studio. It lives on its own
+          routes because importing a spreadsheet and uploading one video are
+          different jobs with different shapes. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/studio/import"
+          className="card flex items-center gap-3 p-4 transition-shadow hover:shadow-md"
+        >
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--color-brand-light)] text-xl">
+            ⬆
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-bold">
+              {lang === 'hi' ? 'प्रश्न आयात करें' : 'Import questions'}
+            </span>
+            <span className="block text-[12px] text-[var(--color-muted)]">
+              {lang === 'hi'
+                ? 'CSV से थोक अपलोड — जाँच के बाद ड्राफ़्ट'
+                : 'Bulk CSV upload — validated, saved as drafts'}
+            </span>
+          </span>
+        </Link>
+        <Link
+          href="/studio/drafts"
+          className="card flex items-center gap-3 p-4 transition-shadow hover:shadow-md"
+        >
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--color-accent-light)] text-xl">
+            📝
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-bold">
+              {lang === 'hi' ? 'समीक्षा एवं प्रकाशन' : 'Review and publish'}
+            </span>
+            <span className="block text-[12px] text-[var(--color-muted)]">
+              {lang === 'hi' ? 'ड्राफ़्ट देखें और प्रकाशित करें' : 'Look over drafts, then publish'}
+            </span>
+          </span>
+        </Link>
+      </div>
+
       <div className="flex gap-2">
         {(['video', 'note'] as Mode[]).map((m) => (
           <button

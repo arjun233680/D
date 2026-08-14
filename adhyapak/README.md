@@ -191,6 +191,30 @@ do not:
 - **warns** — no explanation, a repeated option, no exam attached, negative
   marking larger than the marks on offer
 
+### Importing from the Studio
+
+`/studio/import` is the same pipeline with a UI on it: upload a CSV, confirm or
+change the column mapping, review, import. Rejected rows are listed by
+spreadsheet line with the field, the problem and a suggested fix; possible
+duplicates are shown with a reason and skipped only if you tick them.
+
+Everything lands as a draft — the status is forced by the database function, not
+by the client — and `/studio/drafts` is where they are published in bulk. Every
+publish goes through `set_question_status`, so the checks run per question and
+the audit trail records who did it.
+
+Parsing, mapping and validation are entirely client-side, so a file can be
+checked without any database at all; only the final write needs one.
+
+### Previous-year analysis
+
+`/analytics/pyq` counts topic frequency and a per-year trend from questions
+carrying structured PYQ metadata. Two rules it states on screen: a year with no
+questions is **absent rather than zero**, because a gap means the paper has not
+been collected; and the High/Medium/Low bands are **derived from the selected
+data** — top third and bottom third of the observed range, printed underneath so
+the label can be checked.
+
 ### Adding content by hand
 
 | To add… | Edit |
