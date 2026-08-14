@@ -36,14 +36,16 @@ jobs:
         working-directory: adhyapak
         run: npm ci
 
-      # Every expo-* package must match the SDK's own matrix. Pinning them by
-      # hand is how the first two builds broke, so ask Expo instead: this
-      # rewrites any mismatched version and reinstalls.
-      - name: Align Expo package versions with the SDK
+      # Report drift from the SDK matrix; do not silently repair it. `--fix`
+      # used to run here, and rewriting package.json mid-build produced a tree
+      # that had never been built anywhere else — which is how the third build
+      # broke. Versions are pinned to expo's own bundledNativeModules.json and
+      # verified locally, so this should stay quiet.
+      - name: Check Expo package versions against the SDK
         working-directory: adhyapak/apps/mobile
         env:
           EXPO_NO_TELEMETRY: '1'
-        run: npx expo install --fix
+        run: npx expo install --check
 
       # Generates the native android/ project from app.json.
       - name: Generate the native project
