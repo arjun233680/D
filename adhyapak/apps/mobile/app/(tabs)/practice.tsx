@@ -8,17 +8,25 @@ import {
   getPaper,
   previousYearQuestions,
   recommendedTopics,
+  resolvePaperSubjects,
   t,
   theme,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { Badge, ProgressBar, SectionHeader, Stat, Touch, s } from '@/components/ui';
+import { Badge, ElectiveNotice, ProgressBar, SectionHeader, Stat, Touch, s } from '@/components/ui';
 
 export default function PracticeScreen() {
   const { lang, user } = useStore();
   const exam = getExam(user.goalExamId);
   const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
-  const paperSubjects = paper ? paper.sections.map((x) => x.subjectId) : SUBJECTS.map((x) => x.id);
+  // A paper with an elective has no subject list until the learner picks one;
+  // recommending against a guess would hand them another candidate's syllabus.
+  const resolved = resolvePaperSubjects(paper?.id, user.electiveSubjectId);
+  const paperSubjects = resolved.ok
+    ? resolved.subjectIds.length > 0
+      ? resolved.subjectIds
+      : SUBJECTS.map((x) => x.id)
+    : [];
   const recommended = recommendedTopics(paperSubjects, 6);
   const streak = currentStreak(user.activeDates);
 
@@ -71,25 +79,32 @@ export default function PracticeScreen() {
           subtitle={paper ? t(paper.name, lang) : undefined}
         />
         <View style={{ paddingHorizontal: theme.space.lg, gap: theme.space.sm }}>
-          {recommended.map((topic) => (
-            <Touch key={topic.id} href={`/practice/topic/${topic.id}`} style={[s.card, { padding: theme.space.md }]}>
+          {!resolved.ok ? (
+            <ElectiveNotice error={resolved.error} lang={lang} />
+          ) : (
+            recommended.map((topic) => (
+              <Touch key={topic.id} href={`/practice/topic/${topic.id}`} style={[s.card, { padding: theme.space.md }]}>
                 <View style={[s.row, { justifyContent: 'space-between' }]}>
                   <Text style={{ fontSize: theme.font.sm, fontWeight: '700', flex: 1 }} numberOfLines={1}>
                     {t(topic.name, lang)}
                   </Text>
-                  {topic.weightage >= 15 ? (
+                  {(topic.weightage ?? 0) >= 15 ? (
                     <Badge tone="danger">{lang === 'hi' ? 'अति महत्वपूर्ण' : 'High yield'}</Badge>
                   ) : null}
                 </View>
-                <View style={{ marginTop: 8 }}>
-                  <ProgressBar value={topic.weightage * 3} />
-                </View>
-                <Text style={[s.faint, { marginTop: 5 }]}>
-                  {lang === 'hi' ? 'भार' : 'Weightage'} {topic.weightage}% ·{' '}
-                  {formatCount(topic.questionCount)} {lang === 'hi' ? 'प्रश्न' : 'Qs'}
-                </Text>
+                {topic.weightage !== undefined ? (
+                  <>
+                    <View style={{ marginTop: 8 }}>
+                      <ProgressBar value={topic.weightage * 3} />
+                    </View>
+                    <Text style={[s.faint, { marginTop: 5 }]}>
+                      {lang === 'hi' ? 'भार' : 'Weightage'} {topic.weightage}%
+                    </Text>
+                  </>
+                ) : null}
               </Touch>
-          ))}
+            ))
+          )}
         </View>
       </View>
 

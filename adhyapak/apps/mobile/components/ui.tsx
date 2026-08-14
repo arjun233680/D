@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { theme, type ContentAccess } from '@adhyapak/core';
+import { theme, type ContentAccess, type ElectiveError } from '@adhyapak/core';
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useResponsive } from '@/lib/responsive';
@@ -302,6 +302,43 @@ export function EmptyState({ icon, title, body }: { icon: string; title: string;
       <Text style={{ fontSize: theme.icon.xl }}>{icon}</Text>
       <Text style={[s.h2, { marginTop: 8 }]}>{title}</Text>
       <Text style={[s.muted, { marginTop: 4, textAlign: 'center' }]}>{body}</Text>
+    </View>
+  );
+}
+
+/**
+ * Shown where a syllabus would be, when the paper has an elective and we do not
+ * know which subject the learner sits.
+ *
+ * HTET Levels 2 and 3 are a different paper for each of twelve (or twenty-one)
+ * subjects. Guessing one would show most candidates somebody else's syllabus,
+ * so `resolvePaperSubjects` returns an error and this renders it.
+ */
+export function ElectiveNotice({ error, lang }: { error: ElectiveError; lang: 'en' | 'hi' }) {
+  const hi = lang === 'hi';
+  const body =
+    error.kind === 'not-in-group'
+      ? hi
+        ? 'आपका चुना हुआ विषय इस पेपर में उपलब्ध नहीं है। कृपया दोबारा चुनें।'
+        : 'The subject saved on your profile is not offered for this paper. Please choose again.'
+      : error.kind === 'unknown-group'
+        ? hi
+          ? 'इस पेपर का विषय विवरण अनुपलब्ध है। हमें इसे ठीक करना होगा।'
+          : 'This paper is missing its subject list — that is a bug on our side, not yours.'
+        : hi
+          ? 'यह पेपर हर अभ्यर्थी के लिए अलग होता है। अपना विषय चुनिए, फिर हम उसी का सिलेबस दिखाएँगे।'
+          : 'This paper differs for every candidate. Pick your subject and we will show that syllabus.';
+
+  return (
+    <View style={[s.card, { padding: theme.space.lg, gap: 10 }]}>
+      <Text style={s.h2}>{hi ? 'पहले अपना विषय चुनें' : 'Choose your subject first'}</Text>
+      <Text style={s.muted}>{body}</Text>
+      {error.kind !== 'unknown-group' ? (
+        <Button
+          label={hi ? 'विषय चुनें' : 'Choose subject'}
+          onPress={() => router.push('/(auth)/goal')}
+        />
+      ) : null}
     </View>
   );
 }

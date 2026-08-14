@@ -98,10 +98,11 @@ export default function SubjectPracticePage({
         />
         <div className="grid gap-2 sm:grid-cols-2">
           {[...subject.topics]
-            .sort((a, b) => b.weightage - a.weightage)
+            .sort((a, b) => (b.weightage ?? -1) - (a.weightage ?? -1))
             .map((topic) => {
-              // Counted from the same fetched set, so the index never issues one
-              // request per topic.
+              // The only count on this card, and it is real: the published
+              // questions actually fetched for this subject, counted per topic
+              // from the same set so the index never issues a request per topic.
               const ready = questions.filter((q) => q.topicId === topic.id).length;
               return (
                 <Link
@@ -111,16 +112,20 @@ export default function SubjectPracticePage({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-bold">{t(topic.name, lang)}</p>
-                    <div className="mt-1.5">
-                      <ProgressBar value={topic.weightage * 3} color={subject.color} />
-                    </div>
+                    {topic.weightage !== undefined ? (
+                      <div className="mt-1.5">
+                        <ProgressBar value={topic.weightage * 3} color={subject.color} />
+                      </div>
+                    ) : null}
                     <p className="mt-1 text-[11px] text-[var(--color-muted)]">
-                      {lang === 'hi' ? 'भार' : 'Weightage'} {topic.weightage}% ·{' '}
-                      {formatCount(topic.questionCount)} {lang === 'hi' ? 'बैंक में' : 'in bank'} ·{' '}
-                      {ready} {lang === 'hi' ? 'तैयार' : 'ready'}
+                      {topic.weightage !== undefined
+                        ? `${lang === 'hi' ? 'भार' : 'Weightage'} ${topic.weightage}% · `
+                        : ''}
+                      {formatCount(ready)}{' '}
+                      {lang === 'hi' ? 'प्रश्न उपलब्ध' : ready === 1 ? 'question' : 'questions'}
                     </p>
                   </div>
-                  {topic.weightage >= 15 ? (
+                  {(topic.weightage ?? 0) >= 15 ? (
                     <Badge tone="danger">{lang === 'hi' ? 'अति महत्वपूर्ण' : 'High yield'}</Badge>
                   ) : null}
                 </Link>

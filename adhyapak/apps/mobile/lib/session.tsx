@@ -3,7 +3,7 @@ import {
   examTheme,
   getExam,
   getPaper,
-  subjectsForPaper,
+  subjectsForPaperOrEmpty,
   theme,
   type ExamTheme,
   type Lang,
@@ -82,14 +82,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       examName: exam ? exam.name[lang] : '',
       examShortName: exam?.shortName ?? '',
       paperName: paper ? paper.name[lang] : null,
-      subjectIds: subjectsForPaper(paper?.id),
+      subjectIds: subjectsForPaperOrEmpty(paper?.id, user.electiveSubjectId),
       lang,
       signIn,
       continueAsGuest,
       chooseGoal,
       signOut,
     }),
-    [user.signedIn, user.onboarded, exam, paper, lang, signIn, continueAsGuest, chooseGoal, signOut],
+    [user.signedIn, user.onboarded, user.electiveSubjectId, exam, paper, lang, signIn, continueAsGuest, chooseGoal, signOut],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

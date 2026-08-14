@@ -129,11 +129,18 @@ export default function GoalScreen() {
                     : 'no negative marking'}{' '}
                 · {lang === 'hi' ? 'कट-ऑफ' : 'cut-off'} {paper.cutoffGeneral}%/{paper.cutoffReserved}%
               </Text>
-              {paper.sections.map((sec) => {
-                const subject = getSubject(sec.subjectId);
+              {paper.sections.map((sec, i) => {
+                // An elective section is named for the choice, not for a
+                // subject: HTET Levels 2 and 3 are a different paper for every
+                // candidate, and only this block differs.
+                const isElective = sec.subjectId === undefined;
+                const group = isElective
+                  ? paper.electives?.find((g) => g.id === sec.electiveGroupId)
+                  : undefined;
+                const subject = isElective ? undefined : getSubject(sec.subjectId);
                 return (
                   <View
-                    key={sec.subjectId}
+                    key={isElective ? `elective-${i}` : sec.subjectId}
                     style={[
                       s.row,
                       {
@@ -145,9 +152,20 @@ export default function GoalScreen() {
                       },
                     ]}
                   >
-                    <Text style={{ fontSize: theme.font.sm, fontWeight: '600', flex: 1 }}>
-                      {subject?.icon} {subject ? t(subject.name, lang) : sec.subjectId}
-                    </Text>
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={{ fontSize: theme.font.sm, fontWeight: '600' }}>
+                        {isElective
+                          ? `🎯 ${group ? t(group.name, lang) : sec.electiveGroupId}`
+                          : `${subject?.icon} ${subject ? t(subject.name, lang) : sec.subjectId}`}
+                      </Text>
+                      {isElective ? (
+                        <Text style={[s.faint, { marginTop: 2 }]}>
+                          {lang === 'hi'
+                            ? `आपका चुना हुआ विषय — ${group?.choices.length ?? 0} विकल्प`
+                            : `Your chosen subject — ${group?.choices.length ?? 0} options`}
+                        </Text>
+                      ) : null}
+                    </View>
                     <Text style={s.faint}>
                       {sec.questions} {lang === 'hi' ? 'प्रश्न' : 'Qs'} · {sec.marks}{' '}
                       {lang === 'hi' ? 'अंक' : 'marks'}

@@ -165,8 +165,10 @@ export default function GoalScreen() {
             <View style={{ marginTop: theme.space.lg, gap: theme.space.md }}>
               {selected.papers.map((paper) => {
                 const on = (paperId ?? selected.papers[0]?.id) === paper.id;
+                // Elective sections contribute no icon: the subject is not
+                // known until the candidate picks one.
                 const subjects = paper.sections
-                  .map((sec) => getSubject(sec.subjectId))
+                  .map((sec) => (sec.subjectId ? getSubject(sec.subjectId) : undefined))
                   .filter(Boolean)
                   .map((sub) => sub!.icon)
                   .join(' ');

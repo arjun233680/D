@@ -176,10 +176,10 @@ export default function ExplorePage() {
                   <Badge tone="neutral">
                     {s.topics.length} {lang === 'hi' ? 'टॉपिक' : 'topics'}
                   </Badge>
-                  <Badge tone="neutral">
-                    {formatCount(s.topics.reduce((sum, x) => sum + x.questionCount, 0))}{' '}
-                    {lang === 'hi' ? 'प्रश्न' : 'questions'}
-                  </Badge>
+                  {/* A question-count badge used to sit here, summing a
+                      hardcoded per-topic figure. It reported tens of thousands
+                      against a bank of 67. Topic count is a fact about the
+                      syllabus, so it stays; the other was not. */}
                 </div>
               </div>
             </Link>

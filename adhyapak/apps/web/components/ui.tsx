@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import type { ContentAccess } from '@adhyapak/core';
+import { t, type ContentAccess, type ElectiveError } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 
 /* Small presentational atoms shared by every screen. */
@@ -137,6 +137,59 @@ export function EmptyState({ icon, title, body }: { icon: string; title: string;
       <div className="text-4xl">{icon}</div>
       <h3 className="text-base font-bold">{title}</h3>
       <p className="max-w-sm text-sm text-[var(--color-muted)]">{body}</p>
+    </div>
+  );
+}
+
+/**
+ * Shown where a syllabus would be, when the paper has an elective and we do not
+ * know which subject the learner sits.
+ *
+ * This is the visible half of `PaperSubjects` being a result type. HTET Levels
+ * 2 and 3 are a different paper for each of twelve (or twenty-one) subjects, so
+ * guessing one would show most candidates somebody else's syllabus and quietly
+ * miscount their practice. Asking is the only correct behaviour.
+ */
+export function ElectiveNotice({
+  error,
+  lang,
+}: {
+  error: ElectiveError;
+  lang: 'en' | 'hi';
+}) {
+  const hi = lang === 'hi';
+  const groupName = error.kind === 'unknown-group' ? undefined : error.group?.name;
+
+  const body =
+    error.kind === 'not-in-group'
+      ? hi
+        ? 'आपका चुना हुआ विषय इस पेपर में उपलब्ध नहीं है। कृपया दोबारा चुनें।'
+        : 'The subject saved on your profile is not offered for this paper. Please choose again.'
+      : error.kind === 'unknown-group'
+        ? hi
+          ? 'इस पेपर का विषय विवरण अनुपलब्ध है। हमें इसे ठीक करना होगा।'
+          : 'This paper is missing its subject list — that is a bug on our side, not yours.'
+        : hi
+          ? 'यह पेपर हर अभ्यर्थी के लिए अलग होता है। अपना विषय चुनिए, फिर हम उसी का सिलेबस दिखाएँगे।'
+          : 'This paper differs for every candidate. Pick your subject and we will show that syllabus.';
+
+  return (
+    <div className="card flex flex-col items-start gap-3 p-5">
+      <div>
+        <h3 className="text-base font-bold">
+          {hi ? 'पहले अपना विषय चुनें' : 'Choose your subject first'}
+          {groupName ? ` — ${t(groupName, lang)}` : ''}
+        </h3>
+        <p className="mt-1 text-sm text-[var(--color-muted)]">{body}</p>
+      </div>
+      {error.kind !== 'unknown-group' ? (
+        <Link
+          href="/goal"
+          className="rounded-full bg-[var(--color-brand)] px-4 py-2 text-[13px] font-bold text-white"
+        >
+          {hi ? 'विषय चुनें' : 'Choose subject'}
+        </Link>
+      ) : null}
     </div>
   );
 }

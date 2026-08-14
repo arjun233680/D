@@ -73,14 +73,16 @@ out.push(
 out.push(
   rows(
     'topics',
-    ['id', 'subject_id', 'name', 'weightage', 'question_count'],
+    ['id', 'subject_id', 'name', 'weightage'],
     SUBJECTS.flatMap((subject) =>
       subject.topics.map((t) => [
         s(t.id),
         s(t.subjectId),
         j(t.name),
-        n(t.weightage),
-        n(t.questionCount),
+        // Null where no paper analysis has been done. `question_count` used to
+        // sit beside this with a hardcoded figure; it is gone, and real counts
+        // come from counting `questions`.
+        t.weightage === undefined ? 'null' : n(t.weightage),
       ]),
     ),
   ),
@@ -145,13 +147,45 @@ out.push(
   ),
 );
 
+// Elective groups come before the sections that reference them.
+out.push('delete from elective_choices;');
+out.push('delete from elective_groups;');
+
+const ELECTIVES = EXAMS.flatMap((e) =>
+  e.papers.flatMap((p) => (p.electives ?? []).map((g) => ({ paperId: p.id, group: g }))),
+);
+
+if (ELECTIVES.length > 0) {
+  out.push(
+    'insert into elective_groups (id, paper_id, name) values\n' +
+      ELECTIVES.map(
+        ({ paperId, group }) => `  (${s(group.id)}, ${s(paperId)}, ${j(group.name)})`,
+      ).join(',\n') +
+      ';\n',
+  );
+  out.push(
+    'insert into elective_choices (group_id, subject_id, sort_order) values\n' +
+      ELECTIVES.flatMap(({ group }) =>
+        group.choices.map(
+          (subjectId, i) => `  (${s(group.id)}, ${s(subjectId)}, ${n(i)})`,
+        ),
+      ).join(',\n') +
+      ';\n',
+  );
+}
+
 out.push('delete from paper_sections;');
 out.push(
-  'insert into paper_sections (paper_id, subject_id, questions, marks, sort_order) values\n' +
+  'insert into paper_sections (paper_id, subject_id, elective_group_id, questions, marks, sort_order) values\n' +
     EXAMS.flatMap((e) =>
       e.papers.flatMap((p) =>
+        // Exactly one of the two columns is set, matching the check constraint
+        // and the discriminated union the sections come from.
         p.sections.map(
-          (sec, i) => `  (${s(p.id)}, ${s(sec.subjectId)}, ${n(sec.questions)}, ${n(sec.marks)}, ${n(i)})`,
+          (sec, i) =>
+            `  (${s(p.id)}, ${sec.subjectId ? s(sec.subjectId) : 'null'}, ` +
+            `${sec.subjectId ? 'null' : s(sec.electiveGroupId)}, ` +
+            `${n(sec.questions)}, ${n(sec.marks)}, ${n(i)})`,
         ),
       ),
     ).join(',\n') +

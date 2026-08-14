@@ -39,16 +39,73 @@ export interface ExamPaper {
   durationMinutes: number;
   totalQuestions: number;
   sections: ExamSection[];
+  /** Choices offered by this paper. Present only when a section is elective. */
+  electives?: ElectiveGroup[];
   /** Qualifying percentage for General category. */
   cutoffGeneral: number;
   cutoffReserved: number;
 }
 
-export interface ExamSection {
-  subjectId: string;
+/**
+ * A set of subjects a candidate picks one of.
+ *
+ * HTET Levels 2 and 3 are a single 60-mark paper whose subject is whichever one
+ * the candidate applied in — there is no "TGT paper", there are twelve of them.
+ */
+export interface ElectiveGroup {
+  id: string;
+  name: Bilingual;
+  /** Subject ids, every one of which must exist in SUBJECTS. */
+  choices: string[];
+}
+
+interface ExamSectionSize {
   questions: number;
   marks: number;
 }
+
+/**
+ * One block of a paper.
+ *
+ * Either the subject is fixed by the blueprint, or the section is an elective
+ * and the subject is whichever one the candidate chose. The `?: never` arms
+ * make that a real either/or: a section with both, or with neither, does not
+ * typecheck. Before this, `subjectId` was mandatory, so an elective could only
+ * be modelled by inventing a subject for it — which is exactly how HTET Level 2
+ * came to claim it tested Science and Mathematics.
+ */
+export type ExamSection =
+  | (ExamSectionSize & { subjectId: string; electiveGroupId?: never })
+  | (ExamSectionSize & { electiveGroupId: string; subjectId?: never });
+
+/** Why a paper's subjects could not be determined. Never guessed around. */
+export type ElectiveError =
+  /** The paper has an elective and the learner has not chosen one yet. */
+  | { kind: 'not-chosen'; groupId: string; group?: ElectiveGroup }
+  /** The learner's choice is not offered by this group — usually a stale profile. */
+  | { kind: 'not-in-group'; groupId: string; chosen: string; group?: ElectiveGroup }
+  /** The blueprint references a group the paper does not define. A data bug. */
+  | { kind: 'unknown-group'; groupId: string };
+
+export interface ResolvedSection {
+  section: ExamSection;
+  /** The subject this section tests, once any elective is applied. */
+  subjectId: string;
+  /** Set when this section came from an elective group. */
+  electiveGroupId?: string;
+}
+
+/**
+ * The outcome of resolving a paper against a learner's elective choice.
+ *
+ * A discriminated result rather than a `string[]`, because the failure is a
+ * normal state — every TGT and PGT candidate is in it until they pick a subject
+ * — and a screen that silently defaulted would show one candidate another
+ * candidate's syllabus.
+ */
+export type PaperSubjects =
+  | { ok: true; sections: ResolvedSection[]; subjectIds: string[] }
+  | { ok: false; error: ElectiveError };
 
 /** A citation. Every factual claim about an exam carries one. */
 export interface Source {
@@ -113,9 +170,15 @@ export interface Topic {
   id: string;
   subjectId: string;
   name: Bilingual;
-  /** How often this topic has appeared historically — drives "high yield" badges. */
-  weightage: number;
-  questionCount: number;
+  /**
+   * Historical share of questions, as a percentage — drives "high yield"
+   * badges and the recommended-practice ordering.
+   *
+   * Optional because it is a claim about real papers: subjects added without a
+   * paper analysis behind them leave it out rather than carry a number nobody
+   * measured. Screens hide the badge and the bar when it is absent.
+   */
+  weightage?: number;
 }
 
 /* -------------------------------------------------------------- educators */
@@ -366,6 +429,11 @@ export interface User {
   email?: string;
   goalExamId: string;
   targetPaperId?: string;
+  /**
+   * The elective subject chosen for the target paper, where it has one.
+   * Undefined is a real state, not a missing value — see `PaperSubjects`.
+   */
+  electiveSubjectId?: string;
   language: Lang;
   state?: string;
   joinedAt: string;

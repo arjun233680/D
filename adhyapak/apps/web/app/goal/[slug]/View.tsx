@@ -157,7 +157,38 @@ export default function GoalPage({ params }: { params: Promise<{ slug: string }>
                 </tr>
               </thead>
               <tbody>
-                {paper.sections.map((s) => {
+                {paper.sections.map((s, i) => {
+                  // An elective section has no subject of its own — it is
+                  // whichever one the candidate applied in. The blueprint names
+                  // the choice rather than pretending it is a fixed subject.
+                  if (s.subjectId === undefined) {
+                    const group = paper.electives?.find((g) => g.id === s.electiveGroupId);
+                    const names = (group?.choices ?? [])
+                      .map((id) => getSubject(id))
+                      .filter(Boolean)
+                      .map((sub) => t(sub!.name, lang));
+                    return (
+                      <tr key={`elective-${i}`} className="border-t border-[var(--color-line)]">
+                        <td className="px-4 py-2.5">
+                          <div className="font-semibold">
+                            <span className="mr-2">🎯</span>
+                            {group ? t(group.name, lang) : s.electiveGroupId}
+                          </div>
+                          <div className="mt-1 text-[11px] leading-relaxed text-[var(--color-muted)]">
+                            {lang === 'hi'
+                              ? `आपका चुना हुआ विषय — ${names.length} विकल्पों में से एक: `
+                              : `Whichever subject you applied in — one of ${names.length}: `}
+                            {names.join(', ')}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-right align-top tabular-nums">
+                          {s.questions}
+                        </td>
+                        <td className="px-4 py-2.5 text-right align-top tabular-nums">{s.marks}</td>
+                      </tr>
+                    );
+                  }
+
                   const subject = getSubject(s.subjectId);
                   return (
                     <tr key={s.subjectId} className="border-t border-[var(--color-line)]">

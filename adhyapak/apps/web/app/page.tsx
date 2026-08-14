@@ -12,6 +12,7 @@ import {
   getTopic,
   liveVideos,
   recommendedTopics,
+  subjectsForPaperOrEmpty,
   t,
   UI,
 } from '@adhyapak/core';
@@ -63,7 +64,9 @@ export default function HomePage() {
     (x) => x.examId === user.goalExamId && x.type === 'mock' && !results[x.id],
   );
   const weakTopicId = attempts.flatMap((x) => x.weakTopics)[0]?.topicId;
-  const subjectIds = paper ? paper.sections.map((sec) => sec.subjectId) : [];
+  // Empty when the paper has an unresolved elective: the home feed then
+  // recommends nothing rather than recommending somebody else's subject.
+  const subjectIds = subjectsForPaperOrEmpty(paper?.id, user.electiveSubjectId);
   const suggested = weakTopicId ? getTopic(weakTopicId) : recommendedTopics(subjectIds, 1)[0];
   const live = liveVideos().filter((v) => v.examIds.includes(user.goalExamId));
   const myBatch = BATCHES.find((b) => user.enrolledBatchIds.includes(b.id));

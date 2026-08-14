@@ -101,6 +101,71 @@ with checks as (
   select 15, 'PYQ analytics returns rows',
          count(*)::text, '1 or more once PYQs exist', count(*) >= 0
   from pyq_topic_frequency
+
+  -- Electives (0009) -----------------------------------------------------
+  union all
+  select 16, 'elective tables', count(*)::text, '2 (elective_groups, elective_choices)',
+         count(*) = 2
+  from pg_tables where schemaname = 'public'
+    and tablename in ('elective_groups', 'elective_choices')
+
+  union all
+  select 17, 'a section is a subject or an elective, never both',
+         count(*)::text, '1 check constraint', count(*) = 1
+  from pg_constraint where conname = 'paper_sections_subject_xor_elective'
+
+  union all
+  select 18, 'elective groups seeded', count(*)::text, '2 (HTET TGT and PGT)', count(*) >= 2
+  from elective_groups
+
+  union all
+  select 19, 'elective choices seeded', count(*)::text, '33 (12 TGT + 21 PGT)', count(*) >= 33
+  from elective_choices
+
+  union all
+  select 20, 'every elective section has its group',
+         count(*)::text, '0 orphans', count(*) = 0
+  from paper_sections ps
+  where ps.elective_group_id is not null
+    and not exists (select 1 from elective_groups g where g.id = ps.elective_group_id)
+
+  union all
+  select 21, 'HTET Levels 2 and 3 carry a 60-mark elective',
+         count(*)::text, '2', count(*) = 2
+  from paper_sections
+  where paper_id in ('htet-l2', 'htet-l3') and elective_group_id is not null
+    and questions = 60 and marks = 60
+
+  union all
+  select 22, 'every HTET paper sums to 150 marks', count(*)::text, '3', count(*) = 3
+  from (
+    select paper_id from paper_sections
+     where paper_id like 'htet-%'
+     group by paper_id
+    having sum(marks) = 150 and sum(questions) = 150
+  ) ok
+
+  union all
+  select 23, 'learners can record an elective subject',
+         count(*)::text, '1 column on profiles', count(*) = 1
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'profiles'
+    and column_name = 'elective_subject_id'
+
+  union all
+  select 24, 'questions can be tagged to an elective',
+         count(*)::text, '1 column on questions', count(*) = 1
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'questions'
+    and column_name = 'elective_subject_id'
+
+  -- Statistics nobody measured ------------------------------------------
+  union all
+  select 25, 'the fabricated topic question_count is gone',
+         count(*)::text, '0', count(*) = 0
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'topics'
+    and column_name = 'question_count'
 )
 select
   case when ok then 'PASS' else 'FAIL' end as status,
@@ -137,6 +202,13 @@ select
   'anon cannot read the audit log' as "check",
   count(*)::text as found, '0' as expected
 from content_audit;
+
+-- The syllabus is public: a candidate has to see the choices before signing in.
+select
+  case when count(*) >= 2 then 'PASS' else 'FAIL' end as status,
+  'anon can read the elective groups' as "check",
+  count(*)::text as found, '2 or more' as expected
+from elective_groups;
 
 rollback;
 

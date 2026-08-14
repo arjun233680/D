@@ -1,4 +1,11 @@
-import type { Bilingual, Exam } from '../types';
+import type {
+  Bilingual,
+  ElectiveGroup,
+  Exam,
+  ExamPaper,
+  PaperSubjects,
+  ResolvedSection,
+} from '../types';
 
 /**
  * Every teaching-recruitment and teaching-eligibility exam Adhyapak covers.
@@ -136,6 +143,12 @@ export const EXAMS: Exam[] = [
       { label: 'HTET 2026 schedule — Testbook', url: 'https://testbook.com/news/htet-notification-2026-out/', checkedOn: '2026-08-13' },
       { label: 'HTET 2026 exam dates — PW', url: 'https://www.pw.live/teaching/exams/htet-exam-date-2026', checkedOn: '2026-08-13' },
       { label: 'Official BSEH portal', url: 'https://bseh.org.in', checkedOn: '2026-08-13' },
+      // The blueprint below — 150 questions across eight blocks for Level 1 and
+      // seven for Levels 2 and 3, with the 60-mark elective — is cited
+      // separately, because it is the part the app makes exam-day claims about.
+      { label: 'HTET exam pattern and syllabus — BSEH', url: 'https://bseh.org.in', checkedOn: '2026-08-14' },
+      { label: 'HTET 2026 exam pattern, all three levels — Testbook', url: 'https://testbook.com/htet/exam-pattern', checkedOn: '2026-08-14' },
+      { label: 'HTET Level 2 and Level 3 elective subject list — Adda247', url: 'https://www.adda247.com/teaching-jobs-exam/htet-syllabus/', checkedOn: '2026-08-14' },
     ],
     papers: [
       {
@@ -152,7 +165,9 @@ export const EXAMS: Exam[] = [
           { subjectId: 'cdp', questions: 30, marks: 30 },
           { subjectId: 'hindi', questions: 15, marks: 15 },
           { subjectId: 'english', questions: 15, marks: 15 },
-          { subjectId: 'gk', questions: 30, marks: 30 },
+          { subjectId: 'quantitative-aptitude', questions: 10, marks: 10 },
+          { subjectId: 'reasoning', questions: 10, marks: 10 },
+          { subjectId: 'haryana-gk', questions: 10, marks: 10 },
           { subjectId: 'math', questions: 30, marks: 30 },
           { subjectId: 'evs', questions: 30, marks: 30 },
         ],
@@ -167,18 +182,41 @@ export const EXAMS: Exam[] = [
         totalQuestions: 150,
         cutoffGeneral: 60,
         cutoffReserved: 55,
+        electives: [
+          {
+            id: 'htet-l2-elective',
+            name: { en: 'TGT subject', hi: 'TGT विषय' },
+            choices: [
+              'science',
+              'math',
+              'music',
+              'hindi',
+              'english',
+              'home-science',
+              'sanskrit',
+              'sst',
+              'art',
+              'punjabi',
+              'physical-education',
+              'urdu',
+            ],
+          },
+        ],
         sections: [
           { subjectId: 'cdp', questions: 30, marks: 30 },
           { subjectId: 'hindi', questions: 15, marks: 15 },
           { subjectId: 'english', questions: 15, marks: 15 },
-          { subjectId: 'gk', questions: 30, marks: 30 },
-          { subjectId: 'science', questions: 30, marks: 30 },
-          { subjectId: 'math', questions: 30, marks: 30 },
+          { subjectId: 'quantitative-aptitude', questions: 10, marks: 10 },
+          { subjectId: 'reasoning', questions: 10, marks: 10 },
+          { subjectId: 'haryana-gk', questions: 10, marks: 10 },
+          // The candidate's own subject, not a fixed one. There is no single
+          // "TGT paper" — there are twelve, and they differ only here.
+          { electiveGroupId: 'htet-l2-elective', questions: 60, marks: 60 },
         ],
       },
       {
         id: 'htet-l3',
-        name: { en: 'Level 3 — PGT (Classes 11 to 12)', hi: 'स्तर 3 — PGT (कक्षा 11 से 12)' },
+        name: { en: 'Level 3 — PGT (Classes 9 to 12)', hi: 'स्तर 3 — PGT (कक्षा 9 से 12)' },
         level: 'senior-secondary',
         marksPerQuestion: 1,
         negativeMarking: 0,
@@ -186,12 +224,43 @@ export const EXAMS: Exam[] = [
         totalQuestions: 150,
         cutoffGeneral: 60,
         cutoffReserved: 55,
+        electives: [
+          {
+            id: 'htet-l3-elective',
+            name: { en: 'PGT subject', hi: 'PGT विषय' },
+            choices: [
+              'hindi',
+              'english',
+              'sanskrit',
+              'punjabi',
+              'urdu',
+              'math',
+              'physics',
+              'chemistry',
+              'biology',
+              'history',
+              'geography',
+              'political-science',
+              'economics',
+              'sociology',
+              'psychology',
+              'commerce',
+              'computer-science',
+              'home-science',
+              'physical-education',
+              'music',
+              'fine-arts',
+            ],
+          },
+        ],
         sections: [
           { subjectId: 'cdp', questions: 30, marks: 30 },
           { subjectId: 'hindi', questions: 15, marks: 15 },
           { subjectId: 'english', questions: 15, marks: 15 },
-          { subjectId: 'gk', questions: 30, marks: 30 },
-          { subjectId: 'sst', questions: 60, marks: 60 },
+          { subjectId: 'quantitative-aptitude', questions: 10, marks: 10 },
+          { subjectId: 'reasoning', questions: 10, marks: 10 },
+          { subjectId: 'haryana-gk', questions: 10, marks: 10 },
+          { electiveGroupId: 'htet-l3-elective', questions: 60, marks: 60 },
         ],
       },
     ],
@@ -1079,9 +1148,80 @@ export const groupedExams = (): { group: ExamGroup; exams: Exam[] }[] =>
     exams: group.examIds.map((id) => EXAM_BY_ID.get(id)).filter((e): e is Exam => Boolean(e)),
   }));
 
-/** Subjects the learner's chosen paper actually tests. Drives the whole home feed. */
-export const subjectsForPaper = (paperId: string | undefined): string[] => {
+/* ------------------------------------------------------------- electives */
+
+/** The elective group a section refers to, if the paper defines one. */
+export const electiveGroup = (
+  paper: ExamPaper,
+  groupId: string,
+): ElectiveGroup | undefined => paper.electives?.find((g) => g.id === groupId);
+
+/** Every elective group on a paper. Empty for papers with a fixed blueprint. */
+export const electivesForPaper = (paperId: string | undefined): ElectiveGroup[] => {
   if (!paperId) return [];
-  const found = getPaper(paperId);
-  return found ? found.paper.sections.map((s) => s.subjectId) : [];
+  return getPaper(paperId)?.paper.electives ?? [];
+};
+
+/** Whether choosing a subject is a prerequisite for using this paper at all. */
+export const paperNeedsElective = (paperId: string | undefined): boolean =>
+  electivesForPaper(paperId).length > 0;
+
+/**
+ * The subjects a paper actually tests for this learner.
+ *
+ * Returns a result rather than an array because "the learner has not chosen a
+ * TGT subject yet" is a normal state, not an error condition to paper over —
+ * every Level 2 and Level 3 candidate is in it until they pick. Falling back to
+ * a default here would quietly show a Physics candidate the Sanskrit syllabus,
+ * so the caller has to decide what to render instead.
+ */
+export const resolvePaperSubjects = (
+  paperId: string | undefined,
+  electiveSubjectId?: string,
+): PaperSubjects => {
+  const found = paperId ? getPaper(paperId) : undefined;
+  if (!found) return { ok: true, sections: [], subjectIds: [] };
+
+  const resolved: ResolvedSection[] = [];
+  for (const section of found.paper.sections) {
+    if (section.subjectId !== undefined) {
+      resolved.push({ section, subjectId: section.subjectId });
+      continue;
+    }
+
+    const groupId = section.electiveGroupId;
+    const group = electiveGroup(found.paper, groupId);
+    if (!group) return { ok: false, error: { kind: 'unknown-group', groupId } };
+    if (!electiveSubjectId) return { ok: false, error: { kind: 'not-chosen', groupId, group } };
+    if (!group.choices.includes(electiveSubjectId)) {
+      return {
+        ok: false,
+        error: { kind: 'not-in-group', groupId, chosen: electiveSubjectId, group },
+      };
+    }
+    resolved.push({ section, subjectId: electiveSubjectId, electiveGroupId: groupId });
+  }
+
+  return {
+    ok: true,
+    sections: resolved,
+    subjectIds: [...new Set(resolved.map((r) => r.subjectId))],
+  };
+};
+
+/**
+ * Subjects for a paper, or an empty list when an elective is unresolved.
+ *
+ * For the places that genuinely have nothing useful to say about the failure —
+ * a seed generator, a subject filter whose empty state already reads "choose
+ * your subject". Anything that renders a syllabus to a learner should call
+ * `resolvePaperSubjects` and handle the error, which is why this one is named
+ * for what it does rather than reading like the obvious default.
+ */
+export const subjectsForPaperOrEmpty = (
+  paperId: string | undefined,
+  electiveSubjectId?: string,
+): string[] => {
+  const result = resolvePaperSubjects(paperId, electiveSubjectId);
+  return result.ok ? result.subjectIds : [];
 };

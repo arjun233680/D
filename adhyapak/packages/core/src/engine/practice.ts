@@ -105,10 +105,14 @@ export const summarisePractice = (
 /**
  * Topics worth practising next: highest exam weightage first, restricted to
  * subjects that actually appear in the learner's target paper.
+ *
+ * Topics with no measured weightage sort last rather than first — an absent
+ * figure means nobody has analysed those papers yet, which is not a reason to
+ * recommend them ahead of a topic known to carry 18% of the marks.
  */
 export const recommendedTopics = (subjectIds: string[], limit = 6) =>
   ALL_TOPICS.filter((t) => subjectIds.includes(t.subjectId))
-    .sort((a, b) => b.weightage - a.weightage)
+    .sort((a, b) => (b.weightage ?? -1) - (a.weightage ?? -1))
     .slice(0, limit);
 
 /** Consecutive days ending today. Feeds the streak flame on the home screen. */

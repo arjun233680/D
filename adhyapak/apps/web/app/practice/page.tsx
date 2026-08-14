@@ -10,17 +10,26 @@ import {
   getPaper,
   previousYearQuestions,
   recommendedTopics,
+  resolvePaperSubjects,
   t,
   UI,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { Badge, ProgressBar, SectionHeader, Stat } from '@/components/ui';
+import { Badge, ElectiveNotice, ProgressBar, SectionHeader, Stat } from '@/components/ui';
 
 export default function PracticeHubPage() {
   const { lang, user } = useStore();
   const exam = getExam(user.goalExamId);
   const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
-  const paperSubjects = paper ? paper.sections.map((s) => s.subjectId) : SUBJECTS.map((s) => s.id);
+  // A paper with an elective has no subject list until the learner picks one.
+  // Recommending against a guess would hand a Physics candidate the Sanskrit
+  // syllabus, so the unresolved case is rendered as a prompt instead.
+  const resolved = resolvePaperSubjects(paper?.id, user.electiveSubjectId);
+  const paperSubjects = resolved.ok
+    ? resolved.subjectIds.length > 0
+      ? resolved.subjectIds
+      : SUBJECTS.map((s) => s.id)
+    : [];
   const recommended = recommendedTopics(paperSubjects, 8);
   const streak = currentStreak(user.activeDates);
   const pyqCount = previousYearQuestions().length;
@@ -105,29 +114,36 @@ export default function PracticeHubPage() {
           title={lang === 'hi' ? 'आपके पेपर के अनुसार सुझाव' : 'Recommended for your paper'}
           subtitle={paper ? t(paper.name, lang) : undefined}
         />
-        <div className="grid gap-2 sm:grid-cols-2">
-          {recommended.map((topic) => (
-            <Link
-              key={topic.id}
-              href={`/practice/topic/${topic.id}`}
-              className="card flex items-center gap-3 p-3 transition-shadow hover:shadow-md"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-bold">{t(topic.name, lang)}</p>
-                <div className="mt-1.5">
-                  <ProgressBar value={topic.weightage * 3} />
+        {!resolved.ok ? (
+          <ElectiveNotice error={resolved.error} lang={lang} />
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {recommended.map((topic) => (
+              <Link
+                key={topic.id}
+                href={`/practice/topic/${topic.id}`}
+                className="card flex items-center gap-3 p-3 transition-shadow hover:shadow-md"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-bold">{t(topic.name, lang)}</p>
+                  {topic.weightage !== undefined ? (
+                    <>
+                      <div className="mt-1.5">
+                        <ProgressBar value={topic.weightage * 3} />
+                      </div>
+                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">
+                        {lang === 'hi' ? 'भार' : 'Weightage'} {topic.weightage}%
+                      </p>
+                    </>
+                  ) : null}
                 </div>
-                <p className="mt-1 text-[11px] text-[var(--color-muted)]">
-                  {lang === 'hi' ? 'भार' : 'Weightage'} {topic.weightage}% ·{' '}
-                  {formatCount(topic.questionCount)} {lang === 'hi' ? 'प्रश्न' : 'Qs'}
-                </p>
-              </div>
-              {topic.weightage >= 15 ? (
-                <Badge tone="danger">{lang === 'hi' ? 'अति महत्वपूर्ण' : 'High yield'}</Badge>
-              ) : null}
-            </Link>
-          ))}
-        </div>
+                {(topic.weightage ?? 0) >= 15 ? (
+                  <Badge tone="danger">{lang === 'hi' ? 'अति महत्वपूर्ण' : 'High yield'}</Badge>
+                ) : null}
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>
