@@ -12,6 +12,11 @@
 --
 -- Remove when done:
 --   delete from questions where 'demo-data' = any(tags);
+--
+-- The fingerprints below are the real values fingerprint() in @adhyapak/core
+-- produces for this text, written as `en || chr(31) || hi` so the separator is
+-- visible. They have to be exact: duplicate detection is an equality lookup, so
+-- an approximate fingerprint would quietly match nothing.
 -- ---------------------------------------------------------------------------
 
 begin;
@@ -30,7 +35,7 @@ insert into questions (
  0, array[0],
  '{"en":"[TEST] Demo explanation.","hi":"[TEST] डेमो व्याख्या।"}',
  'easy', 'htet', 1999, 'Paper 1', '1', 1,
- array['demo-data'], 'test first stage demo question'),
+ array['demo-data'], 'test which stage comes first in this demo question' || chr(31) || 'test इस डेमो प्रश्न में पहली अवस्था कौन सी है'),
 ('test-q-002', 'published', 'mcq-single', 'cdp', 'cdp-learning',
  array['htet'], array['upper-primary'],
  '{"en":"[TEST] Which option is B in this demo question?","hi":"[TEST] इस डेमो प्रश्न में विकल्प B कौन-सा है?"}',
@@ -38,26 +43,26 @@ insert into questions (
  1, array[1],
  '{"en":"[TEST] Demo explanation.","hi":"[TEST] डेमो व्याख्या।"}',
  'easy', 'htet', 1999, 'Paper 1', '2', 2,
- array['demo-data'], 'test option b demo question'),
+ array['demo-data'], 'test which option is b in this demo question' || chr(31) || 'test इस डेमो प्रश्न में विकल्प b कौन सा है'),
 -- One of each non-published state: what a learner must never see.
 ('test-q-003', 'draft', 'mcq-single', 'cdp', 'cdp-piaget',
  array['htet'], array['upper-primary'],
  '{"en":"[TEST] DRAFT — must never reach a learner.","hi":"[TEST] ड्राफ़्ट — शिक्षार्थी तक कभी नहीं पहुँचे।"}',
  '[{"en":"A","hi":"अ"},{"en":"B","hi":"ब"}]', 0, array[0],
  '{"en":"","hi":""}', 'easy', null, null, null, null, null,
- array['demo-data'], 'test draft never reach learner'),
+ array['demo-data'], 'test draft must never reach a learner' || chr(31) || 'test ड्राफ़्ट शिक्षार्थी तक कभी नहीं पहुँचे'),
 ('test-q-004', 'review', 'mcq-single', 'cdp', 'cdp-piaget',
  array['htet'], array['upper-primary'],
  '{"en":"[TEST] IN REVIEW — must never reach a learner.","hi":"[TEST] समीक्षाधीन — शिक्षार्थी तक कभी नहीं पहुँचे।"}',
  '[{"en":"A","hi":"अ"},{"en":"B","hi":"ब"}]', 0, array[0],
  '{"en":"","hi":""}', 'easy', null, null, null, null, null,
- array['demo-data'], 'test review never reach learner'),
+ array['demo-data'], 'test in review must never reach a learner' || chr(31) || 'test समीक्षाधीन शिक्षार्थी तक कभी नहीं पहुँचे'),
 ('test-q-005', 'archived', 'mcq-single', 'cdp', 'cdp-piaget',
  array['htet'], array['upper-primary'],
  '{"en":"[TEST] ARCHIVED — must never reach a learner.","hi":"[TEST] संग्रहीत — शिक्षार्थी तक कभी नहीं पहुँचे।"}',
  '[{"en":"A","hi":"अ"},{"en":"B","hi":"ब"}]', 0, array[0],
  '{"en":"","hi":""}', 'easy', null, null, null, null, null,
- array['demo-data'], 'test archived never reach learner'),
+ array['demo-data'], 'test archived must never reach a learner' || chr(31) || 'test संग्रहीत शिक्षार्थी तक कभी नहीं पहुँचे'),
 -- One more published PYQ in a second "year", so the trend chart has two points.
 ('test-q-006', 'published', 'mcq-single', 'cdp', 'cdp-piaget',
  array['htet'], array['upper-primary'],
@@ -65,7 +70,7 @@ insert into questions (
  '[{"en":"Yes","hi":"हाँ"},{"en":"No","hi":"नहीं"}]', 0, array[0],
  '{"en":"[TEST] Demo.","hi":"[TEST] डेमो।"}',
  'easy', 'htet', 1998, 'Paper 1', '1', 3,
- array['demo-data'], 'test second demo year trend')
+ array['demo-data'], 'test second demo year for the trend chart' || chr(31) || 'test रुझान चार्ट हेतु दूसरा डेमो वर्ष')
 on conflict (id) do nothing;
 
 commit;

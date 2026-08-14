@@ -156,6 +156,22 @@ describe('duplicate detection', () => {
     assert.equal(normaliseText('यह सही है।'), normaliseText('यह सही है.'));
   });
 
+  it('keeps Devanagari vowel signs, which are marks and not letters', () => {
+    // This shipped broken: the class was `[^\p{L}\p{N}\s]`, and because matras
+    // are combining marks rather than letters it reduced पियाजे to "प य ज".
+    // Every Hindi question sharing a consonant skeleton then fingerprinted the
+    // same, which in the primary language of this product is the whole feature
+    // failing quietly.
+    assert.equal(normaliseText('पियाजे'), 'पियाजे');
+    assert.equal(normaliseText('निकटस्थ विकास'), 'निकटस्थ विकास');
+    assert.notEqual(normaliseText('कल'), normaliseText('किला'));
+  });
+
+  it('separates the two languages, so a shifted boundary is not a match', () => {
+    // "ab"+"c" and "a"+"bc" would be one string without a separator.
+    assert.notEqual(fingerprint({ en: 'ab', hi: 'c' }), fingerprint({ en: 'a', hi: 'bc' }));
+  });
+
   it('does not collapse two genuinely different questions', () => {
     const a = fingerprint({ en: 'Who proposed assimilation?', hi: 'आत्मसातीकरण किसने?' });
     const b = fingerprint({ en: 'Who proposed accommodation?', hi: 'समायोजन किसने?' });

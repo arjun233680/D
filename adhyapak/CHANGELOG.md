@@ -1,5 +1,57 @@
 # Changelog
 
+## Backend activation — verification, and a fingerprint that was quietly wrong
+
+Preparing the live database turned up two real defects in duplicate detection.
+Both were found by checking the schema against a real Postgres 16 instead of
+trusting it, and both would have mattered the first time a real question bank
+met content the library already held.
+
+### Nothing was fingerprinted except imports
+
+`0007` added `questions.fingerprint` and the lookup that reads it, but nothing
+filled it in for rows written by any other path — the 67 seeded questions
+included. A null fingerprint equals nothing, so `find_duplicate_fingerprints`
+was blind to all of them: re-importing a question already in the library would
+have been accepted as new, which is the single failure duplicate detection
+exists to prevent.
+
+`0008` makes the column `not null`. The seed generator now emits the
+fingerprint, computed by the real function.
+
+### The fingerprint destroyed Hindi
+
+`normaliseText` kept `\p{L}\p{N}\s` and replaced everything else with a space.
+Devanagari vowel signs are combining marks, not letters, so पियाजे became
+"प य ज" and निकटस्थ became "निकटस थ" — every Hindi question with the same
+consonant skeleton fingerprinted identically. The comment three lines above it
+claimed "Devanagari is left intact ... stripping its marks would collide
+distinct questions", which is exactly what it did. `\p{M}` is now in the class,
+and a test pins it.
+
+Found because a SQL mirror of the function disagreed with it. That mirror has
+been deleted rather than fixed: Postgres's `[[:alnum:]]` drops Devanagari
+combining marks inconsistently — it kept the vowel signs in पियाजे but dropped
+the virama in निकटस्थ — so the two implementations could not be kept honest.
+There is now exactly one, in TypeScript, and the seed carries its output.
+
+A fingerprint that is *almost* right is worse than none: the lookup returns no
+rows and looks like it worked.
+
+### The separator nobody could see
+
+`fingerprint()` joined its two halves with a literal U+001F embedded in the
+source, invisible to every editor, grep and diff — `return \`${en}${hi}\`` is
+what the file appeared to say. It is now a named constant with an escape.
+
+### Verification
+
+`supabase/verify.sql` — read-only, PASS/FAIL per check, safe on any database.
+Structure, RLS, the five RPCs, both views, the lifecycle, import staging, an
+append-only audit log, fingerprint coverage, and `anon` visibility. All 15
+checks plus the three role checks pass against Postgres 16 with Supabase's own
+grant model.
+
 ## Phase 5 — Excel import
 
 Studio accepts `.xlsx` workbooks. Not as a second import path: the workbook

@@ -26,7 +26,7 @@ From `adhyapak/supabase/`, with the database URL from
 for f in migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
 ```
 
-Seven files, in order. All are idempotent (`if not exists` throughout), so
+Eight files, in order. All are idempotent (`if not exists` throughout), so
 re-running is safe. Then the content seed:
 
 ```bash
@@ -44,14 +44,21 @@ Remove them afterwards with
 
 ## 3. Verify the schema landed
 
-```sql
-select count(*) from pg_policies where schemaname = 'public';  -- expect 59+
-select count(*) from questions;                                 -- expect 67+
-select * from pyq_topic_frequency limit 1;                      -- view exists
-select proname from pg_proc where proname in
-  ('submit_attempt','set_question_status','set_question_status_bulk',
-   'commit_import_batch','find_duplicate_fingerprints');         -- all five
+One script, read-only, reporting PASS or FAIL per check:
+
+```bash
+psql "$DATABASE_URL" -f verify.sql
 ```
+
+Or paste `supabase/verify.sql` into the Supabase SQL editor. It checks the
+tables, that RLS is enabled on every one of them, the 59 policies, the foreign
+keys and indexes, the five `security definer` RPCs, both analytics views, the
+content lifecycle states, the import staging tables, that the audit log has no
+`UPDATE` or `DELETE` policy, that every question carries a fingerprint, and —
+as the `anon` role — that a logged-out visitor sees published questions only
+and cannot read import batches or the audit log.
+
+Every row should say PASS. Anything else is a migration that did not land.
 
 ## 4. Create the first educator
 

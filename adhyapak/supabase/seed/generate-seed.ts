@@ -19,6 +19,7 @@ import {
   DOUBTS,
   EDUCATORS,
   EXAMS,
+  fingerprint,
   NOTES,
   QUESTIONS,
   SUBJECTS,
@@ -178,11 +179,15 @@ out.push(
     [
       'id', 'subject_id', 'topic_id', 'exam_ids', 'text', 'options', 'correct_index',
       'explanation', 'difficulty', 'previous_year', 'avg_time_seconds', 'accuracy',
+      // Duplicate detection is an index lookup on this, and the client computes
+      // the same value in the browser. It is emitted here, from the one real
+      // implementation, so there is no second copy of the rule to drift.
+      'fingerprint',
     ],
     QUESTIONS.map((q) => [
       s(q.id), s(q.subjectId), s(q.topicId), arr(q.examIds), j(q.text), j(q.options),
       n(q.correctIndex), j(q.explanation), s(q.difficulty), s(q.previousYear),
-      n(q.avgTimeSeconds), n(q.accuracy),
+      n(q.avgTimeSeconds), n(q.accuracy), s(fingerprint(q.text)),
     ]),
   ),
 );

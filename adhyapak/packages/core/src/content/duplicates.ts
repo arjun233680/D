@@ -35,7 +35,12 @@ export const normaliseText = (text: string): string =>
     .replace(/[‐-―−]/g, '-')
     .replace(/[।॥]/g, '.')
     // Anything that is not a letter, a digit or a space carries no meaning here.
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    // `\p{M}` is not optional: Devanagari vowel signs are combining marks, not
+    // letters, so leaving it out silently reduces पियाजे to "प य ज" and makes
+    // every Hindi question with the same consonant skeleton look like the same
+    // question. Hindi is the primary language here — that is not a rounding
+    // error, it is the fingerprint failing at its one job.
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -45,11 +50,19 @@ export const normaliseText = (text: string): string =>
  * Both languages participate: a bank that carries only Hindi still fingerprints,
  * and a question whose English matches but whose Hindi differs is a different
  * question — usually a translation fix worth seeing, not a duplicate to hide.
+ *
+ * The halves are joined with U+001F rather than concatenated, so a question
+ * ending where the next begins cannot collide. It is written as an escape on
+ * purpose: this file used to carry the character literally, which made the
+ * separator invisible in every editor, grep and diff — and hid a real
+ * mismatch with the SQL mirror of this function until a parity test caught it.
  */
+const FIELD_SEPARATOR = '\u001F';
+
 export const fingerprint = (text: Bilingual): string => {
   const en = normaliseText(text.en ?? '');
   const hi = normaliseText(text.hi ?? '');
-  return `${en}${hi}`;
+  return `${en}${FIELD_SEPARATOR}${hi}`;
 };
 
 /** How confident the match is, and why — shown to the educator, never acted on. */
