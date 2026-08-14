@@ -1,17 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { BATCHES, EXAMS, t, UI } from '@adhyapak/core';
+import { EXAMS, listBatches, t, UI } from '@adhyapak/core';
+import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { BatchCard } from '@/components/cards';
 import { EmptyState } from '@/components/ui';
 
 export default function BatchesPage() {
+  const batches = useAsync(() => listBatches(), []);
   const { lang, user } = useStore();
   const [examId, setExamId] = useState<string>('all');
 
-  const filtered = examId === 'all' ? BATCHES : BATCHES.filter((b) => b.examId === examId);
-  const enrolled = BATCHES.filter((b) => user.enrolledBatchIds.includes(b.id));
+  const all = batches.data ?? [];
+  const filtered = examId === 'all' ? all : all.filter((b) => b.examId === examId);
+  const enrolled = all.filter((b) => user.enrolledBatchIds.includes(b.id));
 
   return (
     <div className="space-y-6 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
@@ -49,7 +52,7 @@ export default function BatchesPage() {
         >
           {lang === 'hi' ? 'सभी' : 'All'}
         </button>
-        {EXAMS.filter((e) => BATCHES.some((b) => b.examId === e.id)).map((e) => (
+        {EXAMS.map((e) => (
           <button
             key={e.id}
             type="button"

@@ -2,11 +2,11 @@
 
 import { use, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import type { Note } from '@adhyapak/core';
 import {
-  NOTES,
-  QUESTIONS,
   buildNoteDocument,
+  countQuestions,
+  fetchNote,
   formatCount,
   noteToPdfHtml,
   t,
@@ -14,6 +14,8 @@ import {
   type NoteBlock,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useAsync } from '@/lib/useAsync';
+import { AsyncSection } from '@/components/ui';
 
 /**
  * The note reader — a PDF viewer, not an article.
@@ -25,18 +27,47 @@ import { useStore } from '@/lib/store';
  */
 export default function NoteReaderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { lang, user, toggleSavedNote, uploadedNotes } = useStore();
+  const { lang, uploadedNotes } = useStore();
+
+  // A note uploaded in this session has not reached the backend yet, so it is
+  // checked first; everything else comes through the repository, which serves
+  // published notes only.
+  const local = uploadedNotes.find((n) => n.id === id);
+  const state = useAsync(async () => local ?? (await fetchNote(id)) ?? undefined, [id, local]);
+
+  return (
+    <AsyncSection
+      state={state}
+      lang={lang}
+      empty={{
+        icon: '📚',
+        title: lang === 'hi' ? 'नोट्स नहीं मिले' : 'Note not found',
+        body:
+          lang === 'hi'
+            ? 'ये नोट्स अब उपलब्ध नहीं हैं या अभी प्रकाशित नहीं हुए हैं।'
+            : 'These notes are no longer available, or have not been published yet.',
+      }}
+    >
+      {(note) => <Reader note={note} />}
+    </AsyncSection>
+  );
+}
+
+function Reader({ note }: { note: Note }) {
+  const { lang, user, toggleSavedNote } = useStore();
   const [busy, setBusy] = useState(false);
 
-  const note = [...uploadedNotes, ...NOTES].find((n) => n.id === id);
-  const doc = useMemo(() => (note ? buildNoteDocument(note, lang) : null), [note, lang]);
-  if (!note || !doc) notFound();
-
+  const doc = useMemo(() => buildNoteDocument(note, lang), [note, lang]);
   const hi = lang === 'hi';
   const saved = user.savedNoteIds.includes(note.id);
-  const practiceCount = QUESTIONS.filter(
-    (q) => q.topicId === note.topicId || q.subjectId === note.subjectId,
-  ).length;
+
+  // Counted, not fetched: the reader only needs to know whether a practice link
+  // is worth showing.
+  const practice = useAsync(
+    () => countQuestions(note.topicId ? { topicId: note.topicId } : { subjectId: note.subjectId }),
+    [note.topicId, note.subjectId],
+  );
+  const practiceCount = practice.data ?? 0;
 
   /** Opens the document as its own file, where "Save as PDF" writes it to disk. */
   const download = () => {

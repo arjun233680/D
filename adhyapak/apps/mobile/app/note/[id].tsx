@@ -2,19 +2,21 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import {
-  NOTES,
   buildNoteDocument,
+  fetchNote,
   formatCount,
   getSubject,
   t,
   theme,
+  type Note,
   type NoteBlock,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useAsync } from '@/lib/useAsync';
 import { useSession } from '@/lib/session';
 import { useResponsive } from '@/lib/responsive';
 import { openNotePdf } from '@/lib/pdf';
-import { Content, EmptyState, s } from '@/components/ui';
+import { AsyncSection, Content, s } from '@/components/ui';
 
 /**
  * The note reader.
@@ -29,26 +31,40 @@ const SHEET_MAX = 820;
 
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { lang, user, toggleSavedNote, uploadedNotes } = useStore();
+  const { lang, uploadedNotes } = useStore();
+
+  // Uploaded-this-session first, then the repository, which serves published
+  // notes only.
+  const local = uploadedNotes.find((n) => n.id === String(id));
+  const state = useAsync(async () => local ?? (await fetchNote(String(id))) ?? undefined, [id, local]);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.color.surfaceAlt }}>
+      <AsyncSection
+        state={state}
+        lang={lang}
+        empty={{
+          icon: '📚',
+          title: lang === 'hi' ? 'नहीं मिला' : 'Not found',
+          body:
+            lang === 'hi'
+              ? 'ये नोट्स अब उपलब्ध नहीं हैं या अभी प्रकाशित नहीं हुए हैं।'
+              : 'These notes are no longer available, or have not been published yet.',
+        }}
+      >
+        {(note) => <Reader note={note} />}
+      </AsyncSection>
+    </View>
+  );
+}
+
+function Reader({ note }: { note: Note }) {
+  const { lang, user, toggleSavedNote } = useStore();
   const { palette } = useSession();
   const r = useResponsive();
   const [busy, setBusy] = useState(false);
 
-  const note = [...uploadedNotes, ...NOTES].find((n) => n.id === String(id));
-  const doc = useMemo(() => (note ? buildNoteDocument(note, lang) : null), [note, lang]);
-
-  if (!note || !doc) {
-    return (
-      <View style={[s.screen, { padding: theme.space.lg }]}>
-        <EmptyState
-          icon="📚"
-          title={lang === 'hi' ? 'नहीं मिला' : 'Not found'}
-          body={lang === 'hi' ? 'ये नोट्स अब उपलब्ध नहीं हैं।' : 'These notes are no longer available.'}
-        />
-      </View>
-    );
-  }
-
+  const doc = useMemo(() => buildNoteDocument(note, lang), [note, lang]);
   const hi = lang === 'hi';
   const subject = getSubject(note.subjectId);
   const saved = user.savedNoteIds.includes(note.id);

@@ -2,16 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { SUBJECTS, VIDEOS, t, UI } from '@adhyapak/core';
+import { SUBJECTS, listVideos, t, UI } from '@adhyapak/core';
+import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { VideoCard } from '@/components/cards';
 import { EmptyState, SectionHeader } from '@/components/ui';
 
 export default function VideosPage() {
+  const videos = useAsync(() => listVideos(), []);
   const { lang, uploadedVideos } = useStore();
   const [subjectId, setSubjectId] = useState('all');
 
-  const all = [...uploadedVideos, ...VIDEOS];
+  const all = [...uploadedVideos, ...(videos.data ?? [])];
   const filtered = subjectId === 'all' ? all : all.filter((v) => v.subjectId === subjectId);
   const live = filtered.filter((v) => v.isLive);
   const recorded = filtered.filter((v) => !v.isLive);

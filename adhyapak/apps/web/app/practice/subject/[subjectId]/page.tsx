@@ -3,9 +3,10 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { QUESTIONS, formatCount, getSubject, t } from '@adhyapak/core';
+import { formatCount, getSubject, listQuestions, t } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { Badge, ProgressBar, SectionHeader } from '@/components/ui';
+import { useAsync } from '@/lib/useAsync';
+import { AsyncSection, Badge, ProgressBar, SectionHeader } from '@/components/ui';
 import { PracticeRunner } from '@/components/PracticeRunner';
 
 /**
@@ -25,16 +26,34 @@ export default function SubjectPracticePage({
   const subject = getSubject(subjectId);
   if (!subject) notFound();
 
-  const questions = QUESTIONS.filter((q) => q.subjectId === subject.id);
+  // One call serves both modes: the runner when ?all is set, and the topic index
+  // otherwise, which needs the same set to count questions per topic.
+  const state = useAsync(() => listQuestions({ subjectId }), [subjectId]);
+  const questions = state.data ?? [];
 
   if (all) {
     return (
-      <PracticeRunner
-        questions={questions}
-        title={t(subject.name, lang)}
-        subtitle={lang === 'hi' ? 'पूरा विषय अभ्यास' : 'Full subject practice'}
-        backHref={`/practice/subject/${subject.id}`}
-      />
+      <AsyncSection
+        state={state}
+        lang={lang}
+        empty={{
+          icon: '✍️',
+          title: lang === 'hi' ? 'अभी प्रश्न नहीं' : 'No questions yet',
+          body:
+            lang === 'hi'
+              ? 'इस विषय के लिए अभी कोई प्रश्न प्रकाशित नहीं हुआ है।'
+              : 'No questions have been published for this subject yet.',
+        }}
+      >
+        {(list) => (
+          <PracticeRunner
+            questions={list}
+            title={t(subject.name, lang)}
+            subtitle={lang === 'hi' ? 'पूरा विषय अभ्यास' : 'Full subject practice'}
+            backHref={`/practice/subject/${subject.id}`}
+          />
+        )}
+      </AsyncSection>
     );
   }
 
@@ -81,7 +100,9 @@ export default function SubjectPracticePage({
           {[...subject.topics]
             .sort((a, b) => b.weightage - a.weightage)
             .map((topic) => {
-              const ready = QUESTIONS.filter((q) => q.topicId === topic.id).length;
+              // Counted from the same fetched set, so the index never issues one
+              // request per topic.
+              const ready = questions.filter((q) => q.topicId === topic.id).length;
               return (
                 <Link
                   key={topic.id}

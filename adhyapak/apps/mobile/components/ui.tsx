@@ -363,3 +363,111 @@ export function Grid({ children, gap = theme.space.md }: { children: ReactNode[]
     </View>
   );
 }
+
+/* ------------------------------------------------- async screen states */
+
+/** A grey block standing in for content that has not arrived yet. */
+export function Skeleton({ height = 88 }: { height?: number }) {
+  return (
+    <View
+      style={{
+        height,
+        borderRadius: theme.radius.lg,
+        backgroundColor: theme.color.surfaceAlt,
+      }}
+    />
+  );
+}
+
+export function ErrorState({
+  title,
+  body,
+  onRetry,
+  retryLabel,
+}: {
+  title: string;
+  body: string;
+  onRetry?: () => void;
+  retryLabel: string;
+}) {
+  return (
+    <View style={[s.card, { alignItems: 'center', paddingVertical: 44, paddingHorizontal: 24 }]}>
+      <Text style={{ fontSize: theme.icon.xl }}>⚠️</Text>
+      <Text style={[s.h2, { marginTop: 8 }]}>{title}</Text>
+      <Text style={[s.muted, { marginTop: 4, textAlign: 'center' }]}>{body}</Text>
+      {onRetry ? (
+        <Pressable
+          onPress={onRetry}
+          style={{
+            marginTop: theme.space.lg,
+            backgroundColor: theme.color.ink,
+            borderRadius: theme.radius.pill,
+            paddingHorizontal: 20,
+            paddingVertical: 11,
+          }}
+        >
+          <Text style={{ color: '#fff', fontFamily: theme.family.bodySemi, fontSize: theme.font.sm }}>
+            {retryLabel}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * The three states every database-backed screen has to handle, in one wrapper:
+ * skeletons while loading, an error with a retry, an empty state when the query
+ * legitimately returned nothing, and the content only when there is content.
+ */
+export function AsyncSection<T>({
+  state,
+  lang,
+  empty,
+  skeleton,
+  children,
+}: {
+  state: { data: T | undefined; loading: boolean; error: Error | null; retry: () => void };
+  lang: 'en' | 'hi';
+  empty: { icon: string; title: string; body: string };
+  skeleton?: ReactNode;
+  children: (data: T) => ReactNode;
+}) {
+  const hi = lang === 'hi';
+
+  if (state.loading && state.data === undefined) {
+    return (
+      <View style={{ gap: theme.space.md }}>
+        {skeleton ?? (
+          <>
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
+          </>
+        )}
+      </View>
+    );
+  }
+
+  if (state.error && state.data === undefined) {
+    return (
+      <ErrorState
+        title={hi ? 'लोड नहीं हो सका' : 'Could not load'}
+        body={
+          hi
+            ? 'सामग्री लोड नहीं हो पाई। कृपया दोबारा प्रयास करें।'
+            : 'That content did not load. Please try again.'
+        }
+        onRetry={state.retry}
+        retryLabel={hi ? 'दोबारा प्रयास करें' : 'Try again'}
+      />
+    );
+  }
+
+  const data = state.data;
+  const isEmpty =
+    data === undefined || data === null || (Array.isArray(data) && data.length === 0);
+  if (isEmpty) return <EmptyState icon={empty.icon} title={empty.title} body={empty.body} />;
+
+  return <>{children(data as T)}</>;
+}

@@ -2,17 +2,22 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { NOTES, SUBJECTS, t, UI } from '@adhyapak/core';
+import { SUBJECTS, listNotes, t, UI } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useAsync } from '@/lib/useAsync';
 import { NoteCard } from '@/components/cards';
-import { EmptyState } from '@/components/ui';
+import { AsyncSection, EmptyState } from '@/components/ui';
 
 export default function NotesPage() {
   const { lang, user, uploadedNotes } = useStore();
   const [subjectId, setSubjectId] = useState('all');
   const [savedOnly, setSavedOnly] = useState(false);
 
-  const all = [...uploadedNotes, ...NOTES];
+  // Published notes only — enforced in the repository, not here, so a forgotten
+  // filter on this screen cannot leak a draft. Notes uploaded in this session
+  // sit in front of them until they are saved to the backend.
+  const state = useAsync(() => listNotes({ subjectId: subjectId === 'all' ? undefined : subjectId }), [subjectId]);
+  const all = [...uploadedNotes, ...(state.data ?? [])];
   const filtered = all
     .filter((n) => (subjectId === 'all' ? true : n.subjectId === subjectId))
     .filter((n) => (savedOnly ? user.savedNoteIds.includes(n.id) : true));
@@ -75,23 +80,26 @@ export default function NotesPage() {
         </label>
       </div>
 
-      {filtered.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((n) => (
-            <NoteCard key={n.id} note={n} width="w-full" />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon="📚"
-          title={lang === 'hi' ? 'कोई नोट्स नहीं मिले' : 'No notes found'}
-          body={
+      <AsyncSection
+        state={{ ...state, data: filtered }}
+        lang={lang}
+        empty={{
+          icon: '📚',
+          title: lang === 'hi' ? 'कोई नोट्स नहीं मिले' : 'No notes found',
+          body:
             lang === 'hi'
-              ? 'फ़िल्टर बदलें या स्टूडियो से अपने नोट्स अपलोड करें।'
-              : 'Change the filter, or upload your own notes from the Studio.'
-          }
-        />
-      )}
+              ? 'इस विषय के लिए अभी कोई नोट्स प्रकाशित नहीं हुए हैं।'
+              : 'No notes have been published for this subject yet.',
+        }}
+      >
+        {(list) => (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {list.map((n) => (
+              <NoteCard key={n.id} note={n} width="w-full" />
+            ))}
+          </div>
+        )}
+      </AsyncSection>
     </div>
   );
 }

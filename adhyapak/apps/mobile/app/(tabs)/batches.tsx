@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
-import { BATCHES, EXAMS, theme } from '@adhyapak/core';
+import { EXAMS, listBatches, theme } from '@adhyapak/core';
+import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { BatchCard } from '@/components/cards';
 import { Chip, EmptyState, s } from '@/components/ui';
 import { useResponsive } from '@/lib/responsive';
 
 export default function BatchesScreen() {
+  const batches = useAsync(() => listBatches(), []);
   const { lang } = useStore();
   const r = useResponsive();
   const [examId, setExamId] = useState('all');
-  const data = examId === 'all' ? BATCHES : BATCHES.filter((b) => b.examId === examId);
+  const all = batches.data ?? [];
+  const data = examId === 'all' ? all : all.filter((b) => b.examId === examId);
 
   return (
     <View style={s.screen}>
@@ -25,7 +28,7 @@ export default function BatchesScreen() {
           active={examId === 'all'}
           onPress={() => setExamId('all')}
         />
-        {EXAMS.filter((e) => BATCHES.some((b) => b.examId === e.id)).map((e) => (
+        {EXAMS.map((e) => (
           <Chip
             key={e.id}
             label={`${e.emoji} ${e.shortName}`}

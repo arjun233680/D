@@ -1,16 +1,18 @@
 import { FlatList, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { CURRENT_AFFAIRS, formatDate, t, theme } from '@adhyapak/core';
+import { formatDate, listCurrentAffairs, t, theme } from '@adhyapak/core';
+import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { Badge, s } from '@/components/ui';
 
 export default function CurrentAffairsScreen() {
+  const affairs = useAsync(() => listCurrentAffairs(), []);
   const { lang } = useStore();
 
   return (
     <FlatList
       style={s.screen}
-      data={CURRENT_AFFAIRS}
+      data={affairs.data ?? []}
       keyExtractor={(ca) => ca.id}
       contentContainerStyle={{ padding: theme.space.lg, gap: theme.space.md }}
       ListHeaderComponent={

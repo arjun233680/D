@@ -2,18 +2,47 @@ import type { PracticeSessionResult, Question, QuestionDifficulty } from '../typ
 import { QUESTIONS } from '../data/questions';
 import { ALL_TOPICS } from '../data/subjects';
 
+/**
+ * What a practice screen asks for.
+ *
+ * Every field is optional and they compose, so one filter type serves
+ * "HTET → TGT → Science", "…→ Chemistry → Mole Concept" and
+ * "…→ Science → PYQ → 2024" without a screen ever building its own query.
+ * Levels the bundled data does not carry (unit, subtopic, level) are matched
+ * against the database and ignored offline — see `buildPracticeSet`.
+ */
 export interface PracticeFilter {
   examId?: string;
+  /** Teaching post: primary, upper-primary, secondary, senior-secondary. */
+  level?: string;
   subjectId?: string;
+  /** Chapter between subject and topic. Database-backed content only. */
+  unitId?: string;
   topicId?: string;
+  subtopicId?: string;
   difficulty?: QuestionDifficulty;
   /** Only previous-year questions. */
   pyqOnly?: boolean;
+  /** A specific paper year — implies pyqOnly. */
+  year?: number;
+  /** Morning/evening sitting of that paper. */
+  shift?: string;
   /** Restrict to these ids — used for bookmarks and module practice. */
   ids?: string[];
   limit?: number;
+  /** Rows to skip, for paging a large bank. */
+  offset?: number;
 }
 
+/**
+ * The offline half of `listQuestions`.
+ *
+ * The bundled bank predates the unit/subtopic hierarchy and carries provenance
+ * as prose, so those filters cannot be honoured here. They are dropped rather
+ * than faked: returning the topic's questions unfiltered is the truthful
+ * degradation, and the screen shows the same thing it would show if the paper
+ * had no questions for that subtopic yet.
+ */
 export const buildPracticeSet = (filter: PracticeFilter = {}): Question[] => {
   let pool = QUESTIONS;
   if (filter.ids) {
@@ -24,8 +53,11 @@ export const buildPracticeSet = (filter: PracticeFilter = {}): Question[] => {
   if (filter.subjectId) pool = pool.filter((q) => q.subjectId === filter.subjectId);
   if (filter.topicId) pool = pool.filter((q) => q.topicId === filter.topicId);
   if (filter.difficulty) pool = pool.filter((q) => q.difficulty === filter.difficulty);
-  if (filter.pyqOnly) pool = pool.filter((q) => Boolean(q.previousYear));
-  return filter.limit ? pool.slice(0, filter.limit) : pool;
+  if (filter.pyqOnly || filter.year) pool = pool.filter((q) => Boolean(q.previousYear));
+  // `year` cannot be applied offline: the bundled bank records provenance as
+  // prose, and parsing it back into a year would be guessing.
+  const start = filter.offset ?? 0;
+  return filter.limit ? pool.slice(start, start + filter.limit) : pool.slice(start);
 };
 
 export interface PracticeSummary {

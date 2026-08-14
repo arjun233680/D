@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { EXAMS, TESTS, t, UI, type Test } from '@adhyapak/core';
+import { EXAMS, listTests, t, UI, type Test } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useAsync } from '@/lib/useAsync';
 import { TestCard } from '@/components/cards';
-import { EmptyState } from '@/components/ui';
+import { AsyncSection } from '@/components/ui';
 
 const TYPES: { id: Test['type'] | 'all'; label: { en: string; hi: string } }[] = [
   { id: 'all', label: { en: 'All', hi: 'सभी' } },
@@ -19,9 +20,10 @@ export default function TestsPage() {
   const [type, setType] = useState<Test['type'] | 'all'>('all');
   const [examId, setExamId] = useState<string>(user.goalExamId);
 
-  const filtered = TESTS.filter(
-    (x) => (type === 'all' || x.type === type) && (examId === 'all' || x.examId === examId),
-  );
+  // The exam filter is pushed to the repository so the query does the work;
+  // type is a cheap local narrowing of what came back.
+  const state = useAsync(() => listTests(examId === 'all' ? undefined : examId), [examId]);
+  const filtered = (state.data ?? []).filter((x) => type === 'all' || x.type === type);
   const attemptedCount = Object.keys(results).length;
 
   return (
@@ -64,7 +66,10 @@ export default function TestsPage() {
           >
             {lang === 'hi' ? 'सभी परीक्षाएँ' : 'All exams'}
           </button>
-          {EXAMS.filter((e) => TESTS.some((x) => x.examId === e.id)).map((e) => (
+          {/* The exam chips list the catalogue itself, which is taxonomy rather
+              than content — every exam remains selectable even before any test
+              has been published for it. */}
+          {EXAMS.map((e) => (
             <button
               key={e.id}
               type="button"
@@ -81,23 +86,26 @@ export default function TestsPage() {
         </div>
       </div>
 
-      {filtered.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((x) => (
-            <TestCard key={x.id} test={x} width="w-full" />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon="🎯"
-          title={lang === 'hi' ? 'इस फ़िल्टर में कोई टेस्ट नहीं' : 'No tests in this filter'}
-          body={
+      <AsyncSection
+        state={{ ...state, data: filtered }}
+        lang={lang}
+        empty={{
+          icon: '🎯',
+          title: lang === 'hi' ? 'इस फ़िल्टर में कोई टेस्ट नहीं' : 'No tests in this filter',
+          body:
             lang === 'hi'
               ? 'दूसरी परीक्षा या दूसरा टेस्ट प्रकार चुनें।'
-              : 'Pick another exam or another test type.'
-          }
-        />
-      )}
+              : 'Pick another exam or another test type.',
+        }}
+      >
+        {(list) => (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {list.map((x) => (
+              <TestCard key={x.id} test={x} width="w-full" />
+            ))}
+          </div>
+        )}
+      </AsyncSection>
     </div>
   );
 }

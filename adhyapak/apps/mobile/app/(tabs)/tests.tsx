@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
-import { EXAMS, TESTS, theme, type Test } from '@adhyapak/core';
+import { EXAMS, listTests, theme, type Test } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useAsync } from '@/lib/useAsync';
 import { TestCard } from '@/components/cards';
-import { Chip, EmptyState, s } from '@/components/ui';
+import { AsyncSection, Chip, s } from '@/components/ui';
 import { useResponsive } from '@/lib/responsive';
 
 const TYPES: { id: Test['type'] | 'all'; label: { en: string; hi: string } }[] = [
@@ -20,9 +21,9 @@ export default function TestsScreen() {
   const [type, setType] = useState<Test['type'] | 'all'>('all');
   const [examId, setExamId] = useState('all');
 
-  const data = TESTS.filter(
-    (x) => (type === 'all' || x.type === type) && (examId === 'all' || x.examId === examId),
-  );
+  // The exam filter goes to the repository; type narrows what came back.
+  const state = useAsync(() => listTests(examId === 'all' ? undefined : examId), [examId]);
+  const data = (state.data ?? []).filter((x) => type === 'all' || x.type === type);
 
   return (
     <View style={s.screen}>
@@ -52,7 +53,7 @@ export default function TestsScreen() {
           active={examId === 'all'}
           onPress={() => setExamId('all')}
         />
-        {EXAMS.filter((e) => TESTS.some((x) => x.examId === e.id)).map((e) => (
+        {EXAMS.map((e) => (
           <Chip
             key={e.id}
             label={`${e.emoji} ${e.shortName}`}
@@ -62,32 +63,41 @@ export default function TestsScreen() {
         ))}
       </ScrollView>
 
-      <FlatList
-        key={'cols-' + r.columns}
-        numColumns={r.columns}
-        columnWrapperStyle={r.columns > 1 ? { gap: theme.space.md } : undefined}
-        data={data}
-        keyExtractor={(x) => x.id}
-        contentContainerStyle={{
-          paddingHorizontal: r.gutter,
-          paddingBottom: 24,
-          width: '100%',
-          maxWidth: r.maxWidth,
-          alignSelf: 'center',
-        }}
-        renderItem={({ item }) => (
-          <View style={{ flex: 1 }}>
-            <TestCard test={item} full />
-          </View>
-        )}
-        ListEmptyComponent={
-          <EmptyState
-            icon="🎯"
-            title={lang === 'hi' ? 'कोई टेस्ट नहीं' : 'No tests here'}
-            body={lang === 'hi' ? 'फ़िल्टर बदलें।' : 'Change the filter.'}
-          />
-        }
-      />
+      <View style={{ flex: 1, paddingHorizontal: r.gutter }}>
+        <AsyncSection
+          state={{ ...state, data }}
+          lang={lang}
+          empty={{
+            icon: '🎯',
+            title: lang === 'hi' ? 'कोई टेस्ट नहीं' : 'No tests here',
+            body:
+              lang === 'hi'
+                ? 'इस फ़िल्टर के लिए अभी कोई टेस्ट प्रकाशित नहीं हुआ है।'
+                : 'No tests have been published for this filter yet.',
+          }}
+        >
+          {(list) => (
+            <FlatList
+              key={'cols-' + r.columns}
+              numColumns={r.columns}
+              columnWrapperStyle={r.columns > 1 ? { gap: theme.space.md } : undefined}
+              data={list}
+              keyExtractor={(x) => x.id}
+              contentContainerStyle={{
+                paddingBottom: 24,
+                width: '100%',
+                maxWidth: r.maxWidth,
+                alignSelf: 'center',
+              }}
+              renderItem={({ item }) => (
+                <View style={{ flex: 1 }}>
+                  <TestCard test={item} full />
+                </View>
+              )}
+            />
+          )}
+        </AsyncSection>
+      </View>
     </View>
   );
 }

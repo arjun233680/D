@@ -1,5 +1,85 @@
 # Changelog
 
+## Phase 2 — the UI now reads through the repository
+
+Phase 1 built the content library and left one gap, recorded honestly at the
+time: 19 screens imported the seed arrays directly, so imported content reached
+the database and the analysis views but never the UI. That gap is closed.
+
+### The boundary
+
+`repository.ts` was already written and was called by nothing. Every
+learner-facing screen now goes through it, so the same component renders
+bundled content offline and imported content from Postgres without knowing
+which it got.
+
+**Published-only is enforced in the repository**, not in the screens. RLS
+already hides drafts from a learner, but a screen must not depend on the
+caller's role for correctness: an educator practising their own subject would
+otherwise be served their own unreviewed drafts, and the bug would be invisible
+in testing precisely because the developer is staff.
+
+### Added
+
+- **`listPyqYears`, `listTopicFrequency`, `countQuestions`** — the year picker,
+  the `pyq_topic_frequency` view, and counts that do not require fetching the
+  questions to call `.length` on them.
+- **Structured PYQ filters** on `listQuestions`: `year`, `shift`, `level`,
+  `unitId`, `subtopicId`, all optional and composable, so one call serves
+  "HTET → TGT → Science", "…→ Chemistry → Mole Concept" and "…→ PYQ → 2024".
+  The legacy prose column is never parsed; it survives only as a display
+  fallback for questions imported before the structured fields existed.
+- **`limit`/`offset` with a default page of 200.** A 20,000-question bank must
+  never arrive in one response.
+- **Real queries for notes and videos.** `listNotes` previously returned the
+  bundled array from *both* branches — the query had never been written, so an
+  uploaded note could not appear however well the rest of the pipeline worked.
+  Sections and chapters are fetched with their parent rather than one request
+  per row.
+- **`useAsync` + `AsyncSection`** in each app: loading skeletons, an error with
+  a retry button, and an empty state, in one wrapper. A response that arrives
+  after its inputs changed is discarded, so switching topics quickly cannot
+  leave the previous topic's questions on screen.
+- **`repository.test.ts`** — 16 tests covering filter composition, paging,
+  empty results, the offline fallback, and that `listQuestions` and
+  `buildPracticeSet` agree so behaviour does not change with connectivity.
+
+### Screens migrated
+
+Practice (topic, subject, PYQ), tests list, notes list and reader, explore
+search, current affairs, videos and batches — on both web and mobile. The PYQ
+screens gained a year picker built from real `pyq_year` values.
+
+### Verified
+
+`npm run typecheck` clean, `npm test` 71/71, Next.js production build, Expo web
+export, and a browser pass at 390px and 1440px with no console errors —
+including a practice run rendering a question and its PYQ tag through the
+repository.
+
+Against Postgres 16 with all six migrations and the seed applied, with one
+question forced into each of draft, review and archived: a learner sees 64
+published questions and **0** in any other state; an anonymous client the same;
+an educator sees all three; a second educator sees **0** of the first's import
+batches; a learner reads **0** audit rows; year and PYQ filters return exactly
+the tagged question; and a filter matching nothing returns 0 rather than an
+error.
+
+### Known limitations
+
+- **Batches are still bundled content on both branches.** A batch is a schedule
+  of live classes and there is no scheduling backend to read from yet. The
+  screens go through `listBatches` anyway, so the day one exists, no UI changes.
+- Results and analytics read the attempt and the question bank, which now come
+  through the repository; there is no dedicated PYQ-trend screen yet, so
+  `listTopicFrequency` is available and unused by any UI.
+- Studio import UI is still not built; import remains CLI-only, as planned.
+- Answer keys remain readable client-side. Offline practice with instant
+  feedback requires them, and tests are graded server-side by `submit_attempt`.
+  This is a deliberate trade-off, unchanged from Phase 1.
+
+---
+
 ## Content library — architecture for large-scale import
 
 The application was built to render a question bank. This change builds the

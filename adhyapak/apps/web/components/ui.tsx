@@ -163,3 +163,107 @@ export function Thumb({
     </div>
   );
 }
+
+/* ------------------------------------------------- async screen states */
+
+/**
+ * The three states every database-backed screen has to handle.
+ *
+ * `AsyncSection` renders skeletons while loading, an error with a retry button
+ * when the call failed, an empty state when the query legitimately returned
+ * nothing, and the children only when there is something to show. Screens get
+ * all four by wrapping their content instead of by remembering to write them.
+ */
+export function Skeleton({ className = 'h-24' }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded-xl bg-[var(--color-surface-alt)] ${className}`}
+      aria-hidden
+    />
+  );
+}
+
+export function ErrorState({
+  title,
+  body,
+  onRetry,
+  retryLabel,
+}: {
+  title: string;
+  body: string;
+  onRetry?: () => void;
+  retryLabel: string;
+}) {
+  return (
+    <div
+      role="alert"
+      className="card flex flex-col items-center gap-2 px-6 py-12 text-center"
+    >
+      <div className="text-4xl">⚠️</div>
+      <h3 className="text-base font-bold">{title}</h3>
+      <p className="max-w-sm text-sm text-[var(--color-muted)]">{body}</p>
+      {onRetry ? (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-2 rounded-full bg-[var(--color-ink)] px-5 py-2 text-[13px] font-bold text-white"
+        >
+          {retryLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+export function AsyncSection<T>({
+  state,
+  lang,
+  empty,
+  skeleton,
+  children,
+}: {
+  state: { data: T | undefined; loading: boolean; error: Error | null; retry: () => void };
+  lang: 'en' | 'hi';
+  /** Shown when the call succeeded and there is genuinely nothing to display. */
+  empty: { icon: string; title: string; body: string };
+  skeleton?: ReactNode;
+  children: (data: T) => ReactNode;
+}) {
+  const hi = lang === 'hi';
+
+  if (state.loading && state.data === undefined) {
+    return (
+      <div aria-busy="true" aria-live="polite">
+        {skeleton ?? (
+          <div className="space-y-3">
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (state.error && state.data === undefined) {
+    return (
+      <ErrorState
+        title={hi ? 'लोड नहीं हो सका' : 'Could not load'}
+        body={
+          hi
+            ? 'सामग्री लोड नहीं हो पाई। कृपया दोबारा प्रयास करें।'
+            : 'That content did not load. Please try again.'
+        }
+        onRetry={state.retry}
+        retryLabel={hi ? 'दोबारा प्रयास करें' : 'Try again'}
+      />
+    );
+  }
+
+  const data = state.data;
+  const isEmpty =
+    data === undefined || data === null || (Array.isArray(data) && data.length === 0);
+  if (isEmpty) return <EmptyState icon={empty.icon} title={empty.title} body={empty.body} />;
+
+  return <>{children(data as T)}</>;
+}

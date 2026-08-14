@@ -1,10 +1,12 @@
 'use client';
 
-import { CURRENT_AFFAIRS, EXAMS, formatDate, t } from '@adhyapak/core';
+import { EXAMS, formatDate, listCurrentAffairs, t } from '@adhyapak/core';
+import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { Badge } from '@/components/ui';
 
 export default function CurrentAffairsPage() {
+  const affairs = useAsync(() => listCurrentAffairs(), []);
   const { lang } = useStore();
 
   return (
@@ -21,7 +23,7 @@ export default function CurrentAffairsPage() {
       </div>
 
       <div className="space-y-3">
-        {CURRENT_AFFAIRS.map((ca) => (
+        {(affairs.data ?? []).map((ca) => (
           <article key={ca.id} className="card p-4">
             <div className="flex flex-wrap items-center gap-1.5">
               {ca.tags.map((tag) => (

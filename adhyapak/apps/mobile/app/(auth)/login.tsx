@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { EXAMS, QUESTIONS, formatCount, theme } from '@adhyapak/core';
+import { EXAMS, countQuestions, formatCount, theme } from '@adhyapak/core';
+import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { useSession } from '@/lib/session';
 import { s } from '@/components/ui';
@@ -25,6 +26,9 @@ import { useResponsive } from '@/lib/responsive';
  * progress needs to follow them to another device.
  */
 export default function LoginScreen() {
+  // The headline stat counts what the library actually holds, so it grows with
+  // an import instead of being a number baked into the bundle.
+  const questionCount = useAsync(() => countQuestions(), []);
   const { lang, toggleLang } = useStore();
   const { signIn, continueAsGuest } = useSession();
   const r = useResponsive();
@@ -192,7 +196,7 @@ export default function LoginScreen() {
           >
             {[
               { value: `${EXAMS.length}`, label: hi ? 'परीक्षाएँ' : 'Exams' },
-              { value: formatCount(QUESTIONS.length), label: hi ? 'प्रश्न' : 'Questions' },
+              { value: formatCount(questionCount.data ?? 0), label: hi ? 'प्रश्न' : 'Questions' },
               { value: hi ? 'हिं/EN' : 'Hi/EN', label: hi ? 'द्विभाषी' : 'Bilingual' },
             ].map((stat) => (
               <View key={stat.label} style={{ alignItems: 'center' }}>

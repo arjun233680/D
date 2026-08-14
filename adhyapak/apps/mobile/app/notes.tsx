@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { NOTES, SUBJECTS, t, theme, UI } from '@adhyapak/core';
+import { SUBJECTS, listNotes, t, theme, UI } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useAsync } from '@/lib/useAsync';
 import { NoteCard } from '@/components/cards';
-import { Chip, EmptyState, s } from '@/components/ui';
+import { AsyncSection, Chip, s } from '@/components/ui';
 
 export default function NotesScreen() {
   const { lang, uploadedNotes } = useStore();
   const [subjectId, setSubjectId] = useState('all');
-  const all = [...uploadedNotes, ...NOTES];
+  // Published notes only, enforced in the repository. Notes uploaded in this
+  // session sit in front until they reach the backend.
+  const state = useAsync(
+    () => listNotes({ subjectId: subjectId === 'all' ? undefined : subjectId }),
+    [subjectId],
+  );
+  const all = [...uploadedNotes, ...(state.data ?? [])];
   const data = subjectId === 'all' ? all : all.filter((n) => n.subjectId === subjectId);
 
   return (
@@ -26,7 +33,7 @@ export default function NotesScreen() {
           active={subjectId === 'all'}
           onPress={() => setSubjectId('all')}
         />
-        {SUBJECTS.filter((sub) => all.some((n) => n.subjectId === sub.id)).map((sub) => (
+        {SUBJECTS.map((sub) => (
           <Chip
             key={sub.id}
             label={`${sub.icon} ${t(sub.name, lang)}`}
@@ -35,19 +42,29 @@ export default function NotesScreen() {
           />
         ))}
       </ScrollView>
-      <FlatList
-        data={data}
-        keyExtractor={(n) => n.id}
-        contentContainerStyle={{ paddingHorizontal: theme.space.lg, paddingBottom: 24 }}
-        renderItem={({ item }) => <NoteCard note={item} full />}
-        ListEmptyComponent={
-          <EmptyState
-            icon="📚"
-            title={lang === 'hi' ? 'नोट्स नहीं' : 'No notes'}
-            body={lang === 'hi' ? 'दूसरा विषय चुनें।' : 'Try another subject.'}
-          />
-        }
-      />
+      <View style={{ flex: 1, paddingHorizontal: theme.space.lg }}>
+        <AsyncSection
+          state={{ ...state, data }}
+          lang={lang}
+          empty={{
+            icon: '📚',
+            title: lang === 'hi' ? 'नोट्स नहीं' : 'No notes',
+            body:
+              lang === 'hi'
+                ? 'इस विषय के लिए अभी कोई नोट्स प्रकाशित नहीं हुए हैं।'
+                : 'No notes have been published for this subject yet.',
+          }}
+        >
+          {(list) => (
+            <FlatList
+              data={list}
+              keyExtractor={(n) => n.id}
+              contentContainerStyle={{ paddingBottom: 24 }}
+              renderItem={({ item }) => <NoteCard note={item} full />}
+            />
+          )}
+        </AsyncSection>
+      </View>
     </View>
   );
 }

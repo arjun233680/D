@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { SUBJECTS, VIDEOS, t, theme, UI } from '@adhyapak/core';
+import { SUBJECTS, listVideos, t, theme, UI } from '@adhyapak/core';
+import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { VideoCard } from '@/components/cards';
 import { Chip, EmptyState, s } from '@/components/ui';
 
 export default function VideosScreen() {
+  const videos = useAsync(() => listVideos(), []);
   const { lang, uploadedVideos } = useStore();
   const [subjectId, setSubjectId] = useState('all');
-  const all = [...uploadedVideos, ...VIDEOS];
+  const all = [...uploadedVideos, ...(videos.data ?? [])];
   const data = subjectId === 'all' ? all : all.filter((v) => v.subjectId === subjectId);
 
   return (

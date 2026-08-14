@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { EXAMS, NOTES, SUBJECTS, TESTS, VIDEOS, formatCount, t, UI } from '@adhyapak/core';
+import { EXAMS, SUBJECTS, countQuestions, formatCount, listNotes, listTests, listVideos, t, UI } from '@adhyapak/core';
+import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { Badge, EmptyState, SectionHeader } from '@/components/ui';
 import { ExamCard, NoteCard, TestCard, VideoCard } from '@/components/cards';
@@ -29,27 +30,26 @@ export default function ExplorePage() {
     [q, query, scope],
   );
 
-  const videos = useMemo(
-    () =>
-      q
-        ? VIDEOS.filter(
-            (v) => v.title.en.toLowerCase().includes(q) || v.title.hi.includes(query),
-          )
-        : [],
-    [q, query],
+  // Search runs over what the repository serves, so it finds imported content
+  // as well as bundled content — and, being published-only, never surfaces a
+  // draft through the search box. The three lists load once and are then
+  // filtered in memory: search is per-keystroke, and a query per keystroke is
+  // how you melt a phone.
+  const library = useAsync(
+    async () => ({
+      videos: await listVideos(),
+      notes: await listNotes(),
+      tests: await listTests(),
+    }),
+    [],
   );
 
-  const notes = useMemo(
-    () =>
-      q ? NOTES.filter((n) => n.title.en.toLowerCase().includes(q) || n.title.hi.includes(query)) : [],
-    [q, query],
-  );
+  const matches = <T extends { title: { en: string; hi: string } }>(items: T[]): T[] =>
+    q ? items.filter((x) => x.title.en.toLowerCase().includes(q) || x.title.hi.includes(query)) : [];
 
-  const tests = useMemo(
-    () =>
-      q ? TESTS.filter((x) => x.title.en.toLowerCase().includes(q) || x.title.hi.includes(query)) : [],
-    [q, query],
-  );
+  const videos = matches(library.data?.videos ?? []);
+  const notes = matches(library.data?.notes ?? []);
+  const tests = matches(library.data?.tests ?? []);
 
   const scopes: { id: Scope; label: { en: string; hi: string } }[] = [
     { id: 'all', label: { en: 'All exams', hi: 'सभी परीक्षाएँ' } },
