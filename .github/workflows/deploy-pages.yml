@@ -36,9 +36,21 @@ jobs:
         working-directory: adhyapak
         run: npm ci
 
+      # The gates run before the build, and each one fails the job. Until this
+      # existed the workflow typechecked and nothing else, so a broken grading
+      # engine or a lint error deployed green — the tests were only ever run by
+      # whoever remembered to run them.
       - name: Typecheck
         working-directory: adhyapak
         run: npm run typecheck
+
+      - name: Lint
+        working-directory: adhyapak
+        run: npm run lint
+
+      - name: Test
+        working-directory: adhyapak
+        run: npm test
 
       # Supabase credentials are compiled into the client bundles at build time.
       # With the secrets unset both apps fall back to bundled content — the same
