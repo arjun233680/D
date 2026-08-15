@@ -86,8 +86,13 @@ function Shell() {
         <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)/goal" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        {/* The test player owns the whole screen, exactly like the web app. */}
+        {/* Every exam window owns the whole screen, exactly like the web app —
+            a mock, a previous-year paper, and any practice set. */}
         <Stack.Screen name="test/[id]/attempt" options={{ headerShown: false }} />
+        <Stack.Screen name="practice/pyq/attempt" options={{ headerShown: false }} />
+        <Stack.Screen name="practice/bookmarks" options={{ headerShown: false }} />
+        <Stack.Screen name="practice/subject/[subjectId]" options={{ headerShown: false }} />
+        <Stack.Screen name="practice/topic/[topicId]" options={{ headerShown: false }} />
       </Stack>
     </>
   );

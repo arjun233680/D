@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { buildPracticeSet, getSubject, t } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { PracticeRunner } from '@/components/PracticeRunner';
+import { PracticeSession } from '@/components/PracticeSession';
 
 export default function SubjectPracticeScreen() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
@@ -9,10 +9,9 @@ export default function SubjectPracticeScreen() {
   const subject = getSubject(String(subjectId));
 
   return (
-    <PracticeRunner
+    <PracticeSession
       questions={buildPracticeSet({ subjectId: String(subjectId) })}
       title={subject ? t(subject.name, lang) : 'Practice'}
-      subtitle={subject ? t(subject.description, lang) : undefined}
     />
   );
 }

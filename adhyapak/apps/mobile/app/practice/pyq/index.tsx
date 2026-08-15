@@ -170,7 +170,7 @@ export default function PyqScreen() {
           disabled={!ready}
           onPress={() =>
             router.push({
-              pathname: '/practice/pyq/run',
+              pathname: '/practice/pyq/attempt',
               params: pyqSelectionToParams(selection),
             })
           }

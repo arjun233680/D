@@ -1,9 +1,9 @@
 import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { getSubject, getTopic, listQuestions, t, theme } from '@adhyapak/core';
+import { getTopic, listQuestions, t, theme } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
-import { PracticeRunner } from '@/components/PracticeRunner';
+import { PracticeSession } from '@/components/PracticeSession';
 import { AsyncSection, s } from '@/components/ui';
 
 export default function TopicPracticeScreen() {
@@ -14,7 +14,6 @@ export default function TopicPracticeScreen() {
   // The topic is taxonomy and is available immediately; its questions come
   // through the repository, published only.
   const topic = getTopic(id);
-  const subject = topic ? getSubject(topic.subjectId) : undefined;
   const state = useAsync(() => listQuestions({ topicId: id }), [id]);
 
   return (
@@ -32,10 +31,9 @@ export default function TopicPracticeScreen() {
         }}
       >
         {(questions) => (
-          <PracticeRunner
+          <PracticeSession
             questions={questions}
             title={topic ? t(topic.name, lang) : 'Practice'}
-            subtitle={subject ? `${subject.icon} ${t(subject.name, lang)}` : undefined}
           />
         )}
       </AsyncSection>

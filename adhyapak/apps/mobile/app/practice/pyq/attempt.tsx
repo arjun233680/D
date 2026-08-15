@@ -15,7 +15,7 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
-import { PracticeRunner } from '@/components/PracticeRunner';
+import { PracticeSession } from '@/components/PracticeSession';
 import { AsyncSection, s } from '@/components/ui';
 
 /**
@@ -26,7 +26,7 @@ import { AsyncSection, s } from '@/components/ui';
  * set cannot change under a learner mid-paper.
  */
 
-export default function PyqRunScreen() {
+export default function PyqAttemptScreen() {
   const { lang } = useStore();
   const hi = lang === 'hi';
   const params = useLocalSearchParams<Record<string, string>>();
@@ -87,13 +87,7 @@ export default function PyqRunScreen() {
             body: hi ? reason.hi : reason.en,
           }}
         >
-          {(list) => (
-            <PracticeRunner
-              questions={list}
-              title={hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
-              subtitle={subtitle}
-            />
-          )}
+          {(list) => <PracticeSession questions={list} title={subtitle} examId={selection.examId} />}
         </AsyncSection>
       </View>
     </View>
