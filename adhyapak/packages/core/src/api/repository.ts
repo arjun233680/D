@@ -242,7 +242,12 @@ export const countQuestionsBySubject = (examId?: string): Promise<Record<string,
     async (db) => {
       const counts: Record<string, number> = {};
       const pageSize = 1000;
-      for (let from = 0; ; from += pageSize) {
+      // A bound, not an expectation: the loop's real exit is a short page. If a
+      // proxy ever ignored the Range header every page would come back full and
+      // this would spin forever in a learner's browser, so it cannot be allowed
+      // to depend on the server behaving.
+      const maxPages = 100;
+      for (let page = 0, from = 0; page < maxPages; page += 1, from += pageSize) {
         let q = db.from('questions').select('subject_id').eq('status', 'published');
         if (examId) q = q.contains('exam_ids', [examId]);
         const { data, error } = await q.range(from, from + pageSize - 1);
