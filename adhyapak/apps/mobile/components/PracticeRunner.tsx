@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 import {
   getSubject,
@@ -13,6 +13,7 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, Button, EmptyState, ProgressBar, s, Stat } from '@/components/ui';
+import { QuestionSolution } from '@/components/QuestionSolution';
 
 /**
  * Instant-feedback practice — the mobile twin of the web PracticeRunner.
@@ -57,6 +58,9 @@ export function PracticeRunner({
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [finished, setFinished] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // The set is worth re-reading question by question, but the ones worth
+  // re-reading first are the ones that went wrong — so that is the default.
+  const [onlyWrong, setOnlyWrong] = useState(true);
 
   // One result per answered question, in the set's own order — so the summary
   // does not depend on the order the learner jumped around in.
@@ -137,9 +141,17 @@ export function PracticeRunner({
           </View>
         ) : null}
 
+        <Solutions
+          questions={questions}
+          answers={answers}
+          lang={lang}
+          onlyWrong={onlyWrong}
+          onOnlyWrongChange={setOnlyWrong}
+        />
+
         <View style={{ flexDirection: 'row', gap: 8, marginTop: theme.space.lg }}>
           <Button
-            label={lang === 'hi' ? 'वापस' : 'Back'}
+            label={hi ? 'वापस' : 'Back'}
             variant="outline"
             onPress={() => router.back()}
             style={{ flex: 1 }}
@@ -525,6 +537,84 @@ function Palette({
         onPress={onFinish}
         style={{ marginTop: 14 }}
       />
+    </View>
+  );
+}
+
+/**
+ * The whole set, reviewable, after the score.
+ *
+ * The finish screen used to give a number and a few topic chips: a learner who
+ * got seven wrong had no screen that showed them those seven. The palette was
+ * already tracking which ones they were; this is that data made readable.
+ *
+ * Unanswered questions appear only when showing everything — "I never reached
+ * question 24" is worth seeing, but it is not a wrong answer.
+ */
+function Solutions({
+  questions,
+  answers,
+  lang,
+  onlyWrong,
+  onOnlyWrongChange,
+}: {
+  questions: Question[];
+  answers: Record<string, Answer>;
+  lang: 'en' | 'hi';
+  onlyWrong: boolean;
+  onOnlyWrongChange: (value: boolean) => void;
+}) {
+  const hi = lang === 'hi';
+
+  const rows = questions.map((question, i) => ({
+    question,
+    number: i + 1,
+    answer: answers[question.id],
+  }));
+  const wrong = rows.filter((r) => r.answer !== undefined && !r.answer.correct);
+  const visible = onlyWrong ? wrong : rows;
+
+  return (
+    <View style={{ marginTop: theme.space.lg, gap: theme.space.md }}>
+      <Text style={s.h2}>{hi ? 'हल' : 'Solutions'}</Text>
+
+      <View style={[s.row, { gap: 8 }]}>
+        <Switch value={onlyWrong} onValueChange={onOnlyWrongChange} />
+        <Text style={{ fontSize: theme.font.sm, fontWeight: '600' }}>
+          {hi ? `केवल गलत/छोड़े गए (${wrong.length})` : `Only incorrect & skipped (${wrong.length})`}
+        </Text>
+      </View>
+
+      {visible.length ? (
+        visible.map((row) => (
+          <QuestionSolution
+            key={row.question.id}
+            question={row.question}
+            number={row.number}
+            selectedIndex={row.answer?.selectedIndex ?? null}
+            lang={lang}
+            footer={
+              <Text style={[s.faint, { marginTop: 8 }]}>
+                {row.answer
+                  ? `${hi ? 'आपका समय' : 'Your time'}: ${Math.round(row.answer.timeSpentMs / 1000)}s`
+                  : hi
+                    ? 'यह प्रश्न नहीं देखा गया'
+                    : 'You did not reach this one'}
+              </Text>
+            }
+          />
+        ))
+      ) : (
+        <EmptyState
+          icon="🎉"
+          title={hi ? 'सब सही!' : 'All correct!'}
+          body={
+            hi
+              ? 'कोई गलत उत्तर नहीं। सभी प्रश्न देखने हेतु ऊपर का स्विच बंद करें।'
+              : 'No wrong answers here. Turn the switch off to read every question.'
+          }
+        />
+      )}
     </View>
   );
 }

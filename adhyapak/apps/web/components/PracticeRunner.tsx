@@ -13,6 +13,7 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, EmptyState, ProgressBar, Stat } from '@/components/ui';
+import { QuestionSolution } from '@/components/QuestionSolution';
 
 /**
  * Instant-feedback practice: answer, see the explanation immediately, move on.
@@ -71,6 +72,10 @@ export function PracticeRunner({
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [finished, setFinished] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // The set is worth re-reading question by question, but the ones worth
+  // re-reading first are the ones that went wrong — so that is the default,
+  // and it flips to everything when there is nothing wrong to show.
+  const [onlyWrong, setOnlyWrong] = useState(true);
 
   // One result per answered question, in the set's own order — so the summary
   // does not depend on the order the learner happened to jump around in.
@@ -141,6 +146,14 @@ export function PracticeRunner({
             </div>
           </div>
         ) : null}
+
+        <Solutions
+          questions={questions}
+          answers={answers}
+          lang={lang}
+          onlyWrong={onlyWrong}
+          onOnlyWrongChange={setOnlyWrong}
+        />
 
         <div className="flex gap-2">
           <Link
@@ -506,5 +519,91 @@ function Palette({
         {hi ? 'परिणाम देखें' : 'See result'}
       </button>
     </div>
+  );
+}
+
+/**
+ * The whole set, reviewable, after the score.
+ *
+ * The finish screen used to give a number and a few topic chips: a learner who
+ * got seven wrong had no screen that showed them those seven. The palette was
+ * already tracking which ones they were; this is that data made readable.
+ *
+ * Unanswered questions are included when showing everything, because "I never
+ * reached question 24" is also worth seeing — but they are not counted as
+ * wrong, and the filter says so.
+ */
+function Solutions({
+  questions,
+  answers,
+  lang,
+  onlyWrong,
+  onOnlyWrongChange,
+}: {
+  questions: Question[];
+  answers: Record<string, Answer>;
+  lang: 'en' | 'hi';
+  onlyWrong: boolean;
+  onOnlyWrongChange: (value: boolean) => void;
+}) {
+  const hi = lang === 'hi';
+
+  const rows = questions.map((question, i) => ({
+    question,
+    number: i + 1,
+    answer: answers[question.id],
+  }));
+  // Wrong or skipped — both are things to go back over. Never reached is not.
+  const wrong = rows.filter((r) => r.answer !== undefined && !r.answer.correct);
+  const visible = onlyWrong ? wrong : rows;
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[15px] font-bold">{hi ? 'हल' : 'Solutions'}</h2>
+        <label className="flex items-center gap-2 text-[13px] font-semibold">
+          <input
+            type="checkbox"
+            checked={onlyWrong}
+            onChange={(e) => onOnlyWrongChange(e.target.checked)}
+            className="h-4 w-4 accent-[var(--color-brand)]"
+          />
+          {hi ? `केवल गलत/छोड़े गए (${wrong.length})` : `Only incorrect & skipped (${wrong.length})`}
+        </label>
+      </div>
+
+      {visible.length ? (
+        visible.map((row) => (
+          <QuestionSolution
+            key={row.question.id}
+            question={row.question}
+            number={row.number}
+            selectedIndex={row.answer?.selectedIndex ?? null}
+            lang={lang}
+            footer={
+              row.answer ? (
+                <p className="mt-2 text-[11px] text-[var(--color-faint)]">
+                  {hi ? 'आपका समय' : 'Your time'}: {Math.round(row.answer.timeSpentMs / 1000)}s
+                </p>
+              ) : (
+                <p className="mt-2 text-[11px] text-[var(--color-faint)]">
+                  {hi ? 'यह प्रश्न नहीं देखा गया' : 'You did not reach this one'}
+                </p>
+              )
+            }
+          />
+        ))
+      ) : (
+        <EmptyState
+          icon="🎉"
+          title={hi ? 'सब सही!' : 'All correct!'}
+          body={
+            hi
+              ? 'कोई गलत उत्तर नहीं। सभी प्रश्न देखने हेतु ऊपर का चेकबॉक्स हटाएँ।'
+              : 'No wrong answers here. Uncheck the box above to read every question.'
+          }
+        />
+      )}
+    </section>
   );
 }
