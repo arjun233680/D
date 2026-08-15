@@ -16,6 +16,7 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, EmptyState, ProgressBar, Stat } from '@/components/ui';
+import { QuestionSolution } from '@/components/QuestionSolution';
 
 type Tab = 'summary' | 'sections' | 'solutions';
 
@@ -287,73 +288,24 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
           </label>
 
           {visibleRows.length ? (
-            visibleRows.map((row, i) => {
-              const bookmarked = user.bookmarkedQuestionIds.includes(row.question.id);
-              return (
-                <article key={row.question.id} className="card p-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-extrabold">Q{i + 1}</span>
-                    <Badge tone={row.correct ? 'success' : row.selectedIndex === null ? 'neutral' : 'danger'}>
-                      {row.correct
-                        ? t(UI.correct, lang)
-                        : row.selectedIndex === null
-                          ? t(UI.skipped, lang)
-                          : t(UI.incorrect, lang)}
-                    </Badge>
-                    {row.question.previousYear ? (
-                      <Badge tone="info">{row.question.previousYear}</Badge>
-                    ) : null}
-                    <div className="flex-1" />
-                    <button type="button" onClick={() => toggleBookmark(row.question.id)}>
-                      {bookmarked ? '🔖' : '📑'}
-                    </button>
-                  </div>
-
-                  <p className="mt-2 text-[14px] leading-relaxed font-semibold">
-                    {t(row.question.text, lang)}
-                  </p>
-
-                  <ul className="mt-3 space-y-1.5">
-                    {row.question.options.map((opt, oi) => {
-                      const isCorrect = oi === row.question.correctIndex;
-                      const isChosen = oi === row.selectedIndex;
-                      return (
-                        <li
-                          key={oi}
-                          className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-[13px] ${
-                            isCorrect
-                              ? 'border-[var(--color-success)] bg-[var(--color-success-light)]'
-                              : isChosen
-                                ? 'border-[var(--color-danger)] bg-[var(--color-danger-light)]'
-                                : 'border-[var(--color-line)]'
-                          }`}
-                        >
-                          <span className="font-bold">{String.fromCharCode(65 + oi)}.</span>
-                          <span className="flex-1">{t(opt, lang)}</span>
-                          {isCorrect ? <span>✅</span> : isChosen ? <span>❌</span> : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-
-                  <div className="mt-3 rounded-xl bg-[var(--color-surface-alt)] p-3">
-                    <p className="text-[11px] font-bold tracking-wide text-[var(--color-muted)] uppercase">
-                      {t(UI.explanation, lang)}
-                    </p>
-                    <p className="mt-1 text-[13px] leading-relaxed">
-                      {t(row.question.explanation, lang)}
-                    </p>
-                  </div>
-
-                  {/* Only the learner's own time, which was actually
-                      measured. The cohort average and "% got it right" beside
-                      it were seed values. */}
+            visibleRows.map((row, i) => (
+              <QuestionSolution
+                key={row.question.id}
+                question={row.question}
+                number={i + 1}
+                selectedIndex={row.selectedIndex}
+                lang={lang}
+                footer={
+                  /* Only the learner's own time, which was actually measured.
+                     The cohort average and "% got it right" beside it were seed
+                     values. */
                   <p className="mt-2 text-[11px] text-[var(--color-faint)]">
-                    {lang === 'hi' ? 'आपका समय' : 'Your time'}: {Math.round(row.timeSpentMs / 1000)}s
+                    {lang === 'hi' ? 'आपका समय' : 'Your time'}:{' '}
+                    {Math.round(row.timeSpentMs / 1000)}s
                   </p>
-                </article>
-              );
-            })
+                }
+              />
+            ))
           ) : (
             <EmptyState
               icon="🎉"

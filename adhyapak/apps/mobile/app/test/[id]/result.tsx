@@ -15,6 +15,7 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, Button, Chip, EmptyState, ProgressBar, s, Stat } from '@/components/ui';
+import { QuestionSolution } from '@/components/QuestionSolution';
 
 type Tab = 'summary' | 'sections' | 'solutions';
 
@@ -250,85 +251,15 @@ export default function ResultScreen() {
           </View>
 
           {visible.length ? (
-            visible.map((row, i) => {
-              const bookmarked = user.bookmarkedQuestionIds.includes(row.question.id);
-              return (
-                <View key={row.question.id} style={[s.card, { padding: theme.space.lg }]}>
-                  <View style={[s.row, { gap: 8 }]}>
-                    <Text style={{ fontWeight: '800', fontSize: theme.font.sm }}>Q{i + 1}</Text>
-                    <Badge tone={row.correct ? 'success' : row.selectedIndex === null ? 'neutral' : 'danger'}>
-                      {row.correct
-                        ? t(UI.correct, lang)
-                        : row.selectedIndex === null
-                          ? t(UI.skipped, lang)
-                          : t(UI.incorrect, lang)}
-                    </Badge>
-                    <View style={{ flex: 1 }} />
-                    <Pressable onPress={() => toggleBookmark(row.question.id)}>
-                      <Text style={{ fontSize: 16 }}>{bookmarked ? '🔖' : '📑'}</Text>
-                    </Pressable>
-                  </View>
-
-                  <Text style={{ fontSize: theme.font.base, fontWeight: '600', lineHeight: 23, marginTop: 8 }}>
-                    {t(row.question.text, lang)}
-                  </Text>
-
-                  <View style={{ marginTop: 10, gap: 6 }}>
-                    {row.question.options.map((opt, oi) => {
-                      const isCorrect = oi === row.question.correctIndex;
-                      const isChosen = oi === row.selectedIndex;
-                      return (
-                        <View
-                          key={oi}
-                          style={{
-                            flexDirection: 'row',
-                            gap: 8,
-                            borderWidth: 1,
-                            borderRadius: theme.radius.sm,
-                            paddingHorizontal: 12,
-                            paddingVertical: 9,
-                            borderColor: isCorrect
-                              ? theme.color.success
-                              : isChosen
-                                ? theme.color.danger
-                                : theme.color.border,
-                            backgroundColor: isCorrect
-                              ? theme.color.successLight
-                              : isChosen
-                                ? theme.color.dangerLight
-                                : 'transparent',
-                          }}
-                        >
-                          <Text style={{ fontWeight: '800', fontSize: theme.font.sm }}>
-                            {String.fromCharCode(65 + oi)}.
-                          </Text>
-                          <Text style={{ flex: 1, fontSize: theme.font.sm, lineHeight: 20 }}>
-                            {t(opt, lang)}
-                          </Text>
-                          {isCorrect ? <Text>✅</Text> : isChosen ? <Text>❌</Text> : null}
-                        </View>
-                      );
-                    })}
-                  </View>
-
-                  <View
-                    style={{
-                      marginTop: 10,
-                      backgroundColor: theme.color.surfaceAlt,
-                      borderRadius: theme.radius.md,
-                      padding: 12,
-                    }}
-                  >
-                    <Text style={[s.faint, { fontWeight: '800' }]}>
-                      {t(UI.explanation, lang).toUpperCase()}
-                    </Text>
-                    <Text style={{ fontSize: theme.font.sm, lineHeight: 21, marginTop: 4 }}>
-                      {t(row.question.explanation, lang)}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })
+            visible.map((row, i) => (
+              <QuestionSolution
+                key={row.question.id}
+                question={row.question}
+                number={i + 1}
+                selectedIndex={row.selectedIndex}
+                lang={lang}
+              />
+            ))
           ) : (
             <EmptyState
               icon="🎉"
