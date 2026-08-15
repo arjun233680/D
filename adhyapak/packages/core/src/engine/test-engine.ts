@@ -158,7 +158,22 @@ const simulateRank = (percentage: number, attempts: number) => {
   return { percentile, rank, totalCandidates };
 };
 
-export const gradeAttempt = (test: Test, attempt: TestAttempt): TestResult => {
+/**
+ * Finds a question by id.
+ *
+ * Defaults to the bundled bank, which is where every seeded mock's questions
+ * live. A paper assembled at runtime — a previous-year set pulled from the
+ * database — has questions the bundle has never heard of, so the caller passes
+ * a lookup over what it fetched. Without this, grading such a paper silently
+ * skipped every question and reported a score of zero out of zero.
+ */
+export type FindQuestion = (id: string) => Question | undefined;
+
+export const gradeAttempt = (
+  test: Test,
+  attempt: TestAttempt,
+  findQuestion: FindQuestion = getQuestion,
+): TestResult => {
   const ids = testQuestionIds(test);
   const maxScore = testMaxMarks(test);
 
@@ -171,7 +186,7 @@ export const gradeAttempt = (test: Test, attempt: TestAttempt): TestResult => {
   const byTopic = new Map<string, TopicPerformance>();
 
   for (const id of ids) {
-    const question = getQuestion(id);
+    const question = findQuestion(id);
     if (!question) continue;
 
     const answer = attempt.answers[id];
@@ -274,10 +289,11 @@ export const gradeAttempt = (test: Test, attempt: TestAttempt): TestResult => {
 export const reviewList = (
   test: Test,
   attempt: TestAttempt,
+  findQuestion: FindQuestion = getQuestion,
 ): { question: Question; selectedIndex: number | null; correct: boolean }[] =>
   testQuestionIds(test)
     .map((id) => {
-      const question = getQuestion(id);
+      const question = findQuestion(id);
       if (!question) return null;
       const selectedIndex = attempt.answers[id]?.selectedIndex ?? null;
       return { question, selectedIndex, correct: selectedIndex === question.correctIndex };

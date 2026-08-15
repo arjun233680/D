@@ -1,4 +1,4 @@
-import type { Exam, ExamPaper } from '../types';
+import type { Bilingual, Exam, ExamPaper, Test } from '../types';
 import { getExam, getPaper, paperBrowsableSubjects } from '../data/exams';
 import { getSubject } from '../data/subjects';
 import type { PracticeFilter } from './practice';
@@ -260,3 +260,67 @@ export const pyqEmptyReason = (
     hi: 'विगत वर्ष प्रश्न अभी जोड़े नहीं गए हैं।',
   };
 };
+
+/* ------------------------------------------------------------- as a paper */
+
+/**
+ * A previous-year selection, assembled into a sittable paper.
+ *
+ * The exam player takes a `Test`; a PYQ selection is a filter that resolves to
+ * a list of questions at runtime. This is the join between them, so previous-
+ * year practice runs through the same player as every mock rather than through
+ * a second implementation of the same window.
+ *
+ * Sections follow the subjects present, in the order the questions came back,
+ * because that is what the section tabs across the top of the player show. The
+ * duration is the real exam's minute-per-question rate applied to however many
+ * questions the filter actually matched — a 30-question subject drill gets 30
+ * minutes, not the full paper's 150.
+ */
+export const pyqTestFromQuestions = (
+  questions: { id: string; subjectId: string }[],
+  options: { id: string; title: Bilingual; examId: string; paperId?: string; year?: number },
+): Test => {
+  const bySubject = new Map<string, string[]>();
+  for (const question of questions) {
+    const ids = bySubject.get(question.subjectId) ?? [];
+    ids.push(question.id);
+    bySubject.set(question.subjectId, ids);
+  }
+
+  return {
+    id: options.id,
+    title: options.title,
+    examId: options.examId,
+    paperId: options.paperId,
+    type: 'pyq',
+    // One minute per question, the rate every TET paper is set at.
+    durationMinutes: Math.max(1, questions.length),
+    marksPerQuestion: 1,
+    // No TET-style paper deducts, and inventing a penalty would misreport a score.
+    negativeMarking: 0,
+    access: 'free',
+    attempts: 0,
+    year: options.year,
+    sections: [...bySubject].map(([subjectId, questionIds]) => ({
+      id: `${options.id}-${subjectId}`,
+      name: getSubject(subjectId)?.name ?? { en: subjectId, hi: subjectId },
+      subjectId,
+      questionIds,
+    })),
+    instructions: [],
+  };
+};
+
+/**
+ * A stable id for the paper a selection describes.
+ *
+ * The attempt and the result live on two routes, as they do for a mock, and the
+ * store keys both by test id — so the id has to be recoverable from the URL on
+ * the second route rather than invented on the first. Two different selections
+ * are two different papers; the same selection reached twice is the same one.
+ */
+export const pyqTestId = (selection: PyqSelection): string =>
+  ['pyq', selection.examId, selection.paperId, selection.subjectId, selection.year]
+    .filter(Boolean)
+    .join('-');

@@ -180,7 +180,7 @@ function PyqChooser() {
             like every other page, so a chosen set can be shared or bookmarked. */}
         {ready ? (
           <Link
-            href={query ? `/practice/pyq/run?${query}` : '/practice/pyq/run'}
+            href={query ? `/practice/pyq/attempt?${query}` : '/practice/pyq/attempt'}
             className="rounded-xl bg-[var(--color-brand)] px-8 py-3.5 text-[14px] font-bold text-white transition-shadow hover:shadow-md"
           >
             {hi ? 'टेस्ट शुरू करें' : 'Start test'} →
