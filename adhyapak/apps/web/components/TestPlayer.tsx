@@ -373,14 +373,21 @@ export function TestPlayer({
           >
             🔖 {t(UI.markReview, lang)}
           </button>
-          <button
-            type="button"
-            disabled={revealed}
-            onClick={() => setAttempt((prev) => (prev ? clearResponse(prev, currentId) : prev))}
-            className="rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold text-[var(--color-muted)] disabled:opacity-40"
-          >
-            {t(UI.clear, lang)}
-          </button>
+          {/* Only where it can do something. In practice the answer is marked
+              the moment it is chosen and the question locks, so this button
+              could never be pressed usefully — before an answer there is
+              nothing to clear, and after one it is disabled. In a mock, where
+              nothing is revealed until submission, it is a real control and the
+              one every exam engine offers. */}
+          {instantFeedback ? null : (
+            <button
+              type="button"
+              onClick={() => setAttempt((prev) => (prev ? clearResponse(prev, currentId) : prev))}
+              className="rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold text-[var(--color-muted)]"
+            >
+              {t(UI.clear, lang)}
+            </button>
+          )}
           <div className="flex-1" />
           <button
             type="button"

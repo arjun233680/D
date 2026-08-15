@@ -450,23 +450,29 @@ export function TestPlayer({
               🔖 {t(UI.markReview, lang)}
             </Text>
           </Pressable>
-          <Pressable
-            disabled={revealed}
-            onPress={() => setAttempt((prev) => (prev ? clearResponse(prev, currentId) : prev))}
-            style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: theme.color.border,
-              borderRadius: theme.radius.sm,
-              paddingVertical: 9,
-              alignItems: 'center',
-              opacity: revealed ? 0.4 : 1,
-            }}
-          >
-            <Text style={{ fontSize: theme.font.xs, fontWeight: '700', color: theme.color.textMuted }}>
-              {t(UI.clear, lang)}
-            </Text>
-          </Pressable>
+          {/* See the website's copy: only where it can do something. Practice
+              marks the answer on selection and locks the question, so there is
+              never a moment this could be pressed usefully. A mock reveals
+              nothing until submission, so there it is a real control. */}
+          {instantFeedback ? null : (
+            <Pressable
+              onPress={() => setAttempt((prev) => (prev ? clearResponse(prev, currentId) : prev))}
+              style={{
+                flex: 1,
+                borderWidth: 1,
+                borderColor: theme.color.border,
+                borderRadius: theme.radius.sm,
+                paddingVertical: 9,
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{ fontSize: theme.font.xs, fontWeight: '700', color: theme.color.textMuted }}
+              >
+                {t(UI.clear, lang)}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <View style={{ flexDirection: 'row', gap: theme.space.sm }}>
