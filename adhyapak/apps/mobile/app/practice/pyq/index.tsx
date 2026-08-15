@@ -1,37 +1,34 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { router, Stack } from 'expo-router';
 import {
   countQuestions,
   defaultPyqSelection,
   isBackendConfigured,
   listPyqYears,
-  listQuestions,
   pyqEmptyReason,
   pyqFilterModel,
-  pyqTruncation,
+  pyqSelectionToParams,
   t,
   theme,
   type PyqSelection,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
-import { PracticeRunner } from '@/components/PracticeRunner';
-import { AsyncSection, Chip, s } from '@/components/ui';
+import { Button, Chip, s } from '@/components/ui';
 
 /**
- * Previous-year practice.
+ * Choosing a previous-year set.
  *
  * The same funnel as the website — exam → post → subject → year — driven by the
  * same `pyqFilterModel`, so the two apps cannot offer different subjects for
  * the same paper. Posts read PRT / TGT / PGT, the way the bank is categorised,
  * and every subject a paper can test is offered, electives included.
  *
- * Deep links carry the selection on web; here the state is local and seeded
- * from the profile, because there is no address bar to share.
+ * The questions open on their own screen. Filters sitting above a live runner
+ * meant a stray tap on a chip could swap out the paper a learner was part-way
+ * through, and there was no moment where they decided they were starting.
  */
-
-/** See the website's copy of this: a paper's worth, with truncation admitted. */
-const SCREEN_LIMIT = 300;
 
 export default function PyqScreen() {
   const { lang, user } = useStore();
@@ -43,18 +40,11 @@ export default function PyqScreen() {
   // theirs, so someone preparing for PGT would open on PRT.
   const [chosen, setChosen] = useState<PyqSelection | null>(null);
   const selection = chosen ?? defaultPyqSelection(user);
-
-  const model = useMemo(() => pyqFilterModel(selection), [selection]);
-  const filterKey = JSON.stringify(model.filter);
+  const model = pyqFilterModel(selection);
 
   const years = useAsync(() => listPyqYears(selection.examId), [selection.examId]);
-  const total = useAsync(() => countQuestions(model.filter), [filterKey]);
-  const questions = useAsync(
-    () => listQuestions({ ...model.filter, limit: SCREEN_LIMIT }),
-    [filterKey],
-  );
+  const total = useAsync(() => countQuestions(model.filter), [JSON.stringify(model.filter)]);
 
-  const truncated = pyqTruncation(total.data, questions.data?.length ?? 0, SCREEN_LIMIT);
   const reason = pyqEmptyReason(selection, model);
   const update = (patch: Partial<PyqSelection>) => setChosen({ ...selection, ...patch });
 
@@ -62,13 +52,23 @@ export default function PyqScreen() {
   // level, so the paper filter is dropped and the paper's name must not be
   // printed beside a count that was never narrowed by it.
   const byPaper = isBackendConfigured();
+  const ready = total.data !== undefined && total.data > 0;
+
+  const subjectLabel = model.filter.subjectId
+    ? model.subjectOptions.find((o) => o.value === model.filter.subjectId)?.[
+        hi ? 'labelHi' : 'labelEn'
+      ]
+    : hi
+      ? 'सभी विषय'
+      : 'All subjects';
 
   return (
     <View style={s.screen}>
-      <ScrollView
-        style={{ flexGrow: 0, flexShrink: 0 }}
-        contentContainerStyle={{ paddingHorizontal: theme.space.lg, paddingTop: theme.space.lg }}
-      >
+      {/* The runner used to supply this screen's header title; now that the
+          questions live on their own route, the chooser has to name itself or
+          the stack falls back to printing the route path. */}
+      <Stack.Screen options={{ title: hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions' }} />
+      <ScrollView contentContainerStyle={{ padding: theme.space.lg, paddingBottom: theme.space.xl }}>
         <Row label={hi ? 'पद' : 'Post'}>
           <Chip
             label={hi ? 'सभी' : 'All'}
@@ -121,65 +121,61 @@ export default function PyqScreen() {
           </Row>
         ) : null}
 
-      </ScrollView>
-
-      {/* The filter's real size, from the database — not the length of what
-          this screen managed to fetch. */}
-      <View
-        style={{
-          paddingHorizontal: theme.space.lg,
-          paddingBottom: theme.space.sm,
-        }}
-      >
-        <Text style={s.muted}>
-          {total.loading
-            ? hi
-              ? 'गिन रहे हैं…'
-              : 'Counting…'
-            : `${total.data ?? 0} ${hi ? 'प्रश्न' : total.data === 1 ? 'question' : 'questions'}${
-                byPaper && model.paper ? ` · ${t(model.paper.name, lang)}` : ''
-              }`}
-        </Text>
         {!byPaper ? (
-          <Text style={[s.faint, { marginTop: 4 }]}>
+          <Text style={[s.faint, { marginTop: theme.space.sm }]}>
             {hi
               ? 'ऑफ़लाइन — नमूने में पेपर की जानकारी नहीं है, पद से छँटाई नहीं हो सकती।'
               : 'Offline — the bundled sample has no paper information to filter by post.'}
           </Text>
         ) : null}
-        {truncated ? (
-          <Text style={[s.faint, { marginTop: 4, color: theme.color.warning }]}>
-            {hi
-              ? `${truncated.total} में से पहले ${truncated.shown} दिखाए जा रहे हैं — विषय या वर्ष चुनें।`
-              : `Showing the first ${truncated.shown} of ${truncated.total} — choose a subject or year.`}
-          </Text>
-        ) : null}
-      </View>
+      </ScrollView>
 
-      <View style={{ flex: 1, paddingHorizontal: theme.space.lg }}>
-        <AsyncSection
-          state={questions}
-          lang={lang}
-          empty={{
-            icon: '📜',
-            title: hi ? 'कोई प्रश्न नहीं' : 'No questions',
-            body: hi ? reason.hi : reason.en,
-          }}
-        >
-          {(list) => (
-            <PracticeRunner
-              questions={list}
-              title={hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
-              subtitle={
-                byPaper && model.paper
-                  ? `${t(model.paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
-                  : hi
-                    ? 'वास्तविक पेपरों से'
-                    : 'Straight from real papers'
-              }
-            />
-          )}
-        </AsyncSection>
+      {/* What is about to start: the filter's real size, from the database. */}
+      <View
+        style={{
+          padding: theme.space.lg,
+          borderTopWidth: 1,
+          borderTopColor: theme.color.border,
+          backgroundColor: theme.color.surface,
+        }}
+      >
+        {total.loading ? (
+          <Text style={s.muted}>{hi ? 'गिन रहे हैं…' : 'Counting…'}</Text>
+        ) : (
+          <>
+            <Text style={[s.h2, { fontVariant: ['tabular-nums'] }]}>
+              {total.data ?? 0}{' '}
+              <Text style={s.muted}>
+                {hi ? 'प्रश्न' : total.data === 1 ? 'question' : 'questions'}
+              </Text>
+            </Text>
+            <Text style={[s.faint, { marginTop: 4 }]}>
+              {ready
+                ? [
+                    byPaper && model.paper ? t(model.paper.name, lang) : null,
+                    subjectLabel,
+                    selection.year ?? (hi ? 'सभी वर्ष' : 'All years'),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : hi
+                  ? reason.hi
+                  : reason.en}
+            </Text>
+          </>
+        )}
+
+        <Button
+          label={hi ? 'टेस्ट शुरू करें' : 'Start test'}
+          disabled={!ready}
+          onPress={() =>
+            router.push({
+              pathname: '/practice/pyq/run',
+              params: pyqSelectionToParams(selection),
+            })
+          }
+          style={{ marginTop: theme.space.md }}
+        />
       </View>
     </View>
   );

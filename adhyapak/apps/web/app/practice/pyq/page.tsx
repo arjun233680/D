@@ -1,64 +1,54 @@
 'use client';
 
 import { Suspense, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   countQuestions,
   isBackendConfigured,
   listPyqYears,
-  listQuestions,
   pyqEmptyReason,
   pyqFilterModel,
   pyqSelectionFromParams,
   pyqSelectionToParams,
-  pyqTruncation,
   resolvePyqSelection,
   t,
   type PyqSelection,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
-import { PracticeRunner } from '@/components/PracticeRunner';
-import { AsyncSection, Skeleton } from '@/components/ui';
+import { Skeleton } from '@/components/ui';
 
 /**
- * Previous-year practice.
+ * Choosing a previous-year set.
  *
  * The funnel the product needs: exam → post → subject → year. The repository
  * always translated every one of those into a real query; this screen used to
  * send only the year, so a learner could not reach the CDP half of the 2023 PRT
  * paper at all.
  *
- * Every choice lives in the URL, so a filtered view can be shared and survives
- * a refresh. The post picker reads PRT / TGT / PGT, the way the bank is
+ * The questions themselves open on their own page. Filters above a live runner
+ * meant the paper you were part-way through could be swapped out from under you
+ * by a stray click on a dropdown, and it left no moment where a learner decides
+ * they are starting — which is what makes it a sitting rather than a scroll.
+ *
+ * Every choice lives in the URL, so a chosen set can be shared and survives a
+ * refresh. The post picker reads PRT / TGT / PGT, the way the bank is
  * categorised, and the subject picker lists every subject that paper can test —
  * all twenty-one PGT electives included — because this is a menu to choose
  * from, not a syllabus being asserted about the learner.
  */
 
-/**
- * How many questions one screen will hold.
- *
- * The whole HTET bank is ~861 previous-year questions, and the repository's
- * default page is 200 — so the runner used to say "1 / 200" of 861 with nothing
- * admitting the other 661 existed. Rather than page a practice runner, which
- * would mean a learner losing their place, this asks for a paper's worth and
- * says plainly when the filter is wider than that. A fully funnelled selection
- * is 30 questions; this ceiling only bites on "all subjects, all years", where
- * narrowing is the right advice anyway.
- */
-const SCREEN_LIMIT = 300;
-
 export default function PyqPracticePage() {
   return (
     // useSearchParams needs a Suspense boundary to prerender in a static export.
     <Suspense fallback={<Skeleton className="h-64" />}>
-      <PyqBrowser />
+      <PyqChooser />
     </Suspense>
   );
 }
 
-function PyqBrowser() {
+function PyqChooser() {
   const { lang, user } = useStore();
   const hi = lang === 'hi';
   const router = useRouter();
@@ -71,26 +61,22 @@ function PyqBrowser() {
   );
 
   const model = useMemo(() => pyqFilterModel(selection), [selection]);
+  const query = new URLSearchParams(pyqSelectionToParams(selection)).toString();
 
   const setSelection = useCallback(
     (next: PyqSelection) => {
-      const query = new URLSearchParams(pyqSelectionToParams(next)).toString();
-      router.replace(query ? `/practice/pyq?${query}` : '/practice/pyq', { scroll: false });
+      const q = new URLSearchParams(pyqSelectionToParams(next)).toString();
+      router.replace(q ? `/practice/pyq?${q}` : '/practice/pyq', { scroll: false });
     },
     [router],
   );
 
-  const filterKey = JSON.stringify(model.filter);
-
   const years = useAsync(() => listPyqYears(selection.examId), [selection.examId]);
-  // The real size of this filter, which is also how truncation is detected.
-  const total = useAsync(() => countQuestions(model.filter), [filterKey]);
-  const questions = useAsync(
-    () => listQuestions({ ...model.filter, limit: SCREEN_LIMIT }),
-    [filterKey],
+  const total = useAsync(
+    () => countQuestions(model.filter),
+    [JSON.stringify(model.filter)],
   );
 
-  const truncated = pyqTruncation(total.data, questions.data?.length ?? 0, SCREEN_LIMIT);
   const reason = pyqEmptyReason(selection, model);
 
   // Offline, the bundled sample has no teaching level on it, so the paper filter
@@ -101,6 +87,8 @@ function PyqBrowser() {
 
   const update = (patch: Partial<PyqSelection>) => setSelection({ ...selection, ...patch });
 
+  const ready = total.data !== undefined && total.data > 0;
+
   return (
     <div className="space-y-4 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
       <header>
@@ -109,8 +97,8 @@ function PyqBrowser() {
         </h1>
         <p className="mt-1 text-[13px] text-[var(--color-muted)]">
           {hi
-            ? 'असली पेपरों से — पद, विषय और वर्ष के अनुसार छाँटें।'
-            : 'Straight from the real papers — filter by post, subject and year.'}
+            ? 'असली पेपरों से — पद, विषय और वर्ष चुनिए, फिर टेस्ट शुरू कीजिए।'
+            : 'Straight from the real papers — choose a post, subject and year, then start.'}
         </p>
       </header>
 
@@ -148,22 +136,61 @@ function PyqBrowser() {
           options={(years.data ?? []).map((y) => ({ value: String(y), label: String(y) }))}
           placeholder={hi ? 'सभी वर्ष' : 'All years'}
         />
-
       </section>
 
-      {/* The count is the filter's real size, from the database, not the length
-          of whatever this screen managed to fetch. */}
-      <p className="text-[13px] font-semibold" aria-live="polite">
-        {total.loading ? (
-          <span className="text-[var(--color-muted)]">{hi ? 'गिन रहे हैं…' : 'Counting…'}</span>
-        ) : total.data === undefined ? null : (
-          <>
-            {total.data} {hi ? 'प्रश्न' : total.data === 1 ? 'question' : 'questions'}
-            {byPaper && model.paper ? ` · ${t(model.paper.name, lang)}` : ''}
-            {selection.year ? ` · ${selection.year}` : ''}
-          </>
+      {/* What is about to start: the filter's real size, from the database. */}
+      <section className="card flex flex-wrap items-center justify-between gap-4 p-5">
+        <div aria-live="polite">
+          {total.loading ? (
+            <p className="text-[15px] font-bold text-[var(--color-muted)]">
+              {hi ? 'गिन रहे हैं…' : 'Counting…'}
+            </p>
+          ) : (
+            <>
+              <p className="text-[22px] leading-none font-extrabold tabular-nums">
+                {total.data ?? 0}{' '}
+                <span className="text-[14px] font-bold text-[var(--color-muted)]">
+                  {hi ? 'प्रश्न' : total.data === 1 ? 'question' : 'questions'}
+                </span>
+              </p>
+              <p className="mt-1.5 text-[12px] text-[var(--color-muted)]">
+                {ready
+                  ? [
+                      byPaper && model.paper ? t(model.paper.name, lang) : null,
+                      model.filter.subjectId
+                        ? model.subjectOptions.find((o) => o.value === model.filter.subjectId)?.[
+                            hi ? 'labelHi' : 'labelEn'
+                          ]
+                        : hi
+                          ? 'सभी विषय'
+                          : 'All subjects',
+                      selection.year ?? (hi ? 'सभी वर्ष' : 'All years'),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : hi
+                    ? reason.hi
+                    : reason.en}
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Deliberately a link, not a button: the run page is reachable by URL
+            like every other page, so a chosen set can be shared or bookmarked. */}
+        {ready ? (
+          <Link
+            href={query ? `/practice/pyq/run?${query}` : '/practice/pyq/run'}
+            className="rounded-xl bg-[var(--color-brand)] px-8 py-3.5 text-[14px] font-bold text-white transition-shadow hover:shadow-md"
+          >
+            {hi ? 'टेस्ट शुरू करें' : 'Start test'} →
+          </Link>
+        ) : (
+          <span className="cursor-not-allowed rounded-xl bg-[var(--color-line)] px-8 py-3.5 text-[14px] font-bold text-[var(--color-muted)]">
+            {hi ? 'टेस्ट शुरू करें' : 'Start test'} →
+          </span>
         )}
-      </p>
+      </section>
 
       {!byPaper ? (
         <p className="text-[12px] text-[var(--color-muted)]">
@@ -172,36 +199,6 @@ function PyqBrowser() {
             : 'Offline — the bundled sample carries no paper information, so it cannot be filtered by post.'}
         </p>
       ) : null}
-
-      {truncated ? (
-        <p className="rounded-xl border border-[var(--color-warning)] bg-[var(--color-warning-light)] px-4 py-3 text-[13px]">
-          ⚠️{' '}
-          {hi
-            ? `${truncated.total} में से पहले ${truncated.shown} प्रश्न दिखाए जा रहे हैं। पूरा सेट देखने हेतु विषय या वर्ष चुनें।`
-            : `Showing the first ${truncated.shown} of ${truncated.total}. Choose a subject or a year to see a complete set.`}
-        </p>
-      ) : null}
-
-      <AsyncSection
-        state={questions}
-        lang={lang}
-        empty={{ icon: '📜', title: hi ? 'कोई प्रश्न नहीं' : 'No questions', body: hi ? reason.hi : reason.en }}
-      >
-        {(list) => (
-          <PracticeRunner
-            embedded
-            questions={list}
-            title={hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
-            subtitle={
-              byPaper && model.paper
-                ? `${t(model.paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
-                : hi
-                  ? 'वास्तविक पेपरों से'
-                  : 'Straight from real papers'
-            }
-          />
-        )}
-      </AsyncSection>
     </div>
   );
 }
