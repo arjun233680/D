@@ -971,19 +971,37 @@ export const listDraftQuestions = async (filter: DraftFilter = {}): Promise<Draf
   const db = getBackend();
   if (!db) return [];
 
-  let q = db
-    .from('questions')
-    .select('*')
-    .eq('status', filter.status ?? 'draft')
-    .order('created_at', { ascending: false });
-  if (filter.subjectId) q = q.eq('subject_id', filter.subjectId);
-  const limit = filter.limit ?? 100;
-  const offset = filter.offset ?? 0;
-  q = q.range(offset, offset + limit - 1);
+  // With no explicit limit this returns the whole queue, paged. It used to
+  // return one page and stop, so an 840-row import showed 200 drafts and the
+  // other 640 were invisible — there was no next-page control, and no hint that
+  // anything had been left behind. Reviewing a batch means seeing the batch.
+  const windowed = filter.limit !== undefined;
+  const pageSize = filter.limit ?? 1000;
+  // A bound, not an expectation: the loop's real exit is a short page. It must
+  // not depend on the server honouring Range to avoid spinning forever.
+  const maxPages = 50;
 
-  const { data, error } = await q;
-  if (error || !data) return [];
-  return (data as Record<string, unknown>[]).map((r) => ({
+  const rows: Record<string, unknown>[] = [];
+  let from = filter.offset ?? 0;
+
+  for (let page = 0; page < maxPages; page += 1) {
+    let q = db
+      .from('questions')
+      .select('*')
+      .eq('status', filter.status ?? 'draft')
+      .order('created_at', { ascending: false });
+    if (filter.subjectId) q = q.eq('subject_id', filter.subjectId);
+    q = q.range(from, from + pageSize - 1);
+
+    const { data, error } = await q;
+    if (error || !data) break;
+    rows.push(...(data as Record<string, unknown>[]));
+    // A caller that asked for a window gets exactly that window.
+    if (windowed || data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows.map((r) => ({
     id: r.id as string,
     status: r.status as ContentStatus,
     text: r.text as Bilingual,

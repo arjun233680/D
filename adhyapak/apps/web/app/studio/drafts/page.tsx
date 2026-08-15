@@ -41,7 +41,10 @@ export default function DraftsPage() {
   );
   const [round, setRound] = useState(0);
 
-  const drafts = useAsync(() => listDraftQuestions({ status, limit: 200 }), [status, round]);
+  // No limit: the whole queue. This asked for 200, so an 840-row import showed
+  // 200 drafts with no next page and no sign the rest existed — you published
+  // what you could see and the remainder stayed invisible.
+  const drafts = useAsync(() => listDraftQuestions({ status }), [status, round]);
 
   const rows = useMemo(() => drafts.data ?? [], [drafts.data]);
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
