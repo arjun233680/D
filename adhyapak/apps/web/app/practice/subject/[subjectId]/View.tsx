@@ -7,7 +7,7 @@ import { formatCount, getSubject, listQuestions, t } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { AsyncSection, Badge, ProgressBar, SectionHeader } from '@/components/ui';
-import { PracticeRunner } from '@/components/PracticeRunner';
+import { PracticeSession } from '@/components/PracticeSession';
 
 /**
  * A subject page is a topic index plus a "practise everything" runner, so the
@@ -46,10 +46,9 @@ export default function SubjectPracticePage({
         }}
       >
         {(list) => (
-          <PracticeRunner
+          <PracticeSession
             questions={list}
             title={t(subject.name, lang)}
-            subtitle={lang === 'hi' ? 'पूरा विषय अभ्यास' : 'Full subject practice'}
             backHref={`/practice/subject/${subject.id}`}
           />
         )}

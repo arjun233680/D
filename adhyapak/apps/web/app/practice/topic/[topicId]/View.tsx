@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { getSubject, getTopic, listQuestions, t } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
-import { PracticeRunner } from '@/components/PracticeRunner';
+import { PracticeSession } from '@/components/PracticeSession';
 import { AsyncSection } from '@/components/ui';
 
 export default function TopicPracticePage({
@@ -40,10 +40,9 @@ export default function TopicPracticePage({
       }}
     >
       {(questions) => (
-        <PracticeRunner
+        <PracticeSession
           questions={questions}
           title={t(topic.name, lang)}
-          subtitle={subject ? `${subject.icon} ${t(subject.name, lang)}` : undefined}
           backHref={`/practice/subject/${topic.subjectId}`}
         />
       )}

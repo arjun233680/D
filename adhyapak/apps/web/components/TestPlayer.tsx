@@ -159,9 +159,14 @@ export function TestPlayer({
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--color-surface)]">
+    /* A full-screen layer rather than a page section, so the window looks the
+       same wherever it is opened from — a mock route the shell already steps
+       aside for, or a practice screen that sits inside the site chrome. The
+       middle row scrolls, not the page, which is what keeps the action bar and
+       the palette pinned the way an exam engine does. */
+    <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-[var(--color-surface)]">
       {/* Exam header */}
-      <header className="sticky top-0 z-20 border-b border-[var(--color-line)] bg-[var(--color-surface)]">
+      <header className="shrink-0 border-b border-[var(--color-line)] bg-[var(--color-surface)]">
         <div className="flex items-center gap-3 px-3 py-2.5">
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-bold">{t(test.title, lang)}</p>
@@ -217,9 +222,9 @@ export function TestPlayer({
         </div>
       </header>
 
-      <div className="flex flex-1">
+      <div className="flex min-h-0 flex-1">
         {/* Question */}
-        <main className="min-w-0 flex-1 px-4 py-4 pb-40 lg:pb-4">
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-4">
           {question ? (
             <>
               <div className="flex items-center gap-2">
@@ -286,7 +291,7 @@ export function TestPlayer({
         </main>
 
         {/* Desktop palette */}
-        <aside className="hidden w-[280px] shrink-0 border-l border-[var(--color-line)] p-4 lg:block">
+        <aside className="hidden w-[280px] shrink-0 overflow-y-auto border-l border-[var(--color-line)] p-4 lg:block">
           <Palette
             counts={counts}
             questionIds={questionIds}
@@ -301,7 +306,7 @@ export function TestPlayer({
       </div>
 
       {/* Action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 lg:static lg:border-t">
+      <div className="shrink-0 border-t border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -354,7 +359,7 @@ export function TestPlayer({
 
       {/* Mobile palette drawer */}
       {paletteOpen ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
             aria-label="Close"
@@ -381,7 +386,7 @@ export function TestPlayer({
 
       {/* Submit confirmation */}
       {confirmSubmit ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-[var(--color-surface)] p-5">
             <h2 className="text-[17px] font-extrabold">
               {lang === 'hi' ? 'टेस्ट सबमिट करें?' : 'Submit the test?'}
