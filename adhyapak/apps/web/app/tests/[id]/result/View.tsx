@@ -24,7 +24,10 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
   const { id } = use(params);
   const { lang, results, attempts, user, toggleBookmark } = useStore();
   const [tab, setTab] = useState<Tab>('summary');
-  const [onlyWrong, setOnlyWrong] = useState(true);
+  // The whole set, in order, is what a learner opens the solutions for: they
+  // want to walk the paper. Narrowing to what went wrong is one click away, and
+  // is a second pass rather than the first thing they are shown.
+  const [onlyWrong, setOnlyWrong] = useState(false);
 
   const test = getTest(id);
   if (!test) notFound();
@@ -120,7 +123,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
       <div className="grid grid-cols-3 gap-2">
         <Stat label={t(UI.correct, lang)} value={String(result.correct)} tone="success" />
         <Stat label={t(UI.incorrect, lang)} value={String(result.incorrect)} tone="danger" />
-        <Stat label={t(UI.skipped, lang)} value={String(result.skipped)} />
+        <Stat label={t(UI.unattempted, lang)} value={String(result.skipped)} />
       </div>
 
       <div className="rail flex gap-2">
@@ -260,7 +263,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                     ❌ {t(UI.incorrect, lang)}: <b>{s.incorrect}</b>
                   </span>
                   <span>
-                    ⏭ {t(UI.skipped, lang)}: <b>{s.skipped}</b>
+                    ⏭ {t(UI.unattempted, lang)}: <b>{s.skipped}</b>
                   </span>
                   <span>
                     🎯 {t(UI.accuracy, lang)}: <b>{s.accuracy}%</b>
@@ -284,7 +287,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
               onChange={(e) => setOnlyWrong(e.target.checked)}
               className="h-4 w-4 accent-[var(--color-brand)]"
             />
-            {lang === 'hi' ? 'केवल गलत/छोड़े गए प्रश्न' : 'Only incorrect & skipped'}
+            {lang === 'hi' ? 'केवल गलत/अनुत्तरित प्रश्न' : 'Only incorrect & unattempted'}
           </label>
 
           {visibleRows.length ? (

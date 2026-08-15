@@ -91,6 +91,13 @@ export const UI = {
   correct: { en: 'Correct', hi: 'सही' },
   incorrect: { en: 'Incorrect', hi: 'गलत' },
   skipped: { en: 'Skipped', hi: 'छोड़े गए' },
+  /**
+   * No option was marked — the word a candidate reads on every real scorecard.
+   * "Skipped" describes the act of passing over a question you looked at;
+   * a review has no way to tell that apart from never reaching it, and both
+   * come to the same thing on the answer sheet.
+   */
+  unattempted: { en: 'Unattempted', hi: 'अनुत्तरित' },
   qualified: { en: 'Qualified', hi: 'उत्तीर्ण' },
   notQualified: { en: 'Not Qualified', hi: 'अनुत्तीर्ण' },
   solution: { en: 'Solution', hi: 'हल' },

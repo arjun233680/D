@@ -72,10 +72,10 @@ export function PracticeRunner({
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [finished, setFinished] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  // The set is worth re-reading question by question, but the ones worth
-  // re-reading first are the ones that went wrong — so that is the default,
-  // and it flips to everything when there is nothing wrong to show.
-  const [onlyWrong, setOnlyWrong] = useState(true);
+  // The whole set, in order, is what a learner opens the solutions for: they
+  // want to walk the paper. Narrowing to what went wrong is one click away, and
+  // is a second pass rather than the first thing they are shown.
+  const [onlyWrong, setOnlyWrong] = useState(false);
 
   // One result per answered question, in the set's own order — so the summary
   // does not depend on the order the learner happened to jump around in.
@@ -553,8 +553,9 @@ function Solutions({
     number: i + 1,
     answer: answers[question.id],
   }));
-  // Wrong or skipped — both are things to go back over. Never reached is not.
-  const wrong = rows.filter((r) => r.answer !== undefined && !r.answer.correct);
+  // Everything that is not correct, which includes the ones never reached:
+  // an unattempted question is exactly as much of a gap as a wrong one.
+  const wrong = rows.filter((r) => !r.answer?.correct);
   const visible = onlyWrong ? wrong : rows;
 
   return (
@@ -568,7 +569,9 @@ function Solutions({
             onChange={(e) => onOnlyWrongChange(e.target.checked)}
             className="h-4 w-4 accent-[var(--color-brand)]"
           />
-          {hi ? `केवल गलत/छोड़े गए (${wrong.length})` : `Only incorrect & skipped (${wrong.length})`}
+          {hi
+            ? `केवल गलत/अनुत्तरित (${wrong.length})`
+            : `Only incorrect & unattempted (${wrong.length})`}
         </label>
       </div>
 

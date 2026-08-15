@@ -23,7 +23,10 @@ export default function ResultScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { lang, results, attempts, user, toggleBookmark } = useStore();
   const [tab, setTab] = useState<Tab>('summary');
-  const [onlyWrong, setOnlyWrong] = useState(true);
+  // The whole set, in order, is what a learner opens the solutions for: they
+  // want to walk the paper. Narrowing to what went wrong is one click away, and
+  // is a second pass rather than the first thing they are shown.
+  const [onlyWrong, setOnlyWrong] = useState(false);
 
   const test = getTest(String(id));
   const result = test ? results[test.id] : undefined;
@@ -121,7 +124,7 @@ export default function ResultScreen() {
       <View style={{ flexDirection: 'row', gap: 8, marginTop: theme.space.sm }}>
         <Stat label={t(UI.correct, lang)} value={String(result.correct)} color={theme.color.success} />
         <Stat label={t(UI.incorrect, lang)} value={String(result.incorrect)} color={theme.color.danger} />
-        <Stat label={t(UI.skipped, lang)} value={String(result.skipped)} />
+        <Stat label={t(UI.unattempted, lang)} value={String(result.skipped)} />
       </View>
 
       <View style={{ flexDirection: 'row', marginTop: theme.space.lg }}>
@@ -246,7 +249,7 @@ export default function ResultScreen() {
           <View style={[s.row, { gap: 8 }]}>
             <Switch value={onlyWrong} onValueChange={setOnlyWrong} />
             <Text style={{ fontSize: theme.font.sm, fontWeight: '600' }}>
-              {lang === 'hi' ? 'केवल गलत/छोड़े गए' : 'Only incorrect & skipped'}
+              {lang === 'hi' ? 'केवल गलत/अनुत्तरित' : 'Only incorrect & unattempted'}
             </Text>
           </View>
 

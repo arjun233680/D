@@ -58,9 +58,10 @@ export function PracticeRunner({
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [finished, setFinished] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  // The set is worth re-reading question by question, but the ones worth
-  // re-reading first are the ones that went wrong — so that is the default.
-  const [onlyWrong, setOnlyWrong] = useState(true);
+  // The whole set, in order, is what a learner opens the solutions for: they
+  // want to walk the paper. Narrowing to what went wrong is one click away, and
+  // is a second pass rather than the first thing they are shown.
+  const [onlyWrong, setOnlyWrong] = useState(false);
 
   // One result per answered question, in the set's own order — so the summary
   // does not depend on the order the learner jumped around in.
@@ -571,7 +572,7 @@ function Solutions({
     number: i + 1,
     answer: answers[question.id],
   }));
-  const wrong = rows.filter((r) => r.answer !== undefined && !r.answer.correct);
+  const wrong = rows.filter((r) => !r.answer?.correct);
   const visible = onlyWrong ? wrong : rows;
 
   return (
@@ -581,7 +582,9 @@ function Solutions({
       <View style={[s.row, { gap: 8 }]}>
         <Switch value={onlyWrong} onValueChange={onOnlyWrongChange} />
         <Text style={{ fontSize: theme.font.sm, fontWeight: '600' }}>
-          {hi ? `केवल गलत/छोड़े गए (${wrong.length})` : `Only incorrect & skipped (${wrong.length})`}
+          {hi
+            ? `केवल गलत/अनुत्तरित (${wrong.length})`
+            : `Only incorrect & unattempted (${wrong.length})`}
         </Text>
       </View>
 

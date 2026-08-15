@@ -22,7 +22,10 @@ export function QuestionSolution({
   question: Question;
   /** Position in the set the learner just sat, not an id. */
   number: number;
-  /** null when skipped — a real outcome, distinct from a wrong answer. */
+  /**
+   * null when no option was marked — shown as Unattempted, which is a real
+   * outcome and not the same as getting it wrong.
+   */
   selectedIndex: number | null;
   lang: Lang;
   footer?: ReactNode;
@@ -39,7 +42,7 @@ export function QuestionSolution({
           {correct
             ? t(UI.correct, lang)
             : selectedIndex === null
-              ? t(UI.skipped, lang)
+              ? t(UI.unattempted, lang)
               : t(UI.incorrect, lang)}
         </Badge>
         {question.previousYear ? <Badge tone="info">{question.previousYear}</Badge> : null}
