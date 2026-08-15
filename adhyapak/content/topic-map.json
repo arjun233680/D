@@ -1,0 +1,95 @@
+{
+  "$comment": [
+    "Maps the labels used in the source spreadsheets to ids in the app's taxonomy.",
+    "",
+    "This file is the source of truth and is meant to be reviewed and edited by hand.",
+    "Run `npm run content:map` after changing it: that regenerates the TypeScript copy",
+    "the browser bundles (packages/core/src/content/htet-topic-map.ts), and a test",
+    "fails if the two ever drift apart.",
+    "",
+    "A label that is not listed here is NOT silently dropped and NOT guessed at. The",
+    "importer rejects the row naming the unmapped value, so a new topic appearing in a",
+    "future paper is a visible failure rather than a question filed under the wrong",
+    "heading.",
+    "",
+    "Matching ignores case, spacing and punctuation, so 'Socialization Processes' and",
+    "'Socialization processes' are one entry."
+  ],
+
+  "sources": [
+    { "file": "content/CDP.xlsx", "rows": 630, "subject": "cdp", "perPaper": 30 },
+    { "file": "content/GK.xlsx", "rows": 210, "subject": "haryana-gk", "perPaper": 10 }
+  ],
+
+  "level": {
+    "$comment": "The 'HTET' column holds the post, which selects the paper: PRT is htet-l1, TGT htet-l2, PGT htet-l3. The importer stores the TeachingLevel those papers carry.",
+    "PRT": "primary",
+    "TGT": "upper-primary",
+    "PGT": "senior-secondary"
+  },
+
+  "subject": {
+    "$comment": "GK.xlsx is the 10-mark Haryana block, not general awareness — its own topics are Haryana history, Haryana welfare schemes and Haryana culture.",
+    "CDP": "cdp",
+    "Child Development & Pedagogy": "cdp",
+    "G.K. & Awareness": "haryana-gk"
+  },
+
+  "topic": {
+    "$comment": "27 CDP labels onto 9 CDP topics, 8 GK labels onto 5 Haryana GK topics. Where a source label spans two app topics the more specific one wins; those calls are noted.",
+
+    "Assessment": "cdp-assessment",
+    "CCE": "cdp-assessment",
+    "Question Formulation": "cdp-assessment",
+
+    "Concept of Development": "cdp-growth",
+    "Principles of Development": "cdp-growth",
+    "Heredity & Environment": "cdp-growth",
+    "Child as Learner": "cdp-growth",
+
+    "Piaget": "cdp-piaget",
+    "Kohlberg": "cdp-piaget",
+    "Vygotsky": "cdp-piaget",
+    "Language & Thought": "cdp-piaget",
+
+    "Learning Process": "cdp-learning",
+    "Learning and Pedagogy": "cdp-learning",
+    "Teaching & Learning": "cdp-learning",
+    "Factors Contributing to Learning": "cdp-learning",
+    "Child-Centered & Progressive Education": "cdp-learning",
+
+    "Motivation & Learning": "cdp-motivation",
+
+    "Intelligence": "cdp-intelligence",
+    "Cognition & Emotions": "cdp-intelligence",
+
+    "Inclusive Education": "cdp-inclusive",
+    "Inclusive Education & Special Needs": "cdp-inclusive",
+    "Children with Special Needs": "cdp-inclusive",
+    "Special Learners": "cdp-inclusive",
+
+    "Gender as Social Construct": "cdp-gender",
+    "Socialization Processes": "cdp-gender",
+    "Individual Differences": "cdp-gender",
+
+    "Haryana related history": "hgk-history",
+    "Geography": "hgk-geography",
+    "Environment": "hgk-geography",
+    "Civics": "hgk-polity",
+    "Culture, Art, Traditions": "hgk-culture",
+    "Literature": "hgk-culture",
+    "Welfare Schemes of Haryana Government": "hgk-schemes",
+    "Current affairs": "hgk-schemes"
+  },
+
+  "notes": {
+    "Language & Thought": "Filed with Piaget/Kohlberg/Vygotsky because in TET papers this topic is Vygotsky's account of inner speech.",
+    "Child as Learner": "Filed under Growth & Development rather than Theories of Learning: the questions are about how a child develops, not about a named learning theory.",
+    "Cognition & Emotions": "Filed under Intelligence & Creativity, the nearest cognitive-processes topic in the taxonomy.",
+    "Individual Differences": "The app topic is 'Gender, Socialisation & Individual Differences', which names it explicitly.",
+    "Environment": "Haryana environment questions are geography questions here; the taxonomy has no separate environment topic under Haryana GK.",
+    "Literature": "Haryana literature sits with Art, Culture, Fairs & Festivals.",
+    "hgk-sports": "No source label maps to it. Left unused rather than forcing a label into it.",
+    "cdp-rte": "No source label maps to it. RTE questions in these papers are labelled under other headings."
+  }
+}

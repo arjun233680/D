@@ -116,21 +116,27 @@ export const DEFAULT_COLUMNS: ColumnMap = {
   unit: ['unit', 'chapter', 'unitid', 'chapterid'],
   topic: ['topic', 'topicid'],
   subtopic: ['subtopic', 'subtopicid', 'concept'],
-  question: ['question', 'questionen', 'questiontext', 'questiontexten', 'q', 'qenglish'],
+  question: ['question', 'questionen', 'questiontext', 'questiontexten', 'q', 'qenglish', 'questionenglish'],
   questionHi: ['questionhi', 'questionhindi', 'prashn', 'questiontexthi', 'qhindi'],
-  // The `…en` spellings matter in a bilingual file: a contributor who writes
-  // "Option A HI" writes "Option A EN" beside it, and the pair has to resolve.
-  optionA: ['optiona', 'optionaen', 'opta', 'optaen', 'a', 'aen', 'opt1', 'option1', 'option1en'],
-  optionB: ['optionb', 'optionben', 'optb', 'optben', 'b', 'ben', 'opt2', 'option2', 'option2en'],
-  optionC: ['optionc', 'optioncen', 'optc', 'optcen', 'c', 'cen', 'opt3', 'option3', 'option3en'],
-  optionD: ['optiond', 'optionden', 'optd', 'optden', 'd', 'den', 'opt4', 'option4', 'option4en'],
+  // Bilingual files label the pair in whatever style the author prefers:
+  // "Option A EN"/"Option A HI", "Opt-A (English)"/"Opt-A (Hindi)". Both halves
+  // have to resolve or the row loses its English and fails validation, which is
+  // how a 630-row file came back 630 rejected.
+  optionA: ['optiona', 'optionaen', 'optaenglish', 'optionaenglish', 'opta', 'optaen', 'a', 'aen', 'opt1', 'option1', 'option1en'],
+  optionB: ['optionb', 'optionben', 'optbenglish', 'optionbenglish', 'optb', 'optben', 'b', 'ben', 'opt2', 'option2', 'option2en'],
+  optionC: ['optionc', 'optioncen', 'optcenglish', 'optioncenglish', 'optc', 'optcen', 'c', 'cen', 'opt3', 'option3', 'option3en'],
+  optionD: ['optiond', 'optionden', 'optdenglish', 'optiondenglish', 'optd', 'optden', 'd', 'den', 'opt4', 'option4', 'option4en'],
   optionAHi: ['optionahi', 'optahi', 'optionahindi', 'optahindi', 'ahi', 'option1hi'],
   optionBHi: ['optionbhi', 'optbhi', 'optionbhindi', 'optbhindi', 'bhi', 'option2hi'],
   optionCHi: ['optionchi', 'optchi', 'optionchindi', 'optchindi', 'chi', 'option3hi'],
   optionDHi: ['optiondhi', 'optdhi', 'optiondhindi', 'optdhindi', 'dhi', 'option4hi'],
   answer: ['correctanswer', 'answer', 'correct', 'ans', 'key'],
-  explanation: ['explanation', 'explanationen', 'solution', 'reason'],
-  explanationHi: ['explanationhi', 'solutionhi', 'vyakhya'],
+  // Language-specific spellings come first. A bilingual file can carry both
+  // "Explanation (English)" and a merged "Explanation"; the specific header is
+  // the one that means English, and the bare one would otherwise win by being
+  // listed first and pull Hindi into the English field.
+  explanation: ['explanationen', 'explanationenglish', 'explanation', 'solution', 'reason'],
+  explanationHi: ['explanationhi', 'explanationhindi', 'solutionhi', 'vyakhya'],
   difficulty: ['difficulty', 'level2', 'hardness'],
   year: ['year', 'pyqyear', 'examyear'],
   paper: ['paper', 'papername', 'paperid'],
@@ -177,6 +183,15 @@ export interface ImportOptions {
   columns?: ColumnMap;
   /** Known ids, so a typo'd topic is caught at import instead of at render. */
   refs?: ContentRefs;
+  /**
+   * Per-field translations from the labels a source file uses to the ids this
+   * app uses — "Piaget" to `cdp-piaget`, "PRT" to `primary`.
+   *
+   * Only the fields listed are translated, and only for values the table names.
+   * Anything unlisted passes through and is validated as usual, so an unmapped
+   * topic is rejected with its own label in the message rather than dropped.
+   */
+  valueAliases?: Record<string, Record<string, string> | undefined>;
   /** Overridden in tests so generated ids and timestamps are deterministic. */
   now?: () => string;
   idPrefix?: string;
@@ -289,15 +304,34 @@ export function importQuestions(rows: Row[], options: ImportOptions = {}): Impor
     kind = 'mcq-single',
     columns = DEFAULT_COLUMNS,
     refs,
+    valueAliases = {},
     now = () => new Date().toISOString(),
     idPrefix = 'q',
   } = options;
 
   const headers = Object.keys(rows[0] ?? {});
   const col = resolveColumns(headers, columns);
+
+  // Value aliases are looked up on the same normalised form as headers, so
+  // "Socialization Processes" and "Socialization processes" are one entry.
+  const aliasTables = new Map<string, Map<string, string>>(
+    Object.entries(valueAliases).map(([field, table]) => [
+      field,
+      new Map(Object.entries(table ?? {}).map(([label, id]) => [normalise(label), id])),
+    ]),
+  );
+
   const get = (row: Row, field: string): string | undefined => {
     const header = col[field];
-    return header ? row[header] : undefined;
+    const raw = header ? row[header] : undefined;
+    if (raw === undefined) return undefined;
+
+    const table = aliasTables.get(field);
+    if (!table) return raw;
+    // An unmapped label is deliberately passed through untouched: validation
+    // then rejects the row naming the value, which is what makes a new topic in
+    // next year's paper a visible failure rather than a silent mis-filing.
+    return table.get(normalise(raw)) ?? raw;
   };
 
   const accepted: ContentQuestion[] = [];

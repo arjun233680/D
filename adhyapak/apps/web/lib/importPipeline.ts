@@ -9,6 +9,7 @@ import {
   findDuplicates,
   findLibraryDuplicates,
   fingerprint,
+  HTET_VALUE_ALIASES,
   importQuestions,
   parseDelimited,
   readWorkbook,
@@ -244,6 +245,13 @@ export const validateImport = async (
   const report = importQuestions(parsed.rows, {
     columns: columnMapFrom(mapping),
     refs: contentRefs(),
+    // The HTET source sheets label their rows in prose — "Piaget", "PRT",
+    // "G.K. & Awareness" — so those are translated to ids. Keyed to the chosen
+    // exam rather than applied always: a label like "Geography" means something
+    // different outside a Haryana GK paper, and filing it under hgk-geography
+    // because the table happened to contain the word would be worse than
+    // rejecting it. Unmapped values pass through and are validated as usual.
+    valueAliases: options.examId === 'htet' ? HTET_VALUE_ALIASES : undefined,
     defaultExamIds: options.examId ? [options.examId] : [],
     status: 'draft',
     idPrefix: options.idPrefix ?? `q-${Date.now().toString(36)}`,

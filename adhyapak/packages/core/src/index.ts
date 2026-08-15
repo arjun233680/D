@@ -29,6 +29,7 @@ export * from './content/validation';
 export * from './content/import';
 export * from './content/duplicates';
 export * from './content/xlsx';
+export * from './content/htet-topic-map';
 
 export { theme, examTheme } from './theme';
 export type { Theme, ExamTheme } from './theme';

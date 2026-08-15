@@ -16,7 +16,9 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "seed:generate": "npm run seed:generate --workspace=@adhyapak/backend",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "content:map": "tsx scripts/generate-topic-map.mts",
+    "content:verify": "tsx scripts/content-verify.mts"
   },
   "engines": {
     "node": ">=20"
