@@ -206,6 +206,13 @@ export const countQuestions = (filter: PracticeFilter = {}): Promise<number> =>
       if (filter.examId) q = q.contains('exam_ids', [filter.examId]);
       if (filter.year) q = q.eq('pyq_year', filter.year);
       if (filter.pyqOnly && !filter.year) q = q.not('pyq_year', 'is', null);
+      // Level, shift and difficulty were missing here while listQuestions
+      // honoured all three, so a filtered screen showed a count for a wider set
+      // than the list beneath it — the one number on the page that is supposed
+      // to describe exactly that list.
+      if (filter.level) q = q.contains('levels', [filter.level]);
+      if (filter.shift) q = q.eq('pyq_shift', filter.shift);
+      if (filter.difficulty) q = q.eq('difficulty', filter.difficulty);
       const { count, error } = await q;
       if (error) throw error;
       return count ?? 0;
@@ -219,6 +226,44 @@ export const countQuestions = (filter: PracticeFilter = {}): Promise<number> =>
  * Empty offline: the bundled bank records provenance as prose, so there are no
  * years to list. The screen shows its empty state rather than a fabricated one.
  */
+/**
+ * How many published questions each subject holds, as one round trip.
+ *
+ * A subject index needs a number per subject, and asking `countQuestions` per
+ * subject would be one request per tile. Selecting a single column for the
+ * exam's published questions and tallying here is one request whose payload is
+ * a few kilobytes.
+ *
+ * Offline it counts the bundled set, which is honest about what is actually
+ * available in that mode.
+ */
+export const countQuestionsBySubject = (examId?: string): Promise<Record<string, number>> =>
+  withFallback(
+    async (db) => {
+      const counts: Record<string, number> = {};
+      const pageSize = 1000;
+      for (let from = 0; ; from += pageSize) {
+        let q = db.from('questions').select('subject_id').eq('status', 'published');
+        if (examId) q = q.contains('exam_ids', [examId]);
+        const { data, error } = await q.range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        for (const row of data as { subject_id: string }[]) {
+          counts[row.subject_id] = (counts[row.subject_id] ?? 0) + 1;
+        }
+        if (data.length < pageSize) break;
+      }
+      return counts;
+    },
+    () => {
+      const counts: Record<string, number> = {};
+      for (const q of buildPracticeSet({ examId, limit: undefined, offset: undefined })) {
+        counts[q.subjectId] = (counts[q.subjectId] ?? 0) + 1;
+      }
+      return counts;
+    },
+  );
+
 export const listPyqYears = (examId?: string): Promise<number[]> =>
   withFallback(
     async (db) => {
