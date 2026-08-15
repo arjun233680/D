@@ -85,7 +85,6 @@ export default function VideoScreen() {
                 {t(educator.headline, lang)}
               </Text>
             </View>
-            <Text style={{ color: theme.color.warning, fontWeight: '700' }}>★ {educator.rating}</Text>
           </View>
         ) : null}
 

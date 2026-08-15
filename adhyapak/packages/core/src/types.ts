@@ -189,8 +189,6 @@ export interface Educator {
   headline: Bilingual;
   subjects: string[];
   experienceYears: number;
-  rating: number;
-  learners: number;
   languages: Lang[];
   bio: Bilingual;
 }

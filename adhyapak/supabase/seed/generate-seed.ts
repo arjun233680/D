@@ -197,10 +197,10 @@ out.push(
 out.push(
   rows(
     'educators',
-    ['id', 'name', 'avatar', 'headline', 'bio', 'subjects', 'experience_years', 'rating', 'learners', 'languages'],
+    ['id', 'name', 'avatar', 'headline', 'bio', 'subjects', 'experience_years', 'languages'],
     EDUCATORS.map((e) => [
       s(e.id), s(e.name), s(e.avatar), j(e.headline), j(e.bio), arr(e.subjects),
-      n(e.experienceYears), n(e.rating), n(e.learners), arr(e.languages),
+      n(e.experienceYears), arr(e.languages),
     ]),
   ),
 );

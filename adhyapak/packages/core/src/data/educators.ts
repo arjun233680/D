@@ -12,8 +12,6 @@ export const EDUCATORS: Educator[] = [
     headline: { en: 'CDP & Pedagogy — 9 years, 4L+ learners', hi: 'CDP एवं शिक्षाशास्त्र — 9 वर्ष, 4 लाख+ शिक्षार्थी' },
     subjects: ['cdp'],
     experienceYears: 9,
-    rating: 4.9,
-    learners: 412000,
     languages: ['hi', 'en'],
     bio: {
       en: 'M.Ed from Jamia Millia Islamia. Known for turning Piaget and Vygotsky into one-line memory hooks that survive exam pressure.',
@@ -27,8 +25,6 @@ export const EDUCATORS: Educator[] = [
     headline: { en: 'Maths & Maths Pedagogy — 12 years', hi: 'गणित एवं गणित शिक्षाशास्त्र — 12 वर्ष' },
     subjects: ['math'],
     experienceYears: 12,
-    rating: 4.8,
-    learners: 528000,
     languages: ['hi'],
     bio: {
       en: 'Teaches Class 1-8 maths the way NCERT intends it — concept first, shortcut second. 12 years across CTET, UPTET and Super TET batches.',
@@ -42,8 +38,6 @@ export const EDUCATORS: Educator[] = [
     headline: { en: 'EVS & Science Pedagogy — 7 years', hi: 'EVS एवं विज्ञान शिक्षाशास्त्र — 7 वर्ष' },
     subjects: ['evs', 'science'],
     experienceYears: 7,
-    rating: 4.9,
-    learners: 296000,
     languages: ['hi', 'en'],
     bio: {
       en: 'Ex-KV teacher. Her EVS classes work backwards from the NCERT chapter to the exact question CBSE has asked six times.',
@@ -57,8 +51,6 @@ export const EDUCATORS: Educator[] = [
     headline: { en: 'English Language & Pedagogy — 10 years', hi: 'अंग्रेज़ी भाषा एवं शिक्षाशास्त्र — 10 वर्ष' },
     subjects: ['english'],
     experienceYears: 10,
-    rating: 4.7,
-    learners: 218000,
     languages: ['en', 'hi'],
     bio: {
       en: 'Trains Hindi-medium aspirants to score 27+ in Language II without memorising a single grammar rule out of context.',
@@ -72,8 +64,6 @@ export const EDUCATORS: Educator[] = [
     headline: { en: 'Hindi Vyakaran & Pedagogy — 14 years', hi: 'हिंदी व्याकरण एवं शिक्षाशास्त्र — 14 वर्ष' },
     subjects: ['hindi', 'sanskrit'],
     experienceYears: 14,
-    rating: 4.9,
-    learners: 634000,
     languages: ['hi'],
     bio: {
       en: 'The most-followed Hindi educator for REET and UPTET. Alankar and Ras in her classes are pattern recognition, not memorisation.',
@@ -87,8 +77,6 @@ export const EDUCATORS: Educator[] = [
     headline: { en: 'SST & State GK — 11 years', hi: 'सामाजिक अध्ययन एवं राज्य GK — 11 वर्ष' },
     subjects: ['sst', 'gk'],
     experienceYears: 11,
-    rating: 4.8,
-    learners: 387000,
     languages: ['hi', 'en'],
     bio: {
       en: 'Covers Haryana, UP, Bihar and Rajasthan state GK separately, because a national syllabus never gets you the state cut-off.',
@@ -102,8 +90,6 @@ export const EDUCATORS: Educator[] = [
     headline: { en: 'Reasoning & Computer Literacy — 6 years', hi: 'तर्कशक्ति एवं कंप्यूटर साक्षरता — 6 वर्ष' },
     subjects: ['reasoning', 'computer'],
     experienceYears: 6,
-    rating: 4.7,
-    learners: 174000,
     languages: ['en', 'hi'],
     bio: {
       en: 'Specialises in the DSSSB and KVS general sections — the 70 marks most aspirants leave on the table.',

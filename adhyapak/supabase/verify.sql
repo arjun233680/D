@@ -9,9 +9,11 @@
 -- as running it once.
 --
 --   psql "$DATABASE_URL" -f supabase/verify.sql
+--
+-- No psql meta-commands anywhere in this file. A `\pset` used to sit here,
+-- which made the paste fail in the Supabase editor with `syntax error at or
+-- near "\"` — the one place the header tells you to paste it.
 -- ---------------------------------------------------------------------------
-
-\pset footer off
 
 with checks as (
 
@@ -173,6 +175,13 @@ with checks as (
   from information_schema.columns
   where table_schema = 'public' and table_name = 'exams'
     and column_name = 'learners'
+
+  union all
+  select 27, 'the fabricated educator rating is gone',
+         count(*)::text, '0', count(*) = 0
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'educators'
+    and column_name in ('rating', 'learners')
 )
 select
   case when ok then 'PASS' else 'FAIL' end as status,

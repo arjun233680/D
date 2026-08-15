@@ -94,9 +94,6 @@ export default function VideoPage({ params }: { params: Promise<{ id: string }> 
                 {t(educator.headline, lang)}
               </p>
             </div>
-            <span className="text-[12px] font-bold text-[var(--color-warning)]">
-              ★ {educator.rating}
-            </span>
           </div>
         ) : null}
 

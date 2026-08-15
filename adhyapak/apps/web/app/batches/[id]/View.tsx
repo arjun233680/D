@@ -100,7 +100,7 @@ export default function BatchPage({ params }: { params: Promise<{ id: string }> 
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-bold">{e.name}</p>
                 <p className="truncate text-[11px] text-[var(--color-muted)]">
-                  ★ {e.rating} · {e.experienceYears} {lang === 'hi' ? 'वर्ष' : 'yrs'}
+                  {e.experienceYears} {lang === 'hi' ? 'वर्ष का अनुभव' : 'yrs experience'}
                 </p>
               </div>
             </div>
