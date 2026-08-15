@@ -37,13 +37,25 @@ export interface PracticeFilter {
 /**
  * The offline half of `listQuestions`.
  *
- * The bundled bank predates the unit/subtopic hierarchy and carries provenance
- * as prose, so those filters cannot be honoured here. They are dropped rather
- * than faked: returning the topic's questions unfiltered is the truthful
- * degradation, and the screen shows the same thing it would show if the paper
- * had no questions for that subtopic yet.
+ * The bundled bank predates the unit/subtopic hierarchy and records provenance
+ * as prose, so some filters cannot be applied here at all. There are two honest
+ * responses to that and this uses both, depending on what the filter claims.
+ *
+ * A structural filter — unit, subtopic, teaching level — is dropped. The result
+ * is wider than asked for, but every question in it is still a real question of
+ * that subject and exam, and nothing on screen asserts otherwise.
+ *
+ * A provenance filter — `year`, `shift` — returns nothing. Those name a
+ * specific sitting of a specific paper, and the screen prints that name next to
+ * the count. Returning the 2023 questions for `year=2019` would put "2019"
+ * above questions from another paper, which is worse than an empty state: the
+ * empty state says the paper has not been collected yet, and that is true.
  */
 export const buildPracticeSet = (filter: PracticeFilter = {}): Question[] => {
+  // Nothing in the bundle carries a structured year or shift, so a filter on
+  // either can only be answered with "none collected".
+  if (filter.year !== undefined || filter.shift !== undefined) return [];
+
   let pool = QUESTIONS;
   if (filter.ids) {
     const wanted = new Set(filter.ids);
@@ -53,9 +65,7 @@ export const buildPracticeSet = (filter: PracticeFilter = {}): Question[] => {
   if (filter.subjectId) pool = pool.filter((q) => q.subjectId === filter.subjectId);
   if (filter.topicId) pool = pool.filter((q) => q.topicId === filter.topicId);
   if (filter.difficulty) pool = pool.filter((q) => q.difficulty === filter.difficulty);
-  if (filter.pyqOnly || filter.year) pool = pool.filter((q) => Boolean(q.previousYear));
-  // `year` cannot be applied offline: the bundled bank records provenance as
-  // prose, and parsing it back into a year would be guessing.
+  if (filter.pyqOnly) pool = pool.filter((q) => Boolean(q.previousYear));
   const start = filter.offset ?? 0;
   return filter.limit ? pool.slice(start, start + filter.limit) : pool.slice(start);
 };
