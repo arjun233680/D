@@ -10,13 +10,18 @@ import {
   getSubject,
   getTest,
   getTopic,
+  matchesSolutionFilter,
+  solutionFilterOptions,
+  solutionOutcome,
   t,
   testQuestionIds,
   UI,
+  type SolutionFilter,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, EmptyState, ProgressBar, Stat } from '@/components/ui';
 import { QuestionSolution } from '@/components/QuestionSolution';
+import { SolutionFilterChips } from '@/components/SolutionFilterChips';
 
 type Tab = 'summary' | 'sections' | 'solutions';
 
@@ -25,9 +30,9 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
   const { lang, results, attempts, user, toggleBookmark } = useStore();
   const [tab, setTab] = useState<Tab>('summary');
   // The whole set, in order, is what a learner opens the solutions for: they
-  // want to walk the paper. Narrowing to what went wrong is one click away, and
-  // is a second pass rather than the first thing they are shown.
-  const [onlyWrong, setOnlyWrong] = useState(false);
+  // want to walk the paper. Narrowing to one outcome is one click away, and is
+  // a second pass rather than the first thing they are shown.
+  const [filter, setFilter] = useState<SolutionFilter>('all');
 
   const test = getTest(id);
   if (!test) notFound();
@@ -71,7 +76,16 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
     })
     .filter((r): r is NonNullable<typeof r> => Boolean(r));
 
-  const visibleRows = onlyWrong ? rows.filter((r) => !r.correct) : rows;
+  // Numbered by position in the paper, not position in the filtered list: under
+  // "Incorrect" the third wrong answer is still Q17, and renumbering it Q3
+  // would send a learner to the wrong question when they go back to it.
+  const numbered = rows.map((row, i) => ({
+    ...row,
+    number: i + 1,
+    outcome: solutionOutcome(row.selectedIndex, row.question.correctIndex),
+  }));
+  const filterOptions = solutionFilterOptions(numbered.map((r) => r.outcome));
+  const visibleRows = numbered.filter((r) => matchesSolutionFilter(r.outcome, filter));
 
   const tabs: { id: Tab; label: { en: string; hi: string } }[] = [
     { id: 'summary', label: { en: 'Summary', hi: 'सारांश' } },
@@ -280,22 +294,19 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
 
       {tab === 'solutions' ? (
         <div className="space-y-3">
-          <label className="flex items-center gap-2 text-[13px] font-semibold">
-            <input
-              type="checkbox"
-              checked={onlyWrong}
-              onChange={(e) => setOnlyWrong(e.target.checked)}
-              className="h-4 w-4 accent-[var(--color-brand)]"
-            />
-            {lang === 'hi' ? 'केवल गलत/अनुत्तरित प्रश्न' : 'Only incorrect & unattempted'}
-          </label>
+          <SolutionFilterChips
+            options={filterOptions}
+            value={filter}
+            onChange={setFilter}
+            lang={lang}
+          />
 
           {visibleRows.length ? (
-            visibleRows.map((row, i) => (
+            visibleRows.map((row) => (
               <QuestionSolution
                 key={row.question.id}
                 question={row.question}
-                number={i + 1}
+                number={row.number}
                 selectedIndex={row.selectedIndex}
                 lang={lang}
                 footer={

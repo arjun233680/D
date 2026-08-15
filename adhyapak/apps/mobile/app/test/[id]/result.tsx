@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import {
   formatClock,
@@ -8,14 +8,19 @@ import {
   getSubject,
   getTest,
   getTopic,
+  matchesSolutionFilter,
+  solutionFilterOptions,
+  solutionOutcome,
   t,
   testQuestionIds,
   theme,
   UI,
+  type SolutionFilter,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, Button, Chip, EmptyState, ProgressBar, s, Stat } from '@/components/ui';
 import { QuestionSolution } from '@/components/QuestionSolution';
+import { SolutionFilterChips } from '@/components/SolutionFilterChips';
 
 type Tab = 'summary' | 'sections' | 'solutions';
 
@@ -24,9 +29,9 @@ export default function ResultScreen() {
   const { lang, results, attempts, user, toggleBookmark } = useStore();
   const [tab, setTab] = useState<Tab>('summary');
   // The whole set, in order, is what a learner opens the solutions for: they
-  // want to walk the paper. Narrowing to what went wrong is one click away, and
-  // is a second pass rather than the first thing they are shown.
-  const [onlyWrong, setOnlyWrong] = useState(false);
+  // want to walk the paper. Narrowing to one outcome is one tap away, and is a
+  // second pass rather than the first thing they are shown.
+  const [filter, setFilter] = useState<SolutionFilter>('all');
 
   const test = getTest(String(id));
   const result = test ? results[test.id] : undefined;
@@ -57,7 +62,16 @@ export default function ResultScreen() {
     })
     .filter((r): r is NonNullable<typeof r> => Boolean(r));
 
-  const visible = onlyWrong ? rows.filter((r) => !r.correct) : rows;
+  // Numbered by position in the paper, not position in the filtered list: under
+  // "Incorrect" the third wrong answer is still Q17, and renumbering it Q3
+  // would send a learner to the wrong question when they go back to it.
+  const numbered = rows.map((row, i) => ({
+    ...row,
+    number: i + 1,
+    outcome: solutionOutcome(row.selectedIndex, row.question.correctIndex),
+  }));
+  const filterOptions = solutionFilterOptions(numbered.map((r) => r.outcome));
+  const visible = numbered.filter((r) => matchesSolutionFilter(r.outcome, filter));
 
   return (
     <ScrollView style={s.screen} contentContainerStyle={{ padding: theme.space.lg, paddingBottom: 40 }}>
@@ -246,19 +260,19 @@ export default function ResultScreen() {
 
       {tab === 'solutions' ? (
         <View style={{ marginTop: theme.space.lg, gap: theme.space.md }}>
-          <View style={[s.row, { gap: 8 }]}>
-            <Switch value={onlyWrong} onValueChange={setOnlyWrong} />
-            <Text style={{ fontSize: theme.font.sm, fontWeight: '600' }}>
-              {lang === 'hi' ? 'केवल गलत/अनुत्तरित' : 'Only incorrect & unattempted'}
-            </Text>
-          </View>
+          <SolutionFilterChips
+            options={filterOptions}
+            value={filter}
+            onChange={setFilter}
+            lang={lang}
+          />
 
           {visible.length ? (
-            visible.map((row, i) => (
+            visible.map((row) => (
               <QuestionSolution
                 key={row.question.id}
                 question={row.question}
-                number={i + 1}
+                number={row.number}
                 selectedIndex={row.selectedIndex}
                 lang={lang}
               />

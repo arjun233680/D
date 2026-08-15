@@ -1,19 +1,24 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 import {
   getSubject,
   getTopic,
+  matchesSolutionFilter,
+  solutionFilterOptions,
+  solutionOutcome,
   summarisePractice,
   t,
   theme,
   UI,
+  type SolutionFilter,
   type PracticeSessionResult,
   type Question,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, Button, EmptyState, ProgressBar, s, Stat } from '@/components/ui';
 import { QuestionSolution } from '@/components/QuestionSolution';
+import { SolutionFilterChips } from '@/components/SolutionFilterChips';
 
 /**
  * Instant-feedback practice — the mobile twin of the web PracticeRunner.
@@ -59,9 +64,9 @@ export function PracticeRunner({
   const [finished, setFinished] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   // The whole set, in order, is what a learner opens the solutions for: they
-  // want to walk the paper. Narrowing to what went wrong is one click away, and
-  // is a second pass rather than the first thing they are shown.
-  const [onlyWrong, setOnlyWrong] = useState(false);
+  // want to walk the paper. Narrowing to one outcome is one tap away, and is a
+  // second pass rather than the first thing they are shown.
+  const [filter, setFilter] = useState<SolutionFilter>('all');
 
   // One result per answered question, in the set's own order — so the summary
   // does not depend on the order the learner jumped around in.
@@ -146,8 +151,8 @@ export function PracticeRunner({
           questions={questions}
           answers={answers}
           lang={lang}
-          onlyWrong={onlyWrong}
-          onOnlyWrongChange={setOnlyWrong}
+          filter={filter}
+          onFilterChange={setFilter}
         />
 
         <View style={{ flexDirection: 'row', gap: 8, marginTop: theme.space.lg }}>
@@ -556,14 +561,14 @@ function Solutions({
   questions,
   answers,
   lang,
-  onlyWrong,
-  onOnlyWrongChange,
+  filter,
+  onFilterChange,
 }: {
   questions: Question[];
   answers: Record<string, Answer>;
   lang: 'en' | 'hi';
-  onlyWrong: boolean;
-  onOnlyWrongChange: (value: boolean) => void;
+  filter: SolutionFilter;
+  onFilterChange: (filter: SolutionFilter) => void;
 }) {
   const hi = lang === 'hi';
 
@@ -571,22 +576,15 @@ function Solutions({
     question,
     number: i + 1,
     answer: answers[question.id],
+    outcome: solutionOutcome(answers[question.id]?.selectedIndex, question.correctIndex),
   }));
-  const wrong = rows.filter((r) => !r.answer?.correct);
-  const visible = onlyWrong ? wrong : rows;
+  const options = solutionFilterOptions(rows.map((r) => r.outcome));
+  const visible = rows.filter((r) => matchesSolutionFilter(r.outcome, filter));
 
   return (
     <View style={{ marginTop: theme.space.lg, gap: theme.space.md }}>
       <Text style={s.h2}>{hi ? 'हल' : 'Solutions'}</Text>
-
-      <View style={[s.row, { gap: 8 }]}>
-        <Switch value={onlyWrong} onValueChange={onOnlyWrongChange} />
-        <Text style={{ fontSize: theme.font.sm, fontWeight: '600' }}>
-          {hi
-            ? `केवल गलत/अनुत्तरित (${wrong.length})`
-            : `Only incorrect & unattempted (${wrong.length})`}
-        </Text>
-      </View>
+      <SolutionFilterChips options={options} value={filter} onChange={onFilterChange} lang={lang} />
 
       {visible.length ? (
         visible.map((row) => (
@@ -609,12 +607,12 @@ function Solutions({
         ))
       ) : (
         <EmptyState
-          icon="🎉"
-          title={hi ? 'सब सही!' : 'All correct!'}
+          icon="\u{1F50E}"
+          title={hi ? 'इस श्रेणी में कुछ नहीं' : 'Nothing in this group'}
           body={
             hi
-              ? 'कोई गलत उत्तर नहीं। सभी प्रश्न देखने हेतु ऊपर का स्विच बंद करें।'
-              : 'No wrong answers here. Turn the switch off to read every question.'
+              ? 'दूसरा फ़िल्टर चुनें — “सभी” पूरा पेपर दिखाता है।'
+              : 'Pick another filter — “All” shows the whole paper.'
           }
         />
       )}

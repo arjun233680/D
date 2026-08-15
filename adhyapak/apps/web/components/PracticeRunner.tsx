@@ -5,15 +5,20 @@ import Link from 'next/link';
 import {
   getSubject,
   getTopic,
+  matchesSolutionFilter,
+  solutionFilterOptions,
+  solutionOutcome,
   summarisePractice,
   t,
   UI,
+  type SolutionFilter,
   type PracticeSessionResult,
   type Question,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, EmptyState, ProgressBar, Stat } from '@/components/ui';
 import { QuestionSolution } from '@/components/QuestionSolution';
+import { SolutionFilterChips } from '@/components/SolutionFilterChips';
 
 /**
  * Instant-feedback practice: answer, see the explanation immediately, move on.
@@ -73,9 +78,9 @@ export function PracticeRunner({
   const [finished, setFinished] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   // The whole set, in order, is what a learner opens the solutions for: they
-  // want to walk the paper. Narrowing to what went wrong is one click away, and
-  // is a second pass rather than the first thing they are shown.
-  const [onlyWrong, setOnlyWrong] = useState(false);
+  // want to walk the paper. Narrowing to one outcome is one click away, and is
+  // a second pass rather than the first thing they are shown.
+  const [filter, setFilter] = useState<SolutionFilter>('all');
 
   // One result per answered question, in the set's own order — so the summary
   // does not depend on the order the learner happened to jump around in.
@@ -151,8 +156,8 @@ export function PracticeRunner({
           questions={questions}
           answers={answers}
           lang={lang}
-          onlyWrong={onlyWrong}
-          onOnlyWrongChange={setOnlyWrong}
+          filter={filter}
+          onFilterChange={setFilter}
         />
 
         <div className="flex gap-2">
@@ -537,14 +542,14 @@ function Solutions({
   questions,
   answers,
   lang,
-  onlyWrong,
-  onOnlyWrongChange,
+  filter,
+  onFilterChange,
 }: {
   questions: Question[];
   answers: Record<string, Answer>;
   lang: 'en' | 'hi';
-  onlyWrong: boolean;
-  onOnlyWrongChange: (value: boolean) => void;
+  filter: SolutionFilter;
+  onFilterChange: (filter: SolutionFilter) => void;
 }) {
   const hi = lang === 'hi';
 
@@ -552,28 +557,15 @@ function Solutions({
     question,
     number: i + 1,
     answer: answers[question.id],
+    outcome: solutionOutcome(answers[question.id]?.selectedIndex, question.correctIndex),
   }));
-  // Everything that is not correct, which includes the ones never reached:
-  // an unattempted question is exactly as much of a gap as a wrong one.
-  const wrong = rows.filter((r) => !r.answer?.correct);
-  const visible = onlyWrong ? wrong : rows;
+  const options = solutionFilterOptions(rows.map((r) => r.outcome));
+  const visible = rows.filter((r) => matchesSolutionFilter(r.outcome, filter));
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[15px] font-bold">{hi ? 'हल' : 'Solutions'}</h2>
-        <label className="flex items-center gap-2 text-[13px] font-semibold">
-          <input
-            type="checkbox"
-            checked={onlyWrong}
-            onChange={(e) => onOnlyWrongChange(e.target.checked)}
-            className="h-4 w-4 accent-[var(--color-brand)]"
-          />
-          {hi
-            ? `केवल गलत/अनुत्तरित (${wrong.length})`
-            : `Only incorrect & unattempted (${wrong.length})`}
-        </label>
-      </div>
+      <h2 className="text-[15px] font-bold">{hi ? 'हल' : 'Solutions'}</h2>
+      <SolutionFilterChips options={options} value={filter} onChange={onFilterChange} lang={lang} />
 
       {visible.length ? (
         visible.map((row) => (
@@ -598,12 +590,12 @@ function Solutions({
         ))
       ) : (
         <EmptyState
-          icon="🎉"
-          title={hi ? 'सब सही!' : 'All correct!'}
+          icon="\u{1F50E}"
+          title={hi ? 'इस श्रेणी में कुछ नहीं' : 'Nothing in this group'}
           body={
             hi
-              ? 'कोई गलत उत्तर नहीं। सभी प्रश्न देखने हेतु ऊपर का चेकबॉक्स हटाएँ।'
-              : 'No wrong answers here. Uncheck the box above to read every question.'
+              ? 'दूसरा फ़िल्टर चुनें — “सभी” पूरा पेपर दिखाता है।'
+              : 'Pick another filter — “All” shows the whole paper.'
           }
         />
       )}
