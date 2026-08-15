@@ -32,6 +32,16 @@ export interface ExamPaper {
   id: string;
   name: Bilingual;
   level: TeachingLevel;
+  /**
+   * The teaching post this paper qualifies you for — PRT, TGT, PGT.
+   *
+   * How the question bank is categorised and how every candidate refers to the
+   * paper: nobody sits "Level 2", they sit TGT. Kept separate from `level`
+   * because the level is the shared vocabulary across exams (CTET Paper 1 is
+   * also `primary`) while the post code is what this exam calls it. Absent for
+   * exams that number their papers instead.
+   */
+  post?: string;
   /** Marks per correct answer. */
   marksPerQuestion: number;
   /** 0 for every TET-style paper; some state exams do deduct. */

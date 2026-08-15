@@ -153,6 +153,7 @@ export const EXAMS: Exam[] = [
         id: 'htet-l1',
         name: { en: 'Level 1 — PRT (Classes 1 to 5)', hi: 'स्तर 1 — PRT (कक्षा 1 से 5)' },
         level: 'primary',
+        post: 'PRT',
         marksPerQuestion: 1,
         negativeMarking: 0,
         durationMinutes: 150,
@@ -174,6 +175,7 @@ export const EXAMS: Exam[] = [
         id: 'htet-l2',
         name: { en: 'Level 2 — TGT (Classes 6 to 8)', hi: 'स्तर 2 — TGT (कक्षा 6 से 8)' },
         level: 'upper-primary',
+        post: 'TGT',
         marksPerQuestion: 1,
         negativeMarking: 0,
         durationMinutes: 150,
@@ -216,6 +218,7 @@ export const EXAMS: Exam[] = [
         id: 'htet-l3',
         name: { en: 'Level 3 — PGT (Classes 9 to 12)', hi: 'स्तर 3 — PGT (कक्षा 9 से 12)' },
         level: 'senior-secondary',
+        post: 'PGT',
         marksPerQuestion: 1,
         negativeMarking: 0,
         durationMinutes: 150,
@@ -1192,6 +1195,41 @@ export const resolvePaperSubjects = (
     sections: resolved,
     subjectIds: [...new Set(resolved.map((r) => r.subjectId))],
   };
+};
+
+/**
+ * Every subject a paper can test, elective choices included.
+ *
+ * Deliberately different from `resolvePaperSubjects`, and the difference is the
+ * question being asked. That one answers "which subjects does *this candidate's*
+ * paper contain" — for a syllabus or a set of recommendations, where handing a
+ * Physics candidate the Sanskrit syllabus is the failure to avoid, so an
+ * unchosen elective is an error the caller must handle.
+ *
+ * This one answers "which subjects could a question in this paper belong to",
+ * which is what a browser's filter needs. Listing all twenty-one PGT choices is
+ * not a guess at the learner's subject — it is the menu they choose from, and
+ * nothing is selected until they do. Blocking the whole screen behind a profile
+ * setting instead was worse for the one thing this screen exists to do.
+ *
+ * Order follows the blueprint — the common blocks first, then the elective
+ * choices — and a subject appearing in both (Hindi is a TGT elective as well as
+ * a common block) is listed once.
+ */
+export const paperBrowsableSubjects = (paperId: string | undefined): string[] => {
+  const found = paperId ? getPaper(paperId) : undefined;
+  if (!found) return [];
+
+  const ids: string[] = [];
+  for (const section of found.paper.sections) {
+    if (section.subjectId !== undefined) {
+      ids.push(section.subjectId);
+      continue;
+    }
+    const group = electiveGroup(found.paper, section.electiveGroupId);
+    if (group) ids.push(...group.choices);
+  }
+  return [...new Set(ids)];
 };
 
 /**
