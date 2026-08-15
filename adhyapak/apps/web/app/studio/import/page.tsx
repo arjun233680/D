@@ -16,6 +16,7 @@ import {
   runImport,
   templateBlob,
   validateImport,
+  type ColumnMapping,
   type ParsedFile,
   type Step,
   type ValidatedImport,
@@ -76,7 +77,7 @@ export default function ImportPage() {
 
   const [step, setStep] = useState<Step>('upload');
   const [parsed, setParsed] = useState<ParsedFile | null>(null);
-  const [mapping, setMapping] = useState<Record<string, string | undefined>>({});
+  const [mapping, setMapping] = useState<ColumnMapping>({});
   const [label, setLabel] = useState('');
   const [examId, setExamId] = useState<string>('');
   const [validated, setValidated] = useState<ValidatedImport | null>(null);
@@ -343,6 +344,18 @@ export default function ImportPage() {
             </p>
           </div>
 
+          {parsed.unmappable.length > 0 ? (
+            <div className="rounded-xl border border-[var(--color-info)] bg-[var(--color-info-light)] px-4 py-3 text-[13px]">
+              ℹ️{' '}
+              {parsed.unmappable
+                .map((u) => `“${u.header}” → ${u.label}`)
+                .join(', ')}{' '}
+              {hi
+                ? 'स्वतः मैप नहीं किया गया: इस टैक्सोनॉमी में ऐसी कोई आईडी नहीं है, इसलिए हर पंक्ति अस्वीकृत हो जाती। मान रखना हो तो इसे Tags पर मैप करें।'
+                : 'was not mapped automatically: this taxonomy defines no such ids, so every row would have been rejected. Map it to Tags if you want to keep the value.'}
+            </div>
+          ) : null}
+
           <div className="card overflow-hidden">
             <table className="w-full text-[13px]">
               <thead className="bg-[var(--color-surface-alt)] text-left text-[11px] font-bold uppercase text-[var(--color-muted)]">
@@ -366,7 +379,9 @@ export default function ImportPage() {
                         <select
                           value={chosen ?? ''}
                           onChange={(e) =>
-                            setMapping({ ...mapping, [f.field]: e.target.value || undefined })
+                            // null, not undefined: "— not mapped —" is a decision,
+                            // and undefined would let the defaults re-apply it.
+                            setMapping({ ...mapping, [f.field]: e.target.value || null })
                           }
                           className="w-full rounded-lg border border-[var(--color-line)] px-2 py-1 text-[12px]"
                         >

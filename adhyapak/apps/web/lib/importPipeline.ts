@@ -93,8 +93,14 @@ export interface ParsedFile {
   filename: string;
   headers: string[];
   rows: Row[];
-  /** Canonical field → the header the aliases matched, or undefined. */
-  autoMapping: Record<string, string | undefined>;
+  /** Canonical field → the header the aliases matched, or null/undefined. */
+  autoMapping: ColumnMapping;
+  /**
+   * Columns the auto-mapper matched to a field with no ids to match against,
+   * and therefore cleared. Shown on the Map step so the operator knows the
+   * column was seen and deliberately left alone.
+   */
+  unmappable: UnmappableColumn[];
   /** Every sheet in the workbook, so the educator can switch. Empty for CSV. */
   sheets: Worksheet[];
   /** Which sheet these rows came from. */
@@ -103,17 +109,54 @@ export interface ParsedFile {
   headerRow: number;
 }
 
+/**
+ * Fields that hold an id, and the reference set each is checked against.
+ *
+ * When a set is empty the taxonomy defines no such ids, so *any* value in that
+ * column is unresolvable and every row carrying one is rejected. Auto-mapping
+ * such a column is not a helpful guess, it is a guaranteed failure — the HTET
+ * sheet's prose "Sub-Topic" column mapped itself to `subtopic` and produced 630
+ * identical rejections at the Review step, three clicks after the place the
+ * operator could have done something about it.
+ */
+const ID_FIELDS: { field: string; label: string; ids: (refs: ReturnType<typeof contentRefs>) => ReadonlySet<string> | undefined }[] = [
+  { field: 'subtopic', label: 'Subtopic', ids: (r) => r.subtopicIds },
+  { field: 'unit', label: 'Unit / chapter', ids: (r) => r.unitIds },
+];
+
+/** A column that was auto-mapped to a field nothing could ever match. */
+export interface UnmappableColumn {
+  field: string;
+  label: string;
+  header: string;
+}
+
 const rowsToParsed = (
   filename: string,
   rows: Row[],
   extra: Partial<ParsedFile> = {},
 ): ParsedFile => {
   const headers = Object.keys(rows[0] ?? {});
+  const autoMapping: ColumnMapping = resolveColumns(headers, DEFAULT_COLUMNS);
+
+  // Clear the guaranteed-failure mappings before the operator ever sees them,
+  // and hand back what was cleared so the Map step can say why.
+  const refs = contentRefs();
+  const unmappable: UnmappableColumn[] = [];
+  for (const { field, label, ids } of ID_FIELDS) {
+    const header = autoMapping[field];
+    if (typeof header === 'string' && header && !ids(refs)?.size) {
+      unmappable.push({ field, label, header });
+      autoMapping[field] = null;
+    }
+  }
+
   return {
     filename,
     headers,
     rows,
-    autoMapping: resolveColumns(headers, DEFAULT_COLUMNS),
+    autoMapping,
+    unmappable,
     sheets: [],
     headerRow: 1,
     ...extra,
@@ -186,10 +229,13 @@ export const parseFile = async (file: File, sheetName?: string): Promise<ParsedF
     workbook.sheets[0]!;
 
   const { headers, rows, headerRow } = sheetToRows(workbook.read(chosen.name));
+  // `rowsToParsed` computes the mapping *and* clears the fields that could
+  // never resolve, so its result is spread in whole. Recomputing `autoMapping`
+  // here would undo that guard for every workbook — which is exactly the file
+  // type this matters for.
   return {
     ...rowsToParsed(file.name, rows),
     headers: rows.length > 0 ? Object.keys(rows[0]!) : headers,
-    autoMapping: resolveColumns(headers, DEFAULT_COLUMNS),
     sheets: workbook.sheets,
     sheetName: chosen.name,
     headerRow,
@@ -203,21 +249,42 @@ export const templateBlob = (): Blob =>
   });
 
 /**
+ * What the educator has said about one field.
+ *
+ *   string    — this column, whatever its header is called
+ *   null      — deliberately cleared: this field maps to nothing
+ *   undefined — never touched, so the default aliases still apply
+ *
+ * The distinction between the last two is the whole point. They used to be one
+ * value, so "— not mapped —" set the field to undefined, the defaults were
+ * re-applied a moment later, and the column silently mapped itself straight
+ * back. A field the operator cleared has to stay cleared.
+ */
+export type ColumnChoice = string | null | undefined;
+export type ColumnMapping = Record<string, ColumnChoice>;
+
+/**
  * Turns the educator's mapping choices into a column map the core importer
  * understands.
  *
  * A manual choice becomes the single alias for that field, which is what makes
  * "this column is the question, whatever it is called" work for a file whose
- * headers match nothing.
+ * headers match nothing. An empty alias list matches no header at all, which is
+ * how a cleared field survives the defaults below.
  */
-export const columnMapFrom = (mapping: Record<string, string | undefined>): ColumnMap => {
+export const columnMapFrom = (mapping: ColumnMapping): ColumnMap => {
   const map: ColumnMap = {};
   for (const [field, header] of Object.entries(mapping)) {
-    if (header) map[field] = [header];
+    if (typeof header === 'string' && header) map[field] = [header];
+    // Cleared on purpose. An empty list resolves to no column, and — crucially
+    // — claims the key, so the defaults below leave it alone.
+    else if (header === null) map[field] = [];
   }
-  // Fields the educator did not touch keep their default aliases.
+  // Fields the educator never touched keep their default aliases. Tested with
+  // `in` rather than truthiness because a cleared field's `[]` is truthy and a
+  // future refactor to `?.length` would quietly resurrect the bug.
   for (const [field, aliases] of Object.entries(DEFAULT_COLUMNS)) {
-    if (!map[field]) map[field] = aliases;
+    if (!(field in map)) map[field] = aliases;
   }
   return map;
 };
@@ -239,7 +306,7 @@ export interface ValidatedImport {
  */
 export const validateImport = async (
   parsed: ParsedFile,
-  mapping: Record<string, string | undefined>,
+  mapping: ColumnMapping,
   options: { examId?: string; idPrefix?: string } = {},
 ): Promise<ValidatedImport> => {
   const report = importQuestions(parsed.rows, {
