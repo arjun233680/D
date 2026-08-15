@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  examBrowsableSubjects,
   EXAMS,
   SUBJECT_BY_ID,
   electivesForPaper,
@@ -234,5 +235,35 @@ describe('every exam blueprint', () => {
         }
       }
     }
+  });
+});
+
+describe('an exam only ever shows its own subjects', () => {
+  it('covers every paper of the exam, electives included', () => {
+    const htet = examBrowsableSubjects('htet');
+    // The common blocks every HTET paper carries.
+    for (const id of ['cdp', 'hindi', 'english', 'haryana-gk']) {
+      assert.ok(htet.includes(id), `HTET should test ${id}`);
+    }
+    // And the electives, which only exist on Levels 2 and 3.
+    for (const id of ['science', 'physics', 'commerce', 'psychology']) {
+      assert.ok(htet.includes(id), `HTET should test ${id}`);
+    }
+  });
+
+  it('lists each subject once even when several papers share it', () => {
+    const htet = examBrowsableSubjects('htet');
+    assert.equal(new Set(htet).size, htet.length);
+  });
+
+  it('does not leak another exam’s subjects', () => {
+    // Haryana GK is an HTET block; a CTET candidate must never be offered it.
+    assert.ok(examBrowsableSubjects('htet').includes('haryana-gk'));
+    assert.ok(!examBrowsableSubjects('ctet').includes('haryana-gk'));
+  });
+
+  it('is empty for an exam that does not exist', () => {
+    assert.deepEqual(examBrowsableSubjects('no-such-exam'), []);
+    assert.deepEqual(examBrowsableSubjects(undefined), []);
   });
 });

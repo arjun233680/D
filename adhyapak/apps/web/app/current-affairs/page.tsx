@@ -1,13 +1,19 @@
 'use client';
 
-import { EXAMS, formatDate, listCurrentAffairs, t } from '@adhyapak/core';
+import { formatDate, listCurrentAffairs, t } from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { Badge } from '@/components/ui';
 
 export default function CurrentAffairsPage() {
   const affairs = useAsync(() => listCurrentAffairs(), []);
-  const { lang } = useStore();
+  const { lang, user } = useStore();
+
+  // Only what is tagged for the learner's own exam. The per-item exam badges
+  // that used to sit under each story are gone with it: once the whole list is
+  // one exam, naming it on every card is noise, and naming the others was the
+  // thing to remove.
+  const relevant = (affairs.data ?? []).filter((ca) => ca.examIds.includes(user.goalExamId));
 
   return (
     <div className="space-y-5 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
@@ -23,7 +29,7 @@ export default function CurrentAffairsPage() {
       </div>
 
       <div className="space-y-3">
-        {(affairs.data ?? []).map((ca) => (
+        {relevant.map((ca) => (
           <article key={ca.id} className="card p-4">
             <div className="flex flex-wrap items-center gap-1.5">
               {ca.tags.map((tag) => (
@@ -39,19 +45,6 @@ export default function CurrentAffairsPage() {
             <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-muted)]">
               {t(ca.summary, lang)}
             </p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {ca.examIds.map((id) => {
-                const exam = EXAMS.find((e) => e.id === id);
-                return exam ? (
-                  <span
-                    key={id}
-                    className="rounded-full bg-[var(--color-surface-alt)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-muted)]"
-                  >
-                    {exam.shortName}
-                  </span>
-                ) : null;
-              })}
-            </div>
           </article>
         ))}
       </div>

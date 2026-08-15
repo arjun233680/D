@@ -1,19 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { EXAMS, listBatches, t, UI } from '@adhyapak/core';
+import { listBatches, t, UI } from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { BatchCard } from '@/components/cards';
 import { EmptyState } from '@/components/ui';
 
 export default function BatchesPage() {
-  const batches = useAsync(() => listBatches(), []);
   const { lang, user } = useStore();
-  const [examId, setExamId] = useState<string>('all');
-
+  // Fetched unscoped and split here, because the two lists answer different
+  // questions. Browsing is the learner's own exam only — a row of exam chips
+  // used to sit below, offering the batches of exams they are not sitting, and
+  // changing exam is the goal switcher's job in the corner. Enrolments are not
+  // scoped: a batch you already joined is yours, and it should not disappear
+  // because you switched goal.
+  const batches = useAsync(() => listBatches(), []);
   const all = batches.data ?? [];
-  const filtered = examId === 'all' ? all : all.filter((b) => b.examId === examId);
+
+  const filtered = all.filter((b) => b.examId === user.goalExamId);
   const enrolled = all.filter((b) => user.enrolledBatchIds.includes(b.id));
 
   return (
@@ -40,33 +44,6 @@ export default function BatchesPage() {
         </section>
       ) : null}
 
-      <div className="rail flex gap-2">
-        <button
-          type="button"
-          onClick={() => setExamId('all')}
-          className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
-            examId === 'all'
-              ? 'border-transparent bg-[var(--color-ink)] text-white'
-              : 'border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-muted)]'
-          }`}
-        >
-          {lang === 'hi' ? 'सभी' : 'All'}
-        </button>
-        {EXAMS.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            onClick={() => setExamId(e.id)}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
-              examId === e.id
-                ? 'border-transparent bg-[var(--color-ink)] text-white'
-                : 'border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-muted)]'
-            }`}
-          >
-            {e.emoji} {e.shortName}
-          </button>
-        ))}
-      </div>
 
       {filtered.length ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

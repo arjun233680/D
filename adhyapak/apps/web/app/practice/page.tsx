@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import {
-  SUBJECTS,
+  SUBJECT_BY_ID,
   currentStreak,
+  examBrowsableSubjects,
   formatCount,
   getExam,
   getPaper,
@@ -25,11 +26,19 @@ export default function PracticeHubPage() {
   // A paper with an elective has no subject list until the learner picks one.
   // Recommending against a guess would hand a Physics candidate the Sanskrit
   // syllabus, so the unresolved case is rendered as a prompt instead.
+  // Only what this exam tests — the grid below used to list the whole
+  // catalogue, offering a Haryana candidate subjects from exams they are not
+  // sitting. Changing exam is the goal switcher's job, in the corner.
+  const examSubjectIds = examBrowsableSubjects(user.goalExamId);
+  const examSubjects = examSubjectIds
+    .map((id) => SUBJECT_BY_ID.get(id))
+    .filter((s): s is NonNullable<typeof s> => Boolean(s));
+
   const resolved = resolvePaperSubjects(paper?.id, user.electiveSubjectId);
   const paperSubjects = resolved.ok
     ? resolved.subjectIds.length > 0
       ? resolved.subjectIds
-      : SUBJECTS.map((s) => s.id)
+      : examSubjectIds
     : [];
   const recommended = recommendedTopics(paperSubjects, 8);
   const streak = currentStreak(user.activeDates);
@@ -165,7 +174,7 @@ export default function PracticeHubPage() {
       <section>
         <SectionHeader title={lang === 'hi' ? 'सभी विषय' : 'All subjects'} />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {SUBJECTS.map((s) => {
+          {examSubjects.map((s) => {
             const available = bySubject.data?.[s.id] ?? 0;
             return (
               <Link

@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import {
-  SUBJECTS,
+  SUBJECT_BY_ID,
+  examBrowsableSubjects,
   currentStreak,
   formatCount,
   getExam,
@@ -20,13 +21,20 @@ export default function PracticeScreen() {
   const { lang, user } = useStore();
   const exam = getExam(user.goalExamId);
   const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
+  // Only what this exam tests — the grid below used to list the whole
+  // catalogue, offering subjects from exams the learner is not sitting.
+  const examSubjectIds = examBrowsableSubjects(user.goalExamId);
+  const examSubjects = examSubjectIds
+    .map((id) => SUBJECT_BY_ID.get(id))
+    .filter((sub): sub is NonNullable<typeof sub> => Boolean(sub));
+
   // A paper with an elective has no subject list until the learner picks one;
   // recommending against a guess would hand them another candidate's syllabus.
   const resolved = resolvePaperSubjects(paper?.id, user.electiveSubjectId);
   const paperSubjects = resolved.ok
     ? resolved.subjectIds.length > 0
       ? resolved.subjectIds
-      : SUBJECTS.map((x) => x.id)
+      : examSubjectIds
     : [];
   const recommended = recommendedTopics(paperSubjects, 6);
   const streak = currentStreak(user.activeDates);
@@ -127,7 +135,7 @@ export default function PracticeScreen() {
       <View style={{ marginTop: theme.space.xl }}>
         <SectionHeader title={lang === 'hi' ? 'सभी विषय' : 'All subjects'} />
         <View style={{ paddingHorizontal: theme.space.lg, gap: theme.space.sm }}>
-          {SUBJECTS.map((subject) => {
+          {examSubjects.map((subject) => {
             const ready = bySubject.data?.[subject.id] ?? 0;
             return (
               <Touch key={subject.id} href={`/practice/subject/${subject.id}`} style={[s.card, s.row, { padding: theme.space.md, gap: theme.space.md }]}>

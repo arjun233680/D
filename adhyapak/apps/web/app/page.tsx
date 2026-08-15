@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import {
   BATCHES,
-  EXAMS,
   TESTS,
   currentStreak,
   getExam,
@@ -49,6 +48,7 @@ export default function HomePage() {
   const hi = lang === 'hi';
 
   const exam = getExam(user.goalExamId);
+  const examName = exam ? t(exam.name, lang) : '';
   const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
   const accent = exam?.color ?? '#4F46E5';
   const streak = currentStreak(user.activeDates);
@@ -69,7 +69,12 @@ export default function HomePage() {
   const subjectIds = subjectsForPaperOrEmpty(paper?.id, user.electiveSubjectId);
   const suggested = weakTopicId ? getTopic(weakTopicId) : recommendedTopics(subjectIds, 1)[0];
   const live = liveVideos().filter((v) => v.examIds.includes(user.goalExamId));
-  const myBatch = BATCHES.find((b) => user.enrolledBatchIds.includes(b.id));
+  // The home screen is this exam's dashboard, so an enrolment from a previous
+  // goal does not belong on it. It is still on the batches page, which is where
+  // your own enrolments live.
+  const myBatch = BATCHES.find(
+    (b) => b.examId === user.goalExamId && user.enrolledBatchIds.includes(b.id),
+  );
 
   const upcoming = (exam?.updates ?? []).filter(
     (u) => new Date(u.date).getTime() >= Date.now() - 86_400_000,
@@ -261,22 +266,15 @@ export default function HomePage() {
             ? 'अध्यापक — शिक्षक भर्ती परीक्षाओं की संपूर्ण तैयारी'
             : 'Adhyapak — complete preparation for teaching exams'}
         </h2>
+        {/* Named every exam in the catalogue, which put eleven other exams in
+            front of a candidate preparing for one. The platform's reach is
+            still described; the roll-call belongs on a marketing page, not on
+            the home screen of someone revising. */}
         <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-[var(--color-muted)]">
           {hi
-            ? 'CTET, HTET, UPTET, बिहार TET, DSSSB, KVS, NVS, REET, HSSC TGT/PGT/PRT, सुपर TET, MPTET सहित सभी शिक्षक भर्ती परीक्षाओं हेतु लाइव कक्षाएँ, नोट्स, वीडियो, MCQ अभ्यास तथा पूर्ण मॉक टेस्ट — हिंदी एवं अंग्रेज़ी दोनों में।'
-            : 'Live classes, notes, video lessons, MCQ practice and full-length mock tests for CTET, HTET, UPTET, Bihar TET, DSSSB, KVS, NVS, REET, HSSC TGT/PGT/PRT, Super TET, MPTET and every other teaching exam — in both Hindi and English.'}
+            ? `${examName ? examName + ' ' : ''}हेतु लाइव कक्षाएँ, नोट्स, वीडियो, MCQ अभ्यास तथा पूर्ण मॉक टेस्ट — हिंदी एवं अंग्रेज़ी दोनों में।`
+            : `Live classes, notes, video lessons, MCQ practice and full-length mock tests${examName ? ` for ${examName}` : ''} — in both Hindi and English.`}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {EXAMS.map((e) => (
-            <Link
-              key={e.id}
-              href={`/goal/${e.slug}`}
-              className="rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-1 text-[12px] font-medium text-[var(--color-muted)] hover:border-[var(--color-line-strong)]"
-            >
-              {e.shortName}
-            </Link>
-          ))}
-        </div>
       </footer>
     </div>
   );

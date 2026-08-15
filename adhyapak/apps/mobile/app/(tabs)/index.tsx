@@ -74,7 +74,11 @@ export default function DashboardScreen() {
   const suggested = weakTopicId ? getTopic(weakTopicId) : recommendedTopics(subjectIds, 1)[0];
 
   const live = liveVideos().filter((v) => v.examIds.includes(user.goalExamId));
-  const myBatch = BATCHES.find((b) => user.enrolledBatchIds.includes(b.id));
+  // This exam's dashboard, so an enrolment from a previous goal does not belong
+  // on it. It is still on the batches tab, where your own enrolments live.
+  const myBatch = BATCHES.find(
+    (b) => b.examId === user.goalExamId && user.enrolledBatchIds.includes(b.id),
+  );
   // Only updates that have not already happened, newest first.
   const upcoming = (exam?.updates ?? []).filter((u) => new Date(u.date).getTime() >= Date.now() - 86_400_000);
   const timeline = (upcoming.length ? upcoming : (exam?.updates ?? []).slice(-2)).slice(0, 2);

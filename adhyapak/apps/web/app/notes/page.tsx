@@ -16,7 +16,16 @@ export default function NotesPage() {
   // Published notes only — enforced in the repository, not here, so a forgotten
   // filter on this screen cannot leak a draft. Notes uploaded in this session
   // sit in front of them until they are saved to the backend.
-  const state = useAsync(() => listNotes({ subjectId: subjectId === 'all' ? undefined : subjectId }), [subjectId]);
+  // Scoped to the learner's exam: a Haryana candidate's notes list should not
+  // carry CTET material they will never sit.
+  const state = useAsync(
+    () =>
+      listNotes({
+        examId: user.goalExamId,
+        subjectId: subjectId === 'all' ? undefined : subjectId,
+      }),
+    [subjectId, user.goalExamId],
+  );
   const all = [...uploadedNotes, ...(state.data ?? [])];
   const filtered = all
     .filter((n) => (subjectId === 'all' ? true : n.subjectId === subjectId))

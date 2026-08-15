@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { SUBJECTS, listVideos, t, theme, UI } from '@adhyapak/core';
+import { SUBJECT_BY_ID, examBrowsableSubjects, listVideos, t, theme, UI } from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { VideoCard } from '@/components/cards';
 import { Chip, EmptyState, s } from '@/components/ui';
 
 export default function VideosScreen() {
-  const videos = useAsync(() => listVideos(), []);
-  const { lang, uploadedVideos } = useStore();
+  const { lang, user, uploadedVideos } = useStore();
+  // Scoped to the learner's exam, like every other listing.
+  const videos = useAsync(() => listVideos({ examId: user.goalExamId }), [user.goalExamId]);
   const [subjectId, setSubjectId] = useState('all');
+  const subjects = examBrowsableSubjects(user.goalExamId)
+    .map((id) => SUBJECT_BY_ID.get(id))
+    .filter((sub): sub is NonNullable<typeof sub> => Boolean(sub));
   const all = [...uploadedVideos, ...(videos.data ?? [])];
   const data = subjectId === 'all' ? all : all.filter((v) => v.subjectId === subjectId);
 
@@ -28,7 +32,7 @@ export default function VideosScreen() {
           active={subjectId === 'all'}
           onPress={() => setSubjectId('all')}
         />
-        {SUBJECTS.filter((sub) => all.some((v) => v.subjectId === sub.id)).map((sub) => (
+        {subjects.filter((sub) => all.some((v) => v.subjectId === sub.id)).map((sub) => (
           <Chip
             key={sub.id}
             label={`${sub.icon} ${t(sub.name, lang)}`}

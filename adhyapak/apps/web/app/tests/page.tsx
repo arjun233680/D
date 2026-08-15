@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { EXAMS, listTests, t, UI, type Test } from '@adhyapak/core';
+import { getExam, listTests, t, UI, type Test } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { TestCard } from '@/components/cards';
@@ -18,11 +18,13 @@ const TYPES: { id: Test['type'] | 'all'; label: { en: string; hi: string } }[] =
 export default function TestsPage() {
   const { lang, user, results } = useStore();
   const [type, setType] = useState<Test['type'] | 'all'>('all');
-  const [examId, setExamId] = useState<string>(user.goalExamId);
+  const exam = getExam(user.goalExamId);
 
-  // The exam filter is pushed to the repository so the query does the work;
-  // type is a cheap local narrowing of what came back.
-  const state = useAsync(() => listTests(examId === 'all' ? undefined : examId), [examId]);
+  // Always the learner's own exam. There used to be a row of exam chips here,
+  // which meant a Haryana candidate was offered CTET and REET mocks on the page
+  // they came to for their own. Changing exam is the goal switcher's job, and
+  // it is one control in the corner rather than a row on every screen.
+  const state = useAsync(() => listTests(user.goalExamId), [user.goalExamId]);
   const filtered = (state.data ?? []).filter((x) => type === 'all' || x.type === type);
   const attemptedCount = Object.keys(results).length;
 
@@ -32,58 +34,26 @@ export default function TestsPage() {
         <h1 className="text-2xl font-extrabold">{t(UI.tests, lang)}</h1>
         <p className="mt-1 text-[13px] text-[var(--color-muted)]">
           {lang === 'hi'
-            ? `वास्तविक परीक्षा जैसा इंटरफ़ेस · अब तक ${attemptedCount} टेस्ट दिए`
-            : `Real exam interface · ${attemptedCount} attempted so far`}
+            ? `${exam ? t(exam.name, lang) + ' · ' : ''}अब तक ${attemptedCount} टेस्ट दिए`
+            : `${exam ? `${t(exam.name, lang)} · ` : ''}${attemptedCount} attempted so far`}
         </p>
       </div>
 
-      <div className="space-y-2">
-        <div className="rail flex gap-2">
-          {TYPES.map((x) => (
-            <button
-              key={x.id}
-              type="button"
-              onClick={() => setType(x.id)}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                type === x.id
-                  ? 'border-transparent bg-[var(--color-ink)] text-white'
-                  : 'border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-muted)]'
-              }`}
-            >
-              {t(x.label, lang)}
-            </button>
-          ))}
-        </div>
-        <div className="rail flex gap-2">
+      <div className="rail flex gap-2">
+        {TYPES.map((x) => (
           <button
+            key={x.id}
             type="button"
-            onClick={() => setExamId('all')}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
-              examId === 'all'
-                ? 'border-transparent bg-[var(--color-brand)] text-white'
+            onClick={() => setType(x.id)}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+              type === x.id
+                ? 'border-transparent bg-[var(--color-ink)] text-white'
                 : 'border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-muted)]'
             }`}
           >
-            {lang === 'hi' ? 'सभी परीक्षाएँ' : 'All exams'}
+            {t(x.label, lang)}
           </button>
-          {/* The exam chips list the catalogue itself, which is taxonomy rather
-              than content — every exam remains selectable even before any test
-              has been published for it. */}
-          {EXAMS.map((e) => (
-            <button
-              key={e.id}
-              type="button"
-              onClick={() => setExamId(e.id)}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
-                examId === e.id
-                  ? 'border-transparent bg-[var(--color-brand)] text-white'
-                  : 'border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-muted)]'
-              }`}
-            >
-              {e.emoji} {e.shortName}
-            </button>
-          ))}
-        </div>
+        ))}
       </div>
 
       <AsyncSection
@@ -94,8 +64,8 @@ export default function TestsPage() {
           title: lang === 'hi' ? 'इस फ़िल्टर में कोई टेस्ट नहीं' : 'No tests in this filter',
           body:
             lang === 'hi'
-              ? 'दूसरी परीक्षा या दूसरा टेस्ट प्रकार चुनें।'
-              : 'Pick another exam or another test type.',
+              ? 'दूसरा टेस्ट प्रकार चुनें, या ऊपर दाईं ओर से परीक्षा बदलें।'
+              : 'Pick another test type, or change exam from the top right.',
         }}
       >
         {(list) => (

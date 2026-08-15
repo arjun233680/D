@@ -1233,6 +1233,23 @@ export const paperBrowsableSubjects = (paperId: string | undefined): string[] =>
 };
 
 /**
+ * Every subject an exam can test, across all of its papers.
+ *
+ * What a learner preparing for one exam should ever be shown. HTET tests 30-odd
+ * subjects across PRT, TGT and PGT; CTET tests a different set — and a screen
+ * that lists all of both is offering a Haryana candidate the syllabus of an
+ * exam they are not sitting.
+ *
+ * Order follows the papers, so the common blocks a candidate meets first come
+ * first, and a subject shared by two papers is listed once.
+ */
+export const examBrowsableSubjects = (examId: string | undefined): string[] => {
+  const exam = examId ? getExam(examId) : undefined;
+  if (!exam) return [];
+  return [...new Set(exam.papers.flatMap((paper) => paperBrowsableSubjects(paper.id)))];
+};
+
+/**
  * Subjects for a paper, or an empty list when an elective is unresolved.
  *
  * For the places that genuinely have nothing useful to say about the failure —

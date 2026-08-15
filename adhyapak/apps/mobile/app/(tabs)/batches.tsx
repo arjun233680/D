@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
-import { EXAMS, listBatches, theme } from '@adhyapak/core';
+import { listBatches, theme } from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { BatchCard } from '@/components/cards';
@@ -8,35 +8,14 @@ import { Chip, EmptyState, s } from '@/components/ui';
 import { useResponsive } from '@/lib/responsive';
 
 export default function BatchesScreen() {
-  const batches = useAsync(() => listBatches(), []);
-  const { lang } = useStore();
+  const { lang, user } = useStore();
   const r = useResponsive();
-  const [examId, setExamId] = useState('all');
-  const all = batches.data ?? [];
-  const data = examId === 'all' ? all : all.filter((b) => b.examId === examId);
+  // The learner's own exam, always — see the tests tab for why the chips went.
+  const batches = useAsync(() => listBatches(user.goalExamId), [user.goalExamId]);
+  const data = batches.data ?? [];
 
   return (
     <View style={s.screen}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0, flexShrink: 0 }}
-        contentContainerStyle={{ padding: r.gutter }}
-      >
-        <Chip
-          label={lang === 'hi' ? 'सभी' : 'All'}
-          active={examId === 'all'}
-          onPress={() => setExamId('all')}
-        />
-        {EXAMS.map((e) => (
-          <Chip
-            key={e.id}
-            label={`${e.emoji} ${e.shortName}`}
-            active={examId === e.id}
-            onPress={() => setExamId(e.id)}
-          />
-        ))}
-      </ScrollView>
 
       <FlatList
         key={'cols-' + r.columns}

@@ -1,20 +1,29 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { SUBJECTS, listNotes, t, theme, UI } from '@adhyapak/core';
+import { SUBJECT_BY_ID, examBrowsableSubjects, listNotes, t, theme, UI } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { NoteCard } from '@/components/cards';
 import { AsyncSection, Chip, s } from '@/components/ui';
 
 export default function NotesScreen() {
-  const { lang, uploadedNotes } = useStore();
+  const { lang, user, uploadedNotes } = useStore();
   const [subjectId, setSubjectId] = useState('all');
+  // Only the subjects this exam tests — the chip row used to list the whole
+  // catalogue, including subjects from exams the learner is not sitting.
+  const subjects = examBrowsableSubjects(user.goalExamId)
+    .map((id) => SUBJECT_BY_ID.get(id))
+    .filter((sub): sub is NonNullable<typeof sub> => Boolean(sub));
   // Published notes only, enforced in the repository. Notes uploaded in this
   // session sit in front until they reach the backend.
   const state = useAsync(
-    () => listNotes({ subjectId: subjectId === 'all' ? undefined : subjectId }),
-    [subjectId],
+    () =>
+      listNotes({
+        examId: user.goalExamId,
+        subjectId: subjectId === 'all' ? undefined : subjectId,
+      }),
+    [subjectId, user.goalExamId],
   );
   const all = [...uploadedNotes, ...(state.data ?? [])];
   const data = subjectId === 'all' ? all : all.filter((n) => n.subjectId === subjectId);
@@ -33,7 +42,7 @@ export default function NotesScreen() {
           active={subjectId === 'all'}
           onPress={() => setSubjectId('all')}
         />
-        {SUBJECTS.map((sub) => (
+        {subjects.map((sub) => (
           <Chip
             key={sub.id}
             label={`${sub.icon} ${t(sub.name, lang)}`}

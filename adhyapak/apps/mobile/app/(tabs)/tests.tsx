@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
-import { EXAMS, listTests, theme, type Test } from '@adhyapak/core';
+import { listTests, theme, type Test } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { TestCard } from '@/components/cards';
@@ -16,13 +16,14 @@ const TYPES: { id: Test['type'] | 'all'; label: { en: string; hi: string } }[] =
 ];
 
 export default function TestsScreen() {
-  const { lang } = useStore();
+  const { lang, user } = useStore();
   const r = useResponsive();
   const [type, setType] = useState<Test['type'] | 'all'>('all');
-  const [examId, setExamId] = useState('all');
 
-  // The exam filter goes to the repository; type narrows what came back.
-  const state = useAsync(() => listTests(examId === 'all' ? undefined : examId), [examId]);
+  // Always the learner's own exam. A row of exam chips used to sit here,
+  // offering the mocks of exams they are not sitting; changing exam is the goal
+  // switcher's job, one control in the corner rather than a row per screen.
+  const state = useAsync(() => listTests(user.goalExamId), [user.goalExamId]);
   const data = (state.data ?? []).filter((x) => type === 'all' || x.type === type);
 
   return (
@@ -39,26 +40,6 @@ export default function TestsScreen() {
             label={x.label[lang]}
             active={type === x.id}
             onPress={() => setType(x.id)}
-          />
-        ))}
-      </ScrollView>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0, flexShrink: 0 }}
-        contentContainerStyle={{ padding: r.gutter }}
-      >
-        <Chip
-          label={lang === 'hi' ? 'सभी परीक्षाएँ' : 'All exams'}
-          active={examId === 'all'}
-          onPress={() => setExamId('all')}
-        />
-        {EXAMS.map((e) => (
-          <Chip
-            key={e.id}
-            label={`${e.emoji} ${e.shortName}`}
-            active={examId === e.id}
-            onPress={() => setExamId(e.id)}
           />
         ))}
       </ScrollView>

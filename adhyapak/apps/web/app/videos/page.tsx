@@ -9,8 +9,9 @@ import { VideoCard } from '@/components/cards';
 import { EmptyState, SectionHeader } from '@/components/ui';
 
 export default function VideosPage() {
-  const videos = useAsync(() => listVideos(), []);
-  const { lang, uploadedVideos } = useStore();
+  const { lang, user, uploadedVideos } = useStore();
+  // Scoped to the learner's exam, like every other listing.
+  const videos = useAsync(() => listVideos({ examId: user.goalExamId }), [user.goalExamId]);
   const [subjectId, setSubjectId] = useState('all');
 
   const all = [...uploadedVideos, ...(videos.data ?? [])];
