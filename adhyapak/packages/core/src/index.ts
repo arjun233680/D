@@ -36,4 +36,6 @@ export type { Theme, ExamTheme } from './theme';
 // Backend access. Screens call these instead of importing seed arrays directly
 // once credentials are present; without them the same calls serve bundled content.
 export * from './api/client';
+// Authentication. The only module either app may use for supabase.auth.
+export * from './api/auth';
 export * from './api/repository';

@@ -14,6 +14,7 @@ import {
   type Video,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useStudioAccess } from '@/lib/useStudioAccess';
 import { Badge, SectionHeader } from '@/components/ui';
 
 type Mode = 'video' | 'note';
@@ -174,6 +175,10 @@ export default function StudioPage() {
           </span>
         </Link>
       </div>
+
+      {/* Who you are, and the way in. The Studio is the one part of the site
+          that needs an account; the learner side is not gated. */}
+      <StudioIdentity lang={lang} />
 
       <div className="flex gap-2">
         {(['video', 'note'] as Mode[]).map((m) => (
@@ -404,6 +409,47 @@ export default function StudioPage() {
             ))}
           </div>
         </section>
+      ) : null}
+    </div>
+  );
+}
+
+/** A one-line "you are signed in as …" with the sign-in link beside it. */
+function StudioIdentity({ lang }: { lang: 'en' | 'hi' }) {
+  const { access, loading } = useStudioAccess();
+  const hi = lang === 'hi';
+  if (loading || !access) return null;
+
+  const label =
+    access.kind === 'staff'
+      ? hi
+        ? `स्टाफ़ के रूप में साइन इन: ${access.email ?? ''}`
+        : `Signed in as staff: ${access.email ?? ''}`
+      : access.kind === 'not-staff'
+        ? hi
+          ? `${access.email ?? 'यह खाता'} — स्टाफ़ नहीं`
+          : `${access.email ?? 'This account'} — not staff`
+        : access.kind === 'signed-out'
+          ? hi
+            ? 'साइन इन नहीं हैं'
+            : 'Not signed in'
+          : hi
+            ? 'इस बिल्ड में कोई डेटाबेस नहीं'
+            : 'No database in this build';
+
+  return (
+    <div className="card flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+      <span className="text-[13px] text-[var(--color-muted)]">{label}</span>
+      {access.kind !== 'no-backend' ? (
+        <Link href="/studio/sign-in" className="text-[13px] font-bold text-[var(--color-brand)]">
+          {access.kind === 'staff'
+            ? hi
+              ? 'खाता बदलें'
+              : 'Switch account'
+            : hi
+              ? 'साइन इन'
+              : 'Sign in'}
+        </Link>
       ) : null}
     </div>
   );

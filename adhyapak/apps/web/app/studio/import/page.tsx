@@ -4,8 +4,6 @@ import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   EXAMS,
-  isBackendConfigured,
-  isStaff,
   type DuplicateMatch,
   type Issue,
 } from '@adhyapak/core';
@@ -22,7 +20,8 @@ import {
   type Step,
   type ValidatedImport,
 } from '@/lib/importPipeline';
-import { Badge, ErrorState } from '@/components/ui';
+import { Badge } from '@/components/ui';
+import { useStudioAccess } from '@/lib/useStudioAccess';
 
 /**
  * Bulk question import.
@@ -53,14 +52,27 @@ export default function ImportPage() {
   const { lang } = useStore();
   const hi = lang === 'hi';
 
-  // Two different reasons the import step can be unavailable, and they need
-  // different words. Without credentials there is no database to write to;
-  // with credentials but the wrong role, the database will refuse. Saying
-  // "educators only" when the truth is "no database configured" sends someone
-  // to ask for a permission that would not help.
-  const hasBackend = isBackendConfigured();
-  const staff = useAsync(async () => (hasBackend ? await isStaff() : false), [hasBackend]);
-  const canWrite = hasBackend && staff.data === true;
+  // Three reasons the import can be unavailable, each with its own words: no
+  // database in this build, nobody signed in, or signed in without the role the
+  // database requires. See components/StudioGate — collapsing them to one
+  // boolean is what made a blocked import look like a missing database.
+  const { access, loading } = useStudioAccess();
+  const hasBackend = access ? access.kind !== 'no-backend' : false;
+  const canWrite = access?.kind === 'staff';
+
+  // Why the final write is unavailable, in the words that match the actual
+  // state. A generic "needs a database" sent operators to check the deploy when
+  // the real answer was "sign in".
+  const blocked = {
+    'no-backend': ['This build has no database.', 'इस बिल्ड में कोई डेटाबेस नहीं है।'],
+    'signed-out': ['Sign in to save this import.', 'इस आयात को सहेजने के लिए साइन इन करें।'],
+    'not-staff': [
+      'This account is not an educator or admin.',
+      'यह खाता शिक्षक या एडमिन नहीं है।',
+    ],
+  } as const;
+  const [blockedReason, blockedReasonHi] =
+    access && access.kind !== 'staff' ? blocked[access.kind] : ['', ''];
 
   const [step, setStep] = useState<Step>('upload');
   const [parsed, setParsed] = useState<ParsedFile | null>(null);
@@ -171,22 +183,6 @@ export default function ImportPage() {
   // duplicate check all run here, so a file can be checked before anyone has
   // credentials — which is genuinely useful, and the wizard says so plainly
   // rather than pretending the import will land.
-  if (hasBackend && staff.data === false) {
-    return (
-      <div className="px-4 pt-6 sm:px-0">
-        <ErrorState
-          title={hi ? 'केवल शिक्षकों के लिए' : 'Educators only'}
-          body={
-            hi
-              ? 'प्रश्न आयात करने के लिए शिक्षक खाते से साइन इन करें। यह नियम डेटाबेस में भी लागू है।'
-              : 'Sign in with an educator account to import questions. The database enforces this too.'
-          }
-          retryLabel={hi ? 'दोबारा जाँचें' : 'Check again'}
-          onRetry={staff.retry}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 px-4 pt-4 pb-10 sm:px-0 sm:pt-6">
@@ -206,13 +202,32 @@ export default function ImportPage() {
 
       <StepBar current={step} hi={hi} />
 
-      {!hasBackend ? (
-        <p className="rounded-xl border border-[var(--color-warning)] bg-[var(--color-warning-light)] px-4 py-3 text-[13px]">
+      {/* Checking a file needs no database at all — parsing, mapping,
+          validation and in-file duplicate detection run here — so the wizard
+          stays usable and says exactly which step will not be available. */}
+      {!loading && access && access.kind !== 'staff' ? (
+        <div className="rounded-xl border border-[var(--color-warning)] bg-[var(--color-warning-light)] px-4 py-3 text-[13px]">
           ⚠️{' '}
-          {hi
-            ? 'कोई डेटाबेस कॉन्फ़िगर नहीं है। आप फ़ाइल जाँच सकते हैं, पर सहेजा कुछ नहीं जाएगा।'
-            : 'No database is configured. You can check a file here, but nothing can be saved.'}
-        </p>
+          {access.kind === 'no-backend'
+            ? hi
+              ? 'इस बिल्ड में कोई डेटाबेस नहीं है। आप फ़ाइल जाँच सकते हैं, पर सहेजा कुछ नहीं जाएगा।'
+              : 'This build has no database. You can check a file here, but nothing can be saved.'
+            : access.kind === 'signed-out'
+              ? hi
+                ? 'आप साइन इन नहीं हैं। फ़ाइल जाँच सकते हैं; सहेजने के लिए साइन इन करें।'
+                : 'You are not signed in. You can check a file here; signing in is what lets you save it.'
+              : hi
+                ? `${access.email ?? 'यह खाता'} स्टाफ़ नहीं है। डेटाबेस स्वयं आयात अस्वीकार करेगा।`
+                : `${access.email ?? 'This account'} is not staff. The database itself will refuse the import.`}
+          {access.kind !== 'no-backend' ? (
+            <>
+              {' '}
+              <Link href="/studio/sign-in" className="font-bold underline">
+                {hi ? 'साइन इन' : 'Sign in'}
+              </Link>
+            </>
+          ) : null}
+        </div>
       ) : null}
 
       {step === 'upload' ? (
@@ -407,6 +422,8 @@ export default function ImportPage() {
           onImport={onImport}
           busy={busy}
           canWrite={canWrite}
+          blockedReason={blockedReason}
+          blockedReasonHi={blockedReasonHi}
           rowOffset={parsed ? parsed.headerRow - 1 : 0}
         />
       ) : null}
@@ -512,6 +529,8 @@ function ReviewStep({
   onImport,
   busy,
   canWrite,
+  blockedReason,
+  blockedReasonHi,
   rowOffset,
 }: {
   validated: ValidatedImport;
@@ -526,6 +545,9 @@ function ReviewStep({
   onImport: () => void;
   busy: boolean;
   canWrite: boolean;
+  /** Why the write is unavailable, already matched to the real state. */
+  blockedReason: string;
+  blockedReasonHi: string;
   /** Rows above the header, so a line number points at the right spreadsheet row. */
   rowOffset: number;
 }) {
@@ -730,13 +752,7 @@ function ReviewStep({
           type="button"
           onClick={onImport}
           disabled={busy || willWrite === 0 || !canWrite}
-          title={
-            canWrite
-              ? undefined
-              : hi
-                ? 'सहेजने के लिए डेटाबेस चाहिए'
-                : 'Saving needs a database connection'
-          }
+          title={canWrite ? undefined : (hi ? blockedReasonHi : blockedReason)}
           className="rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
         >
           {hi

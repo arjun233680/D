@@ -3,8 +3,6 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  isBackendConfigured,
-  isStaff,
   listDraftQuestions,
   setQuestionStatusBulk,
   type ContentStatus,
@@ -12,7 +10,9 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
-import { AsyncSection, Badge, ErrorState } from '@/components/ui';
+import { AsyncSection, Badge } from '@/components/ui';
+import { StudioGate } from '@/components/StudioGate';
+import { useStudioAccess } from '@/lib/useStudioAccess';
 
 /**
  * Draft review.
@@ -32,8 +32,7 @@ export default function DraftsPage() {
 
   // Drafts live in the database, so without one there is nothing to review —
   // and that is a different message from "you lack permission".
-  const hasBackend = isBackendConfigured();
-  const staff = useAsync(async () => (hasBackend ? await isStaff() : false), [hasBackend]);
+  const { access, loading } = useStudioAccess();
   const [status, setStatus] = useState<ContentStatus>('draft');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -78,33 +77,9 @@ export default function DraftsPage() {
     setRound((n) => n + 1);
   };
 
-  if (!hasBackend || staff.data === false) {
-    return (
-      <div className="px-4 pt-6 sm:px-0">
-        <ErrorState
-          title={
-            hasBackend
-              ? hi
-                ? 'केवल शिक्षकों के लिए'
-                : 'Educators only'
-              : hi
-                ? 'कोई डेटाबेस नहीं'
-                : 'No database configured'
-          }
-          body={
-            hasBackend
-              ? hi
-                ? 'ड्राफ़्ट देखने के लिए शिक्षक खाते से साइन इन करें।'
-                : 'Sign in with an educator account to review drafts.'
-              : hi
-                ? 'ड्राफ़्ट डेटाबेस में रहते हैं। ऑफ़लाइन मोड में समीक्षा के लिए कुछ नहीं है।'
-                : 'Drafts live in the database. In offline mode there is nothing to review.'
-          }
-          retryLabel={hi ? 'दोबारा जाँचें' : 'Check again'}
-          onRetry={staff.retry}
-        />
-      </div>
-    );
+  // Three states, three sentences. See components/StudioGate.
+  if (!access || access.kind !== 'staff') {
+    return <StudioGate access={access} loading={loading} lang={lang}>{null}</StudioGate>;
   }
 
   return (
