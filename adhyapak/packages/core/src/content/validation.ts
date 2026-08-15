@@ -210,6 +210,21 @@ export function validateQuestion(
     }
     if (q.subtopicId && refs.subtopicIds?.size && !refs.subtopicIds.has(q.subtopicId)) {
       issues.push(unknownRef('subtopicId', q.subtopicId, 'subtopic', refs.subtopicIds));
+    } else if (q.subtopicId && !refs.subtopicIds?.size) {
+      // `subtopic_id` is a foreign key. When the taxonomy defines no subtopics
+      // at all, any value here is unresolvable — and a real source file puts
+      // prose in that column ("Basic processes of teaching and learning"), which
+      // used to sail through validation and fail the whole batch on a Postgres
+      // constraint the operator cannot act on. Saying it per row, by name, is
+      // the point of validating before writing.
+      issues.push(
+        err(
+          'unknown.ref',
+          'subtopicId',
+          `No subtopic ids exist in this taxonomy, so "${q.subtopicId}" cannot be one. ` +
+            'Map that column to Tags, or leave it unmapped.',
+        ),
+      );
     }
     (q.examIds ?? []).forEach((id, i) => {
       if (!refs.examIds.has(id)) {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  DEFAULT_COLUMNS,
   EXAMS,
   SUBJECTS,
   importQuestions,
@@ -140,6 +141,32 @@ describe('(c) numeric columns exported as floats', () => {
     // Not "2020.0" carried through as a string, and not NaN.
     assert.equal(typeof pyq?.year, 'number');
     assert.equal(typeof pyq?.questionNumber, 'number');
+  });
+});
+
+describe('a prose value in an id column', () => {
+  it('is rejected per row, not left to the database foreign key', () => {
+    // The real Sub-Topic column reads "Basic processes of teaching and
+    // learning". subtopic_id is a foreign key and this taxonomy defines no
+    // subtopics, so before this the whole 840-row batch died on a Postgres
+    // constraint the operator could do nothing with.
+    const report = importQuestions(
+      [realRow({ Subtopic: 'Basic processes of teaching and learning' })],
+      { refs: REFS, now },
+    );
+    assert.equal(report.accepted.length, 0);
+    const issue = report.rejected[0]!.issues.find((i) => i.field === 'subtopicId');
+    assert.ok(issue, 'the subtopic column is named');
+    assert.match(issue!.message, /Map that column to Tags, or leave it unmapped/);
+  });
+
+  it('accepts the row once that column is not treated as an id', () => {
+    const report = importQuestions(
+      [realRow({ Subtopic: 'Basic processes of teaching and learning' })],
+      { refs: REFS, now, columns: { ...DEFAULT_COLUMNS, subtopic: [] } },
+    );
+    assert.equal(report.rejected.length, 0);
+    assert.equal(report.accepted.length, 1);
   });
 });
 

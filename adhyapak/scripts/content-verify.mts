@@ -52,10 +52,17 @@ const refs = refsFrom({
  * This is the same choice an operator makes on the wizard's column-mapping
  * step; encoding it here keeps `content:verify` honest about what was imported.
  */
-const columnsFor = (file: string): ImportOptions['columns'] =>
-  file === 'GK.xlsx'
-    ? { ...DEFAULT_COLUMNS, explanation: ['explanationenglish'], explanationHi: ['explanation'] }
-    : undefined;
+const columnsFor = (file: string): ImportOptions['columns'] => ({
+  ...DEFAULT_COLUMNS,
+  // "Sub-Topic" holds prose — "Basic processes of teaching and learning" — not
+  // an id, and subtopic_id is a foreign key with no subtopics defined to point
+  // at. Unmapped as an id, kept as a concept tag so the detail survives.
+  subtopic: [],
+  conceptTags: ['subtopic', 'concepttags', 'concepts'],
+  ...(file === 'GK.xlsx'
+    ? { explanation: ['explanationenglish'], explanationHi: ['explanation'] }
+    : {}),
+});
 
 type Key = `${number}|${string}|${string}`;
 const key = (year: number, level: string, subject: string): Key => `${year}|${level}|${subject}`;

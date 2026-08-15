@@ -124,6 +124,52 @@ no explanation, and one exact duplicate. Every row is marked `[TEST]` and dated
 1999, before any covered exam existed, so it can never be mistaken for real
 content.
 
+## Importing the HTET previous-year papers
+
+The two source workbooks live in `content/`: `CDP.xlsx` (630 questions) and
+`GK.xlsx` (210). Both are bilingual, cover 2018-2024 at all three levels, and
+between them encode the HTET split — 30 CDP and 10 Haryana GK per paper.
+
+Before importing, check the files parse and the split holds:
+
+```bash
+npm run content:verify -- --files
+```
+
+Then, signed in as an educator or admin at `/studio/sign-in`:
+
+1. Upload the workbook and pick **Sheet1**. `GK.xlsx` has a second sheet
+   ("DO NOT DELETE - AutoCrat Job Se") which is not data.
+2. Set **Default exam** to **HTET**. This is what activates the topic map:
+   the files label rows "Piaget", "PRT", "G.K. & Awareness", and those are
+   translated to ids only for HTET, because "Geography" means something
+   different outside a Haryana GK paper.
+3. Change two mappings the auto-mapper cannot get right on its own:
+   - **Subtopic → not mapped.** The "Sub-Topic" column holds prose, and
+     `subtopic_id` is a foreign key with no subtopics defined to point at. Map
+     it to **Tags** to keep the detail, or leave it unmapped. The validator now
+     rejects a prose subtopic per row rather than letting the whole batch die on
+     a Postgres constraint.
+   - **`GK.xlsx` only: Explanation → Explanation (Hindi).** That file has one
+     explanation column and its content is Hindi. Left on English it would fill
+     the English field with Hindi text, and every screen that falls back to
+     English would show Hindi and call it English.
+4. Validate, read the review step, decide about the duplicates — CDP contains
+   five near-duplicate rows, flagged and never removed automatically — then
+   import. Everything lands as a draft whatever the file says.
+5. Publish from `/studio/drafts`.
+
+Afterwards, re-check against the database:
+
+```bash
+npm run content:verify
+```
+
+It counts published HTET questions per (year, level, subject) and fails naming
+the papers that disagree. If the counts are not 30 and 10, the topic map or the
+blueprint is wrong rather than the data — the source files were confirmed at
+exactly those counts before any of this ran.
+
 ## Regenerating the test fixtures
 
 `scripts/make-test-workbook.mts` writes the sample workbook and prints the
