@@ -45,6 +45,9 @@ export function PracticeSession({
   const hi = lang === 'hi';
   const [done, setDone] = useState<{ result: TestResult; attempt: TestAttempt } | null>(null);
   const [filter, setFilter] = useState<SolutionFilter>('all');
+  // Set when the learner steps back into the paper from the result, so the
+  // window reopens on their own answers rather than on a blank sheet.
+  const [resume, setResume] = useState<TestAttempt | undefined>(undefined);
 
   const test = useMemo(
     () =>
@@ -77,7 +80,15 @@ export function PracticeSession({
   }
 
   if (!done) {
-    return <TestPlayer test={test} questions={questions} onSubmit={onSubmit} />;
+    return (
+      <TestPlayer
+        test={test}
+        questions={questions}
+        resume={resume}
+        onSubmit={onSubmit}
+        instantFeedback
+      />
+    );
   }
 
   const rows = questions.map((question, i) => {
@@ -169,7 +180,26 @@ export function PracticeSession({
           onPress={() => router.back()}
           style={{ flex: 1 }}
         />
-        <Button label={t(UI.reattempt, lang)} onPress={() => setDone(null)} style={{ flex: 1 }} />
+        {/* Back into the paper with every answer intact — the marking is on the
+            questions too. `submittedAt` is cleared because the window refuses to
+            reopen a paper it counts as finished. */}
+        <Button
+          label={hi ? 'प्रश्नों पर' : 'Questions'}
+          variant="outline"
+          onPress={() => {
+            setResume({ ...done.attempt, submittedAt: undefined });
+            setDone(null);
+          }}
+          style={{ flex: 1 }}
+        />
+        <Button
+          label={t(UI.reattempt, lang)}
+          onPress={() => {
+            setResume(undefined);
+            setDone(null);
+          }}
+          style={{ flex: 1 }}
+        />
       </View>
     </ScrollView>
   );

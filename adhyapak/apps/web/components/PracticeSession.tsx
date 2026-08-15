@@ -48,6 +48,9 @@ export function PracticeSession({
   const hi = lang === 'hi';
   const [done, setDone] = useState<{ result: TestResult; attempt: TestAttempt } | null>(null);
   const [filter, setFilter] = useState<SolutionFilter>('all');
+  // Set when the learner steps back into the paper from the result, so the
+  // window reopens on their own answers rather than on a blank sheet.
+  const [resume, setResume] = useState<TestAttempt | undefined>(undefined);
 
   const test = useMemo(
     () =>
@@ -85,7 +88,15 @@ export function PracticeSession({
   }
 
   if (!done) {
-    return <TestPlayer test={test} questions={questions} onSubmit={onSubmit} />;
+    return (
+      <TestPlayer
+        test={test}
+        questions={questions}
+        resume={resume}
+        onSubmit={onSubmit}
+        instantFeedback
+      />
+    );
   }
 
   const rows = questions.map((question, i) => {
@@ -158,16 +169,33 @@ export function PracticeSession({
         )}
       </section>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Link
           href={backHref}
           className="flex-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] py-3 text-center text-[13px] font-bold"
         >
           {hi ? 'वापस' : 'Back'}
         </Link>
+        {/* Back into the paper with every answer intact — the marking is on the
+            questions too, so a learner can walk them rather than scroll a list.
+            `submittedAt` is cleared because the window refuses to reopen a paper
+            it considers finished. */}
         <button
           type="button"
-          onClick={() => setDone(null)}
+          onClick={() => {
+            setResume({ ...done.attempt, submittedAt: undefined });
+            setDone(null);
+          }}
+          className="flex-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] py-3 text-center text-[13px] font-bold"
+        >
+          {hi ? 'प्रश्नों पर लौटें' : 'Back to questions'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setResume(undefined);
+            setDone(null);
+          }}
           className="flex-1 rounded-xl bg-[var(--color-brand)] py-3 text-center text-[13px] font-bold text-white"
         >
           {t(UI.reattempt, lang)}

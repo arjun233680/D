@@ -198,12 +198,19 @@ function PyqResult() {
         }}
       </AsyncSection>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Link
           href={backHref}
           className="flex-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] py-3 text-center text-[13px] font-bold"
         >
           {hi ? 'वापस' : 'Back'}
+        </Link>
+        {/* Back into the paper with every answer intact, marking and all. */}
+        <Link
+          href={backQuery ? `${retryHref}&review=1` : `${retryHref}?review=1`}
+          className="flex-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] py-3 text-center text-[13px] font-bold"
+        >
+          {hi ? 'प्रश्नों पर लौटें' : 'Back to questions'}
         </Link>
         <Link
           href={retryHref}

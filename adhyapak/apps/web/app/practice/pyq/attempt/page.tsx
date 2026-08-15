@@ -53,7 +53,7 @@ export default function PyqAttemptPage() {
 
 function PyqAttempt() {
   const router = useRouter();
-  const { lang, user, saveAttempt, saveResult, markActiveToday } = useStore();
+  const { lang, user, attempts, saveAttempt, saveResult, markActiveToday } = useStore();
   const hi = lang === 'hi';
   const params = useSearchParams();
 
@@ -63,6 +63,10 @@ function PyqAttempt() {
   );
   const model = useMemo(() => pyqFilterModel(selection), [selection]);
   const filterKey = JSON.stringify(model.filter);
+
+  // "Back to questions" from the result comes back here with ?review=1.
+  const review = params.get('review') === '1';
+  const saved = attempts[pyqTestId(selection)];
 
   const total = useAsync(() => countQuestions(model.filter), [filterKey]);
   const questions = useAsync(
@@ -134,7 +138,17 @@ function PyqAttempt() {
       >
         {() =>
           test ? (
-            <TestPlayer test={test} questions={questions.data ?? []} onSubmit={onSubmit} />
+            <TestPlayer
+              test={test}
+              questions={questions.data ?? []}
+              // Reopened from the result: the window refuses a paper it counts
+              // as finished, so the submission stamp is cleared to walk it again.
+              resume={
+                review && saved ? { ...saved, submittedAt: undefined } : undefined
+              }
+              onSubmit={onSubmit}
+              instantFeedback
+            />
           ) : null
         }
       </AsyncSection>

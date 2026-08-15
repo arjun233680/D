@@ -50,6 +50,7 @@ export function TestPlayer({
   onSubmit,
   resume,
   onAttemptChange,
+  instantFeedback = false,
 }: {
   test: Test;
   /** The paper's questions. Passed in, never looked up — see above. */
@@ -59,12 +60,24 @@ export function TestPlayer({
   resume?: TestAttempt;
   /** Called on every change, so a caller that persists attempts can do so. */
   onAttemptChange?: (attempt: TestAttempt) => void;
+  /**
+   * Marks the answer as soon as it is chosen, and offers the explanation.
+   *
+   * On for practice, off for a mock — a mock is a measurement, and showing the
+   * key mid-paper would destroy it. When on, the question locks once answered:
+   * being told the answer and then allowed to change it would let the score
+   * report something the learner did not do.
+   */
+  instantFeedback?: boolean;
 }) {
   const { lang, toggleLang, user, ready, toggleBookmark } = useStore();
 
   const [attempt, setAttempt] = useState<TestAttempt | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Collapsed by default: the learner asked to be told whether they were right,
+  // not to be handed a paragraph they did not ask for.
+  const [explanationOpen, setExplanationOpen] = useState(false);
   const lastTick = useRef(Date.now());
 
   const questionIds = useMemo(() => testQuestionIds(test), [test]);
@@ -138,9 +151,13 @@ export function TestPlayer({
   const lowTime = attempt.remainingMs < 5 * 60_000;
   const bookmarked = user.bookmarkedQuestionIds.includes(currentId);
 
+  // Answered, with feedback on: the question is settled and shows its marking.
+  const revealed = instantFeedback && (answer?.selectedIndex ?? null) !== null;
+
   const goTo = (qid: string) => {
     setAttempt((prev) => (prev ? visitQuestion(prev, qid) : prev));
     setPaletteOpen(false);
+    setExplanationOpen(false);
   };
   const move = (delta: number) => {
     const next = questionIds[index + delta];
@@ -291,16 +308,34 @@ export function TestPlayer({
             <View style={{ marginTop: theme.space.lg, gap: theme.space.md }}>
               {question.options.map((opt, i) => {
                 const selected = answer?.selectedIndex === i;
+                const isKey = i === question.correctIndex;
+                // Only the key and the learner's own pick are marked. Colouring
+                // every wrong option would give away the next attempt too.
+                const marked = revealed && (isKey || selected);
+                const edge = marked
+                  ? isKey
+                    ? theme.color.success
+                    : theme.color.danger
+                  : selected
+                    ? theme.color.primary
+                    : theme.color.border;
                 return (
                   <Pressable
                     key={i}
+                    disabled={revealed}
                     onPress={() => setAttempt((prev) => (prev ? selectOption(prev, currentId, i) : prev))}
                     style={{
                       flexDirection: 'row',
                       gap: theme.space.md,
                       borderWidth: 1,
-                      borderColor: selected ? theme.color.primary : theme.color.border,
-                      backgroundColor: selected ? theme.color.primaryLight : theme.color.surface,
+                      borderColor: edge,
+                      backgroundColor: marked
+                        ? isKey
+                          ? theme.color.successLight
+                          : theme.color.dangerLight
+                        : selected
+                          ? theme.color.primaryLight
+                          : theme.color.surface,
                       borderRadius: theme.radius.md,
                       paddingHorizontal: 14,
                       paddingVertical: 13,
@@ -312,8 +347,8 @@ export function TestPlayer({
                         height: 24,
                         borderRadius: 12,
                         borderWidth: 1,
-                        borderColor: selected ? theme.color.primary : theme.color.borderStrong,
-                        backgroundColor: selected ? theme.color.primary : 'transparent',
+                        borderColor: marked || selected ? edge : theme.color.borderStrong,
+                        backgroundColor: marked || selected ? edge : 'transparent',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
@@ -322,7 +357,7 @@ export function TestPlayer({
                         style={{
                           fontSize: theme.font.xs,
                           fontWeight: '800',
-                          color: selected ? '#fff' : theme.color.textMuted,
+                          color: marked || selected ? '#fff' : theme.color.textMuted,
                         }}
                       >
                         {String.fromCharCode(65 + i)}
@@ -331,10 +366,55 @@ export function TestPlayer({
                     <Text style={{ flex: 1, fontSize: theme.font.base, lineHeight: 22 }}>
                       {t(opt, lang)}
                     </Text>
+                    {marked ? <Text>{isKey ? '✅' : '❌'}</Text> : null}
                   </Pressable>
                 );
               })}
             </View>
+
+            {/* Folded away until asked for: read it if you want it, skip it if
+                you already knew. */}
+            {revealed ? (
+              <View
+                style={{
+                  marginTop: theme.space.lg,
+                  borderWidth: 1,
+                  borderColor: theme.color.border,
+                  borderRadius: theme.radius.md,
+                  overflow: 'hidden',
+                }}
+              >
+                <Pressable
+                  onPress={() => setExplanationOpen((open) => !open)}
+                  style={{
+                    flexDirection: 'row',
+                    gap: 8,
+                    backgroundColor: theme.color.surfaceAlt,
+                    paddingHorizontal: 14,
+                    paddingVertical: 11,
+                  }}
+                >
+                  <Text style={{ color: theme.color.textMuted }}>
+                    {explanationOpen ? '▾' : '▸'}
+                  </Text>
+                  <Text style={{ fontSize: theme.font.sm, fontWeight: '800' }}>
+                    {t(UI.explanation, lang)}
+                  </Text>
+                </Pressable>
+                {explanationOpen ? (
+                  <Text
+                    style={{
+                      fontSize: theme.font.sm,
+                      lineHeight: 21,
+                      paddingHorizontal: 14,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    {t(question.explanation, lang)}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
           </>
         ) : null}
       </ScrollView>
@@ -371,6 +451,7 @@ export function TestPlayer({
             </Text>
           </Pressable>
           <Pressable
+            disabled={revealed}
             onPress={() => setAttempt((prev) => (prev ? clearResponse(prev, currentId) : prev))}
             style={{
               flex: 1,
@@ -379,6 +460,7 @@ export function TestPlayer({
               borderRadius: theme.radius.sm,
               paddingVertical: 9,
               alignItems: 'center',
+              opacity: revealed ? 0.4 : 1,
             }}
           >
             <Text style={{ fontSize: theme.font.xs, fontWeight: '700', color: theme.color.textMuted }}>

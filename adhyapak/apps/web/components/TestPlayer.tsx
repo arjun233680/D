@@ -50,6 +50,7 @@ export function TestPlayer({
   onSubmit,
   resume,
   onAttemptChange,
+  instantFeedback = false,
 }: {
   test: Test;
   /** The paper's questions. Passed in, never looked up — see above. */
@@ -63,11 +64,23 @@ export function TestPlayer({
    * has nowhere durable to be resumed from anyway.
    */
   onAttemptChange?: (attempt: TestAttempt) => void;
+  /**
+   * Marks the answer as soon as it is chosen, and offers the explanation.
+   *
+   * On for practice, off for a mock — a mock is a measurement, and showing the
+   * key mid-paper would destroy it. When on, the question locks once answered:
+   * being told the answer and then allowed to change it would let the score
+   * report something the learner did not do.
+   */
+  instantFeedback?: boolean;
 }) {
   const { lang, toggleLang, user, ready, toggleBookmark } = useStore();
   const [attempt, setAttempt] = useState<TestAttempt | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
+  // Collapsed by default: the learner asked to be told whether they were right,
+  // not to be handed a paragraph they did not ask for.
+  const [explanationOpen, setExplanationOpen] = useState(false);
   const lastTickRef = useRef<number>(Date.now());
 
   const questionIds = useMemo(() => testQuestionIds(test), [test]);
@@ -149,9 +162,13 @@ export function TestPlayer({
   const lowTime = attempt.remainingMs < 5 * 60_000;
   const bookmarked = user.bookmarkedQuestionIds.includes(currentId);
 
+  // Answered, with feedback on: the question is settled and shows its marking.
+  const revealed = instantFeedback && (answer?.selectedIndex ?? null) !== null;
+
   const goTo = (qid: string) => {
     setAttempt((prev) => (prev ? visitQuestion(prev, qid) : prev));
     setPaletteOpen(false);
+    setExplanationOpen(false);
   };
   const move = (delta: number) => {
     const next = questionIds[index + delta];
@@ -259,33 +276,68 @@ export function TestPlayer({
               <div className="mt-4 space-y-2.5">
                 {question.options.map((opt, i) => {
                   const selected = answer?.selectedIndex === i;
+                  const isKey = i === question.correctIndex;
+                  // Only the key and the learner's own pick are marked. Colouring
+                  // every wrong option would give away the next attempt too.
+                  const marked = revealed && (isKey || selected);
                   return (
                     <button
                       key={i}
                       type="button"
+                      disabled={revealed}
                       onClick={() =>
                         setAttempt((prev) => (prev ? selectOption(prev, currentId, i) : prev))
                       }
                       className={`option-row flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left ${
-                        selected
-                          ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
-                          : 'border-[var(--color-line)] bg-[var(--color-surface)] hover:border-[var(--color-line-strong)]'
+                        marked
+                          ? isKey
+                            ? 'border-[var(--color-success)] bg-[var(--color-success-light)]'
+                            : 'border-[var(--color-danger)] bg-[var(--color-danger-light)]'
+                          : selected
+                            ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
+                            : 'border-[var(--color-line)] bg-[var(--color-surface)] hover:border-[var(--color-line-strong)]'
                       }`}
                     >
                       <span
                         className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border text-[12px] font-bold ${
-                          selected
-                            ? 'border-[var(--color-brand)] bg-[var(--color-brand)] text-white'
-                            : 'border-[var(--color-line-strong)] text-[var(--color-muted)]'
+                          marked
+                            ? isKey
+                              ? 'border-[var(--color-success)] bg-[var(--color-success)] text-white'
+                              : 'border-[var(--color-danger)] bg-[var(--color-danger)] text-white'
+                            : selected
+                              ? 'border-[var(--color-brand)] bg-[var(--color-brand)] text-white'
+                              : 'border-[var(--color-line-strong)] text-[var(--color-muted)]'
                         }`}
                       >
                         {String.fromCharCode(65 + i)}
                       </span>
-                      <span className="text-[14px] leading-relaxed">{t(opt, lang)}</span>
+                      <span className="flex-1 text-[14px] leading-relaxed">{t(opt, lang)}</span>
+                      {marked ? <span>{isKey ? '✅' : '❌'}</span> : null}
                     </button>
                   );
                 })}
               </div>
+
+              {/* Folded away until asked for: read it if you want it, skip it if
+                  you already knew. */}
+              {revealed ? (
+                <div className="mt-4 overflow-hidden rounded-xl border border-[var(--color-line)]">
+                  <button
+                    type="button"
+                    onClick={() => setExplanationOpen((open) => !open)}
+                    aria-expanded={explanationOpen}
+                    className="flex w-full items-center gap-2 bg-[var(--color-surface-alt)] px-3.5 py-2.5 text-left text-[12px] font-bold"
+                  >
+                    <span className="text-[var(--color-muted)]">{explanationOpen ? '▾' : '▸'}</span>
+                    {t(UI.explanation, lang)}
+                  </button>
+                  {explanationOpen ? (
+                    <p className="px-3.5 py-3 text-[13px] leading-relaxed">
+                      {t(question.explanation, lang)}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </>
           ) : null}
         </main>
@@ -306,7 +358,7 @@ export function TestPlayer({
       </div>
 
       {/* Action bar */}
-      <div className="shrink-0 border-t border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5">
+      <div className="shrink-0 border-t border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -323,8 +375,9 @@ export function TestPlayer({
           </button>
           <button
             type="button"
+            disabled={revealed}
             onClick={() => setAttempt((prev) => (prev ? clearResponse(prev, currentId) : prev))}
-            className="rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold text-[var(--color-muted)]"
+            className="rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold text-[var(--color-muted)] disabled:opacity-40"
           >
             {t(UI.clear, lang)}
           </button>
