@@ -179,6 +179,22 @@ export const pyqSelectionFromParams = (
 /* ---------------------------------------------------------- truncation */
 
 /**
+ * How many questions one run of the practice screen will hold.
+ *
+ * The whole HTET bank is ~861 previous-year questions and the repository's
+ * default page is 200, so the runner used to say "1 / 200" of 861 with nothing
+ * admitting the other 661 existed. Rather than page a runner mid-session, which
+ * would cost a learner their place, both apps ask for a paper's worth and say
+ * plainly when the filter is wider than that. A fully funnelled selection is 30
+ * questions; this ceiling only bites on "all subjects, all years", where
+ * narrowing is the right advice anyway.
+ *
+ * Shared so the website and the phone cannot disagree about how much of a
+ * filter a learner has actually seen.
+ */
+export const PYQ_SCREEN_LIMIT = 300;
+
+/**
  * Whether a screen is showing fewer questions than its filter matches.
  *
  * The repository pages at 200 rows by default and said nothing about it, so a
