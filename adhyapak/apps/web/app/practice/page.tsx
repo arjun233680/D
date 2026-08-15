@@ -2,19 +2,20 @@
 
 import Link from 'next/link';
 import {
-  QUESTIONS,
   SUBJECTS,
   currentStreak,
   formatCount,
   getExam,
   getPaper,
-  previousYearQuestions,
+  countQuestions,
+  countQuestionsBySubject,
   recommendedTopics,
   resolvePaperSubjects,
   t,
   UI,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useAsync } from '@/lib/useAsync';
 import { Badge, ElectiveNotice, ProgressBar, SectionHeader, Stat } from '@/components/ui';
 
 export default function PracticeHubPage() {
@@ -32,7 +33,18 @@ export default function PracticeHubPage() {
     : [];
   const recommended = recommendedTopics(paperSubjects, 8);
   const streak = currentStreak(user.activeDates);
-  const pyqCount = previousYearQuestions().length;
+
+  // Both counts describe the bank, so both come from the bank. They used to be
+  // the lengths of the bundled arrays — 67 and 21 — which understated a live
+  // database of ~900 by an order of magnitude. Scoped to the learner's exam,
+  // because that is what these tiles say.
+  const bankCount = useAsync(() => countQuestions({ examId: user.goalExamId }), [user.goalExamId]);
+  const pyqCount = useAsync(
+    () => countQuestions({ examId: user.goalExamId, pyqOnly: true }),
+    [user.goalExamId],
+  );
+  // Per-subject counts for the index below, in one round trip.
+  const bySubject = useAsync(() => countQuestionsBySubject(user.goalExamId), [user.goalExamId]);
 
   return (
     <div className="space-y-7 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
@@ -54,7 +66,7 @@ export default function PracticeHubPage() {
         />
         <Stat
           label={lang === 'hi' ? 'कुल प्रश्न' : 'Questions'}
-          value={formatCount(QUESTIONS.length)}
+          value={bankCount.loading ? '…' : formatCount(bankCount.data ?? 0)}
         />
       </div>
 
@@ -71,7 +83,11 @@ export default function PracticeHubPage() {
               {lang === 'hi' ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
             </p>
             <p className="text-[11px] text-[var(--color-muted)]">
-              {pyqCount} {lang === 'hi' ? 'प्रश्न' : 'questions'}
+              {pyqCount.loading
+                ? lang === 'hi'
+                  ? 'गिन रहे हैं…'
+                  : 'counting…'
+                : `${formatCount(pyqCount.data ?? 0)} ${lang === 'hi' ? 'प्रश्न' : 'questions'}`}
             </p>
           </div>
         </Link>
@@ -150,7 +166,7 @@ export default function PracticeHubPage() {
         <SectionHeader title={lang === 'hi' ? 'सभी विषय' : 'All subjects'} />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {SUBJECTS.map((s) => {
-            const available = QUESTIONS.filter((q) => q.subjectId === s.id).length;
+            const available = bySubject.data?.[s.id] ?? 0;
             return (
               <Link
                 key={s.id}
@@ -166,8 +182,10 @@ export default function PracticeHubPage() {
                 <div className="min-w-0">
                   <p className="text-[14px] font-bold">{t(s.name, lang)}</p>
                   <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">
-                    {s.topics.length} {lang === 'hi' ? 'टॉपिक' : 'topics'} · {available}{' '}
-                    {lang === 'hi' ? 'प्रश्न उपलब्ध' : 'questions ready'}
+                    {s.topics.length} {lang === 'hi' ? 'टॉपिक' : 'topics'}
+                    {bySubject.loading
+                      ? ''
+                      : ` · ${available} ${lang === 'hi' ? 'प्रश्न उपलब्ध' : 'questions ready'}`}
                   </p>
                 </div>
               </Link>

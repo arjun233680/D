@@ -1,18 +1,19 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import {
-  QUESTIONS,
   SUBJECTS,
   currentStreak,
   formatCount,
   getExam,
   getPaper,
-  previousYearQuestions,
+  countQuestions,
+  countQuestionsBySubject,
   recommendedTopics,
   resolvePaperSubjects,
   t,
   theme,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useAsync } from '@/lib/useAsync';
 import { Badge, ElectiveNotice, ProgressBar, SectionHeader, Stat, Touch, s } from '@/components/ui';
 
 export default function PracticeScreen() {
@@ -30,6 +31,15 @@ export default function PracticeScreen() {
   const recommended = recommendedTopics(paperSubjects, 6);
   const streak = currentStreak(user.activeDates);
 
+  // From the bank, not from the bundled arrays. These read 67 and 21 against a
+  // live database of ~900.
+  const bankCount = useAsync(() => countQuestions({ examId: user.goalExamId }), [user.goalExamId]);
+  const pyqCount = useAsync(
+    () => countQuestions({ examId: user.goalExamId, pyqOnly: true }),
+    [user.goalExamId],
+  );
+  const bySubject = useAsync(() => countQuestionsBySubject(user.goalExamId), [user.goalExamId]);
+
   return (
     <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
       <View style={{ flexDirection: 'row', gap: 8, padding: theme.space.lg }}>
@@ -45,7 +55,7 @@ export default function PracticeScreen() {
         />
         <Stat
           label={lang === 'hi' ? 'प्रश्न' : 'Questions'}
-          value={formatCount(QUESTIONS.length)}
+          value={bankCount.loading ? '…' : formatCount(bankCount.data ?? 0)}
         />
       </View>
 
@@ -55,7 +65,13 @@ export default function PracticeScreen() {
           icon="📜"
           bg={theme.color.infoLight}
           title={lang === 'hi' ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
-          sub={`${previousYearQuestions().length} ${lang === 'hi' ? 'प्रश्न' : 'questions'}`}
+          sub={
+            pyqCount.loading
+              ? lang === 'hi'
+                ? 'गिन रहे हैं…'
+                : 'counting…'
+              : `${formatCount(pyqCount.data ?? 0)} ${lang === 'hi' ? 'प्रश्न' : 'questions'}`
+          }
         />
         <Shortcut
           href="/practice/bookmarks"
@@ -112,7 +128,7 @@ export default function PracticeScreen() {
         <SectionHeader title={lang === 'hi' ? 'सभी विषय' : 'All subjects'} />
         <View style={{ paddingHorizontal: theme.space.lg, gap: theme.space.sm }}>
           {SUBJECTS.map((subject) => {
-            const ready = QUESTIONS.filter((q) => q.subjectId === subject.id).length;
+            const ready = bySubject.data?.[subject.id] ?? 0;
             return (
               <Touch key={subject.id} href={`/practice/subject/${subject.id}`} style={[s.card, s.row, { padding: theme.space.md, gap: theme.space.md }]}>
                   <View
