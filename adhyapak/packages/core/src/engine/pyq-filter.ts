@@ -1,20 +1,21 @@
-import type { ElectiveError, Exam, ExamPaper, PaperSubjects } from '../types';
-import { getExam, getPaper, resolvePaperSubjects } from '../data/exams';
+import type { Exam, ExamPaper } from '../types';
+import { getExam, getPaper, paperBrowsableSubjects } from '../data/exams';
 import { getSubject } from '../data/subjects';
 import type { PracticeFilter } from './practice';
 
 /**
- * The previous-year browser's funnel: exam → level → subject → year → shift.
+ * The previous-year browser's funnel: exam → level → subject → year.
  *
  * Shared by both apps so the two cannot drift into offering different subjects
  * for the same paper. Everything here is pure: it decides what the pickers may
  * offer and what filter that selection means, and never fetches anything.
  *
- * The subject list comes from the paper's blueprint rather than a hardcoded
- * list — the fixed sections, plus the learner's own elective for Levels 2 and
- * 3. That is why an HTET PRT candidate is offered CDP, Hindi, English,
- * Quantitative Aptitude, Reasoning, Haryana GK, Maths and EVS, and a TGT
- * candidate is offered their six common blocks plus whichever subject they sit.
+ * The level picker is labelled the way the bank is categorised and the way
+ * candidates speak — PRT, TGT, PGT — not "Level 2". The subject picker lists
+ * every subject that paper can test, elective choices included, so a TGT
+ * candidate browsing the Science questions does not first have to go and set a
+ * profile field. Nothing is selected until they select it; see
+ * `paperBrowsableSubjects` for why that is not the same as guessing.
  */
 
 /** What the learner has chosen, and what the URL carries. */
@@ -24,7 +25,6 @@ export interface PyqSelection {
   paperId?: string;
   subjectId?: string;
   year?: number;
-  shift?: string;
 }
 
 /** One option in a picker, already resolved to something renderable. */
@@ -39,48 +39,42 @@ export interface PyqFilterModel {
   /** Papers of the chosen exam, in blueprint order. Empty for an unknown exam. */
   papers: ExamPaper[];
   paper?: ExamPaper;
-  /**
-   * Subjects the chosen paper tests, or the reason they cannot be listed.
-   * Unresolved is a real state — a TGT candidate who has not picked a subject —
-   * and the screen has to say so rather than guess.
-   */
-  subjects: PaperSubjects;
+  /** Papers as picker options, labelled by post code where the exam has one. */
+  paperOptions: PyqOption<string>[];
+  /** Every subject the chosen paper can test, in blueprint order. */
   subjectOptions: PyqOption<string>[];
-  /** The elective problem, when there is one, so a screen can prompt for it. */
-  electiveError?: ElectiveError;
   /** The selection reduced to a repository filter. */
   filter: PracticeFilter;
 }
 
 /**
- * Resolves a selection into everything a picker needs.
- *
- * `electiveSubjectId` is the learner's saved choice; the funnel's own
- * `subjectId` is what they are browsing right now, which may be any subject the
- * paper tests, not only their elective.
+ * A paper's picker label: its post code where the exam has one, its full name
+ * otherwise. "PGT" is what the bank is categorised by and what a candidate
+ * calls the paper; "Level 3 — PGT (Classes 9 to 12)" is a heading, not an
+ * option in a dropdown.
  */
-export const pyqFilterModel = (
-  selection: PyqSelection,
-  electiveSubjectId?: string,
-): PyqFilterModel => {
+const paperLabel = (paper: ExamPaper): { en: string; hi: string } =>
+  paper.post ? { en: paper.post, hi: paper.post } : { en: paper.name.en, hi: paper.name.hi };
+
+/**
+ * Resolves a selection into everything a picker needs.
+ */
+export const pyqFilterModel = (selection: PyqSelection): PyqFilterModel => {
   const exam = selection.examId ? getExam(selection.examId) : undefined;
   const papers = exam?.papers ?? [];
   const paper = selection.paperId ? getPaper(selection.paperId)?.paper : undefined;
 
-  const subjects: PaperSubjects = paper
-    ? resolvePaperSubjects(paper.id, electiveSubjectId)
-    : { ok: true, sections: [], subjectIds: [] };
+  const paperOptions = papers.map((p) => {
+    const label = paperLabel(p);
+    return { value: p.id, labelEn: label.en, labelHi: label.hi };
+  });
 
-  const subjectOptions = subjects.ok
-    ? subjects.subjectIds
-        .map((id) => {
-          const subject = getSubject(id);
-          return subject
-            ? { value: id, labelEn: subject.name.en, labelHi: subject.name.hi }
-            : undefined;
-        })
-        .filter((o): o is PyqOption<string> => Boolean(o))
-    : [];
+  const subjectOptions = paperBrowsableSubjects(paper?.id)
+    .map((id) => {
+      const subject = getSubject(id);
+      return subject ? { value: id, labelEn: subject.name.en, labelHi: subject.name.hi } : undefined;
+    })
+    .filter((o): o is PyqOption<string> => Boolean(o));
 
   // A subject that is no longer offered by the chosen paper must not silently
   // keep filtering — switching from PGT to PRT should not leave "Physics" in
@@ -94,16 +88,14 @@ export const pyqFilterModel = (
     exam,
     papers,
     paper,
-    subjects,
+    paperOptions,
     subjectOptions,
-    electiveError: subjects.ok ? undefined : subjects.error,
     filter: {
       pyqOnly: true,
       examId: selection.examId,
       level: paper?.level,
       subjectId,
       year: selection.year,
-      shift: selection.shift,
     },
   };
 };
@@ -152,7 +144,6 @@ export const resolvePyqSelection = (
     paperId,
     subjectId: fromUrl.subjectId,
     year: fromUrl.year,
-    shift: fromUrl.shift,
   };
 };
 
@@ -169,7 +160,6 @@ export const pyqSelectionToParams = (selection: PyqSelection): Record<string, st
   if (selection.paperId) params.paper = selection.paperId;
   if (selection.subjectId) params.subject = selection.subjectId;
   if (selection.year !== undefined) params.year = String(selection.year);
-  if (selection.shift) params.shift = selection.shift;
   return params;
 };
 
@@ -183,7 +173,6 @@ export const pyqSelectionFromParams = (
     paperId: get('paper') || undefined,
     subjectId: get('subject') || undefined,
     year: Number.isInteger(year) && year > 0 ? year : undefined,
-    shift: get('shift') || undefined,
   };
 };
 
@@ -228,13 +217,6 @@ export const pyqEmptyReason = (
     : undefined;
   const paperName = model.paper?.name;
 
-  if (selection.shift) {
-    return {
-      field: 'shift',
-      en: `No questions from shift ${selection.shift} of that paper.`,
-      hi: `उस पेपर की पाली ${selection.shift} से कोई प्रश्न नहीं।`,
-    };
-  }
   if (selection.year !== undefined) {
     return {
       field: 'year',

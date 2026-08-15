@@ -11,14 +11,47 @@ import {
 } from '../src/index.ts';
 
 /**
- * The previous-year funnel: exam → level → subject → year → shift.
+ * The previous-year funnel: exam → level → subject → year.
  *
  * The screen it replaces offered a year and nothing else, while the repository
- * had always translated level, subject, topic and shift into real queries. The
+ * had always translated level, subject and topic into real queries. The
  * capability existed; the UI never reached for it.
  */
 
-describe('subject options come from the paper, not a fixed list', () => {
+describe('the level picker is labelled the way the bank is categorised', () => {
+  it('offers HTET as PRT, TGT and PGT', () => {
+    const model = pyqFilterModel({ examId: 'htet' });
+    assert.deepEqual(
+      model.paperOptions.map((o) => o.labelEn),
+      ['PRT', 'TGT', 'PGT'],
+    );
+  });
+
+  it('keeps the post code identical in both languages', () => {
+    // "PGT" is not translated — candidates say PGT in either language, and the
+    // question bank is categorised by that exact string.
+    for (const option of pyqFilterModel({ examId: 'htet' }).paperOptions) {
+      assert.equal(option.labelHi, option.labelEn);
+    }
+  });
+
+  it('falls back to the paper name for an exam with no post codes', () => {
+    const model = pyqFilterModel({ examId: 'ctet' });
+    assert.ok(model.paperOptions.length > 1);
+    for (const option of model.paperOptions) {
+      assert.match(option.labelEn, /Paper/, 'CTET numbers its papers rather than naming a post');
+    }
+  });
+
+  it('still maps each post to the teaching level the bank stores', () => {
+    const level = (paperId: string) => pyqFilterModel({ examId: 'htet', paperId }).filter.level;
+    assert.equal(level('htet-l1'), 'primary');
+    assert.equal(level('htet-l2'), 'upper-primary');
+    assert.equal(level('htet-l3'), 'senior-secondary');
+  });
+});
+
+describe('the subject picker lists everything the paper can test', () => {
   it('offers HTET PRT exactly the eight blocks that paper tests', () => {
     const model = pyqFilterModel({ examId: 'htet', paperId: 'htet-l1' });
     assert.deepEqual(
@@ -31,32 +64,48 @@ describe('subject options come from the paper, not a fixed list', () => {
     const model = pyqFilterModel({ examId: 'htet', paperId: 'htet-l1' });
     for (const option of model.subjectOptions) {
       assert.ok(option.labelEn.length > 0, `${option.value} has no English label`);
-      assert.match(option.labelHi, /[ऀ-ॿ]/, `${option.value} has no Devanagari label`);
+      assert.match(option.labelHi, /[ऀ-૿]/, `${option.value} has no Devanagari label`);
     }
   });
 
-  it('includes the learner’s elective on TGT, and nobody else’s', () => {
-    const physics = pyqFilterModel({ examId: 'htet', paperId: 'htet-l3' }, 'physics');
-    assert.ok(physics.subjectOptions.some((o) => o.value === 'physics'));
-    assert.ok(!physics.subjectOptions.some((o) => o.value === 'history'));
-
-    const history = pyqFilterModel({ examId: 'htet', paperId: 'htet-l3' }, 'history');
-    assert.ok(history.subjectOptions.some((o) => o.value === 'history'));
-    assert.ok(!history.subjectOptions.some((o) => o.value === 'physics'));
+  it('offers every TGT elective, not one chosen for the learner', () => {
+    // The screen used to refuse to list anything until a profile field was set,
+    // so a TGT candidate could not reach the Science questions at all.
+    const values = pyqFilterModel({ examId: 'htet', paperId: 'htet-l2' }).subjectOptions.map(
+      (o) => o.value,
+    );
+    for (const elective of ['science', 'sst', 'sanskrit', 'punjabi', 'urdu']) {
+      assert.ok(values.includes(elective), `TGT should offer ${elective}`);
+    }
   });
 
-  it('reports the elective error rather than guessing a subject', () => {
-    // Reusing P1's resolution: a TGT candidate who has not chosen yet.
-    const model = pyqFilterModel({ examId: 'htet', paperId: 'htet-l2' });
-    assert.equal(model.subjects.ok, false);
-    assert.equal(model.electiveError?.kind, 'not-chosen');
-    assert.deepEqual(model.subjectOptions, [], 'no options invented while unresolved');
+  it('offers all twenty-one PGT subjects', () => {
+    const values = pyqFilterModel({ examId: 'htet', paperId: 'htet-l3' }).subjectOptions.map(
+      (o) => o.value,
+    );
+    for (const elective of ['physics', 'chemistry', 'history', 'commerce', 'psychology']) {
+      assert.ok(values.includes(elective), `PGT should offer ${elective}`);
+    }
   });
 
-  it('still offers the fixed blocks of a paper with no elective', () => {
-    const model = pyqFilterModel({ examId: 'htet', paperId: 'htet-l1' }, undefined);
-    assert.ok(model.subjects.ok);
-    assert.equal(model.electiveError, undefined);
+  it('lists the common blocks first and never twice', () => {
+    const values = pyqFilterModel({ examId: 'htet', paperId: 'htet-l2' }).subjectOptions.map(
+      (o) => o.value,
+    );
+    assert.deepEqual(values.slice(0, 6), [
+      'cdp',
+      'hindi',
+      'english',
+      'quantitative-aptitude',
+      'reasoning',
+      'haryana-gk',
+    ]);
+    // Hindi is both a common block and a TGT elective.
+    assert.equal(new Set(values).size, values.length, 'no subject appears twice');
+  });
+
+  it('offers nothing until a paper is chosen', () => {
+    assert.deepEqual(pyqFilterModel({ examId: 'htet' }).subjectOptions, []);
   });
 });
 
@@ -69,7 +118,6 @@ describe('the selection becomes a repository filter', () => {
       level: 'primary',
       subjectId: 'cdp',
       year: undefined,
-      shift: undefined,
     });
   });
 
@@ -79,22 +127,18 @@ describe('the selection becomes a repository filter', () => {
       paperId: 'htet-l1',
       subjectId: 'cdp',
       year: 2023,
-      shift: '1',
     });
     assert.equal(model.filter.examId, 'htet');
     assert.equal(model.filter.level, 'primary');
     assert.equal(model.filter.subjectId, 'cdp');
     assert.equal(model.filter.year, 2023);
-    assert.equal(model.filter.shift, '1');
     assert.equal(model.filter.pyqOnly, true);
+    assert.equal('shift' in model.filter, false, 'the shift filter is gone');
   });
 
   it('drops a subject the chosen paper does not test', () => {
     // Switching PGT to PRT must not leave Physics quietly filtering to nothing.
-    const model = pyqFilterModel(
-      { examId: 'htet', paperId: 'htet-l1', subjectId: 'physics' },
-      'physics',
-    );
+    const model = pyqFilterModel({ examId: 'htet', paperId: 'htet-l1', subjectId: 'physics' });
     assert.equal(model.filter.subjectId, undefined);
   });
 
@@ -135,7 +179,6 @@ describe('the URL and the profile combine', () => {
       paperId: 'ctet-p1',
       subjectId: undefined,
       year: undefined,
-      shift: undefined,
     });
     assert.ok(pyqFilterModel(resolvePyqSelection(fromUrl(''), learner)).papers.length > 1);
   });
@@ -153,7 +196,6 @@ describe('the URL and the profile combine', () => {
       paperId: 'htet-l1',
       subjectId: 'cdp',
       year: undefined,
-      shift: undefined,
     });
   });
 
@@ -178,7 +220,6 @@ describe('the filter round-trips through the URL', () => {
       paperId: 'htet-l1',
       subjectId: 'cdp',
       year: 2023,
-      shift: '1',
     };
     const params = pyqSelectionToParams(selection);
     const back = pyqSelectionFromParams((k) => params[k] ?? null);
@@ -217,12 +258,7 @@ describe('a screen that cannot show everything says so', () => {
 describe('an empty result names the filter that emptied it', () => {
   const model = (s: Parameters<typeof pyqFilterModel>[0]) => pyqFilterModel(s);
 
-  it('blames the narrowest filter applied', () => {
-    const selection = { examId: 'htet', paperId: 'htet-l1', subjectId: 'cdp', year: 2023, shift: '2' };
-    assert.equal(pyqEmptyReason(selection, model(selection)).field, 'shift');
-  });
-
-  it('blames the year when no shift is chosen', () => {
+  it('blames the narrowest filter applied — the year', () => {
     const selection = { examId: 'htet', paperId: 'htet-l1', subjectId: 'cdp', year: 2023 };
     const reason = pyqEmptyReason(selection, model(selection));
     assert.equal(reason.field, 'year');
