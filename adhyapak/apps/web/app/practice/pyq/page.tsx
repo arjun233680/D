@@ -19,20 +19,21 @@ import {
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { PracticeRunner } from '@/components/PracticeRunner';
-import { AsyncSection, ElectiveNotice, Skeleton } from '@/components/ui';
+import { AsyncSection, Skeleton } from '@/components/ui';
 
 /**
  * Previous-year practice.
  *
- * The funnel the product needs: exam → level → subject → year → shift. The
- * repository always translated every one of those into a real query; this
- * screen used to send only the year, so a learner could not reach the CDP half
- * of the 2023 PRT paper at all.
+ * The funnel the product needs: exam → post → subject → year. The repository
+ * always translated every one of those into a real query; this screen used to
+ * send only the year, so a learner could not reach the CDP half of the 2023 PRT
+ * paper at all.
  *
  * Every choice lives in the URL, so a filtered view can be shared and survives
- * a refresh, and the subject list comes from the paper's own blueprint rather
- * than a hardcoded list — including the learner's elective on Levels 2 and 3,
- * resolved by the same code the rest of the app uses.
+ * a refresh. The post picker reads PRT / TGT / PGT, the way the bank is
+ * categorised, and the subject picker lists every subject that paper can test —
+ * all twenty-one PGT electives included — because this is a menu to choose
+ * from, not a syllabus being asserted about the learner.
  */
 
 /**
@@ -69,10 +70,7 @@ function PyqBrowser() {
     [params, user],
   );
 
-  const model = useMemo(
-    () => pyqFilterModel(selection, user.electiveSubjectId),
-    [selection, user.electiveSubjectId],
-  );
+  const model = useMemo(() => pyqFilterModel(selection), [selection]);
 
   const setSelection = useCallback(
     (next: PyqSelection) => {
@@ -111,19 +109,22 @@ function PyqBrowser() {
         </h1>
         <p className="mt-1 text-[13px] text-[var(--color-muted)]">
           {hi
-            ? 'असली पेपरों से — स्तर, विषय, वर्ष और पाली के अनुसार छाँटें।'
-            : 'Straight from the real papers — filter by level, subject, year and shift.'}
+            ? 'असली पेपरों से — पद, विषय और वर्ष के अनुसार छाँटें।'
+            : 'Straight from the real papers — filter by post, subject and year.'}
         </p>
       </header>
 
-      <section className="card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="card grid gap-3 p-4 sm:grid-cols-3">
         <Picker
           id="paper"
-          label={hi ? 'स्तर' : 'Level'}
+          label={hi ? 'पद' : 'Post'}
           value={selection.paperId ?? ''}
           onChange={(v) => update({ paperId: v || undefined, subjectId: undefined })}
-          options={model.papers.map((p) => ({ value: p.id, label: t(p.name, lang) }))}
-          placeholder={hi ? 'सभी स्तर' : 'All levels'}
+          options={model.paperOptions.map((o) => ({
+            value: o.value,
+            label: hi ? o.labelHi : o.labelEn,
+          }))}
+          placeholder={hi ? 'सभी पद' : 'All posts'}
         />
 
         <Picker
@@ -148,25 +149,12 @@ function PyqBrowser() {
           placeholder={hi ? 'सभी वर्ष' : 'All years'}
         />
 
-        <Picker
-          id="shift"
-          label={hi ? 'पाली' : 'Shift'}
-          value={selection.shift ?? ''}
-          onChange={(v) => update({ shift: v || undefined })}
-          options={[
-            { value: '1', label: hi ? 'पाली 1' : 'Shift 1' },
-            { value: '2', label: hi ? 'पाली 2' : 'Shift 2' },
-          ]}
-          placeholder={hi ? 'दोनों पालियाँ' : 'Both shifts'}
-        />
       </section>
 
       {/* The count is the filter's real size, from the database, not the length
-          of whatever this screen managed to fetch. It is withheld entirely while
-          the elective is unresolved, because there is no question list below it
-          for the number to describe. */}
+          of whatever this screen managed to fetch. */}
       <p className="text-[13px] font-semibold" aria-live="polite">
-        {model.electiveError ? null : total.loading ? (
+        {total.loading ? (
           <span className="text-[var(--color-muted)]">{hi ? 'गिन रहे हैं…' : 'Counting…'}</span>
         ) : total.data === undefined ? null : (
           <>
@@ -177,11 +165,11 @@ function PyqBrowser() {
         )}
       </p>
 
-      {!byPaper && !model.electiveError ? (
+      {!byPaper ? (
         <p className="text-[12px] text-[var(--color-muted)]">
           {hi
-            ? 'ऑफ़लाइन — बंडल किए गए नमूने में पेपर की जानकारी नहीं है, इसलिए स्तर के अनुसार छँटाई नहीं हो सकती।'
-            : 'Offline — the bundled sample carries no paper information, so it cannot be filtered by level.'}
+            ? 'ऑफ़लाइन — बंडल किए गए नमूने में पेपर की जानकारी नहीं है, इसलिए पद के अनुसार छँटाई नहीं हो सकती।'
+            : 'Offline — the bundled sample carries no paper information, so it cannot be filtered by post.'}
         </p>
       ) : null}
 
@@ -194,29 +182,26 @@ function PyqBrowser() {
         </p>
       ) : null}
 
-      {model.electiveError ? (
-        <ElectiveNotice error={model.electiveError} lang={lang} />
-      ) : (
-        <AsyncSection
-          state={questions}
-          lang={lang}
-          empty={{ icon: '📜', title: hi ? 'कोई प्रश्न नहीं' : 'No questions', body: hi ? reason.hi : reason.en }}
-        >
-          {(list) => (
-            <PracticeRunner
-              questions={list}
-              title={hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
-              subtitle={
-                byPaper && model.paper
-                  ? `${t(model.paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
-                  : hi
-                    ? 'वास्तविक पेपरों से'
-                    : 'Straight from real papers'
-              }
-            />
-          )}
-        </AsyncSection>
-      )}
+      <AsyncSection
+        state={questions}
+        lang={lang}
+        empty={{ icon: '📜', title: hi ? 'कोई प्रश्न नहीं' : 'No questions', body: hi ? reason.hi : reason.en }}
+      >
+        {(list) => (
+          <PracticeRunner
+            embedded
+            questions={list}
+            title={hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
+            subtitle={
+              byPaper && model.paper
+                ? `${t(model.paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
+                : hi
+                  ? 'वास्तविक पेपरों से'
+                  : 'Straight from real papers'
+            }
+          />
+        )}
+      </AsyncSection>
     </div>
   );
 }

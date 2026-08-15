@@ -16,15 +16,15 @@ import {
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { PracticeRunner } from '@/components/PracticeRunner';
-import { AsyncSection, Chip, ElectiveNotice, s } from '@/components/ui';
+import { AsyncSection, Chip, s } from '@/components/ui';
 
 /**
  * Previous-year practice.
  *
- * The same funnel as the website — exam → level → subject → year → shift —
- * driven by the same `pyqFilterModel`, so the two apps cannot offer different
- * subjects for the same paper. The subject list is the paper's own blueprint
- * plus the learner's elective, never a hardcoded list.
+ * The same funnel as the website — exam → post → subject → year — driven by the
+ * same `pyqFilterModel`, so the two apps cannot offer different subjects for
+ * the same paper. Posts read PRT / TGT / PGT, the way the bank is categorised,
+ * and every subject a paper can test is offered, electives included.
  *
  * Deep links carry the selection on web; here the state is local and seeded
  * from the profile, because there is no address bar to share.
@@ -44,10 +44,7 @@ export default function PyqScreen() {
   const [chosen, setChosen] = useState<PyqSelection | null>(null);
   const selection = chosen ?? defaultPyqSelection(user);
 
-  const model = useMemo(
-    () => pyqFilterModel(selection, user.electiveSubjectId),
-    [selection, user.electiveSubjectId],
-  );
+  const model = useMemo(() => pyqFilterModel(selection), [selection]);
   const filterKey = JSON.stringify(model.filter);
 
   const years = useAsync(() => listPyqYears(selection.examId), [selection.examId]);
@@ -72,18 +69,18 @@ export default function PyqScreen() {
         style={{ flexGrow: 0, flexShrink: 0 }}
         contentContainerStyle={{ paddingHorizontal: theme.space.lg, paddingTop: theme.space.lg }}
       >
-        <Row label={hi ? 'स्तर' : 'Level'}>
+        <Row label={hi ? 'पद' : 'Post'}>
           <Chip
             label={hi ? 'सभी' : 'All'}
             active={!selection.paperId}
             onPress={() => update({ paperId: undefined, subjectId: undefined })}
           />
-          {model.papers.map((p) => (
+          {model.paperOptions.map((o) => (
             <Chip
-              key={p.id}
-              label={t(p.name, lang).replace(/\s*[—(].*$/, '')}
-              active={selection.paperId === p.id}
-              onPress={() => update({ paperId: p.id, subjectId: undefined })}
+              key={o.value}
+              label={hi ? o.labelHi : o.labelEn}
+              active={selection.paperId === o.value}
+              onPress={() => update({ paperId: o.value, subjectId: undefined })}
             />
           ))}
         </Row>
@@ -124,31 +121,14 @@ export default function PyqScreen() {
           </Row>
         ) : null}
 
-        <Row label={hi ? 'पाली' : 'Shift'}>
-          <Chip
-            label={hi ? 'दोनों' : 'Both'}
-            active={!selection.shift}
-            onPress={() => update({ shift: undefined })}
-          />
-          {['1', '2'].map((sh) => (
-            <Chip
-              key={sh}
-              label={hi ? `पाली ${sh}` : `Shift ${sh}`}
-              active={selection.shift === sh}
-              onPress={() => update({ shift: sh })}
-            />
-          ))}
-        </Row>
       </ScrollView>
 
       {/* The filter's real size, from the database — not the length of what
-          this screen managed to fetch. Withheld entirely while the elective is
-          unresolved, because there is no list below it for a number to describe. */}
+          this screen managed to fetch. */}
       <View
         style={{
           paddingHorizontal: theme.space.lg,
           paddingBottom: theme.space.sm,
-          display: model.electiveError ? 'none' : 'flex',
         }}
       >
         <Text style={s.muted}>
@@ -163,8 +143,8 @@ export default function PyqScreen() {
         {!byPaper ? (
           <Text style={[s.faint, { marginTop: 4 }]}>
             {hi
-              ? 'ऑफ़लाइन — नमूने में पेपर की जानकारी नहीं है, स्तर से छँटाई नहीं हो सकती।'
-              : 'Offline — the bundled sample has no paper information to filter by level.'}
+              ? 'ऑफ़लाइन — नमूने में पेपर की जानकारी नहीं है, पद से छँटाई नहीं हो सकती।'
+              : 'Offline — the bundled sample has no paper information to filter by post.'}
           </Text>
         ) : null}
         {truncated ? (
@@ -177,33 +157,29 @@ export default function PyqScreen() {
       </View>
 
       <View style={{ flex: 1, paddingHorizontal: theme.space.lg }}>
-        {model.electiveError ? (
-          <ElectiveNotice error={model.electiveError} lang={lang} />
-        ) : (
-          <AsyncSection
-            state={questions}
-            lang={lang}
-            empty={{
-              icon: '📜',
-              title: hi ? 'कोई प्रश्न नहीं' : 'No questions',
-              body: hi ? reason.hi : reason.en,
-            }}
-          >
-            {(list) => (
-              <PracticeRunner
-                questions={list}
-                title={hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
-                subtitle={
-                  byPaper && model.paper
-                    ? `${t(model.paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
-                    : hi
-                      ? 'वास्तविक पेपरों से'
-                      : 'Straight from real papers'
-                }
-              />
-            )}
-          </AsyncSection>
-        )}
+        <AsyncSection
+          state={questions}
+          lang={lang}
+          empty={{
+            icon: '📜',
+            title: hi ? 'कोई प्रश्न नहीं' : 'No questions',
+            body: hi ? reason.hi : reason.en,
+          }}
+        >
+          {(list) => (
+            <PracticeRunner
+              questions={list}
+              title={hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions'}
+              subtitle={
+                byPaper && model.paper
+                  ? `${t(model.paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
+                  : hi
+                    ? 'वास्तविक पेपरों से'
+                    : 'Straight from real papers'
+              }
+            />
+          )}
+        </AsyncSection>
       </View>
     </View>
   );
