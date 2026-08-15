@@ -369,21 +369,27 @@ export function PracticeRunner({
             ) : null}
           </article>
 
-          <div className="mt-4 flex gap-2">
+          {/* Bottom right, where a learner's hand already is after clicking the
+              last option — and where the next control sits in every paper-based
+              test they have taken. Back stays on the left, away from Next, so
+              the two are not adjacent targets. */}
+          <div className="mt-4 flex items-center gap-2">
             {index > 0 ? (
               <button
                 type="button"
                 onClick={() => goTo(index - 1)}
                 className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3 text-[13px] font-bold text-[var(--color-muted)]"
+                aria-label={hi ? 'पिछला प्रश्न' : 'Previous question'}
               >
                 ←
               </button>
             ) : null}
+            <div className="flex-1" />
             {!revealed ? (
               <button
                 type="button"
                 onClick={skip}
-                className="flex-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] py-3 text-[13px] font-bold text-[var(--color-muted)]"
+                className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-3 text-[13px] font-bold text-[var(--color-muted)]"
               >
                 {hi ? 'छोड़ें' : 'Skip'}
               </button>
@@ -392,7 +398,7 @@ export function PracticeRunner({
               type="button"
               onClick={next}
               disabled={!revealed}
-              className="flex-[2] rounded-xl bg-[var(--color-brand)] py-3 text-[13px] font-bold text-white disabled:opacity-40"
+              className="rounded-xl bg-[var(--color-brand)] px-8 py-3 text-[13px] font-bold text-white disabled:opacity-40"
             >
               {index + 1 >= questions.length
                 ? hi

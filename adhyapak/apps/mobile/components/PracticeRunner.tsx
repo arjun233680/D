@@ -367,9 +367,13 @@ export function PracticeRunner({
         </View>
       </ScrollView>
 
+      {/* Skip and Next sit bottom right, where the thumb already is after
+          tapping an option. Back stays hard left so the two are not adjacent
+          targets on a phone. */}
       <View
         style={{
           flexDirection: 'row',
+          alignItems: 'center',
           gap: 8,
           padding: theme.space.lg,
           borderTopWidth: 1,
@@ -378,8 +382,9 @@ export function PracticeRunner({
         }}
       >
         {index > 0 ? (
-          <Button label="←" variant="outline" onPress={() => goTo(index - 1)} style={{ width: 64 }} />
+          <Button label="←" variant="outline" onPress={() => goTo(index - 1)} style={{ width: 60 }} />
         ) : null}
+        <View style={{ flex: 1 }} />
         {!revealed ? (
           <Button
             label={hi ? 'छोड़ें' : 'Skip'}
@@ -388,22 +393,22 @@ export function PracticeRunner({
               record(null);
               next();
             }}
-            style={{ flex: 1 }}
+            style={{ paddingHorizontal: 22 }}
           />
         ) : null}
         <Button
           label={
             index + 1 >= questions.length
-              ? lang === 'hi'
+              ? hi
                 ? 'परिणाम देखें'
                 : 'See result'
-              : lang === 'hi'
+              : hi
                 ? 'अगला प्रश्न'
                 : 'Next question'
           }
           disabled={!revealed}
           onPress={next}
-          style={{ flex: 2 }}
+          style={{ paddingHorizontal: 26 }}
         />
       </View>
     </View>
