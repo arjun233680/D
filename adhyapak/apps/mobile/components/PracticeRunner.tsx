@@ -14,7 +14,33 @@ import {
 import { useStore } from '@/lib/store';
 import { Badge, Button, EmptyState, ProgressBar, s, Stat } from '@/components/ui';
 
-/** Instant-feedback practice — the mobile twin of the web PracticeRunner. */
+/**
+ * Instant-feedback practice — the mobile twin of the web PracticeRunner.
+ *
+ * Every question in the set is reachable from the palette, so the answers live
+ * in a map keyed by question id: an append-only list would count a revisited
+ * question twice.
+ */
+
+/** What the learner did with one question. Absent means not yet reached. */
+interface Answer {
+  /** null when skipped — a real answer, distinct from "not attempted". */
+  selectedIndex: number | null;
+  correct: boolean;
+  timeSpentMs: number;
+}
+
+type PaletteStatus = 'correct' | 'wrong' | 'skipped' | 'unseen';
+
+const statusOf = (answer: Answer | undefined): PaletteStatus =>
+  answer === undefined
+    ? 'unseen'
+    : answer.selectedIndex === null
+      ? 'skipped'
+      : answer.correct
+        ? 'correct'
+        : 'wrong';
+
 export function PracticeRunner({
   questions,
   title,
@@ -25,13 +51,23 @@ export function PracticeRunner({
   subtitle?: string;
 }) {
   const { lang, user, toggleBookmark, markActiveToday } = useStore();
+  const hi = lang === 'hi';
   const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
-  const [results, setResults] = useState<PracticeSessionResult[]>([]);
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [finished, setFinished] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
+  // One result per answered question, in the set's own order — so the summary
+  // does not depend on the order the learner jumped around in.
+  const results = useMemo<PracticeSessionResult[]>(
+    () =>
+      questions.flatMap((q) => {
+        const answer = answers[q.id];
+        return answer ? [{ questionId: q.id, ...answer }] : [];
+      }),
+    [questions, answers],
+  );
   const summary = useMemo(() => summarisePractice(questions, results), [questions, results]);
 
   if (!questions.length) {
@@ -112,9 +148,7 @@ export function PracticeRunner({
             label={t(UI.reattempt, lang)}
             onPress={() => {
               setIndex(0);
-              setSelected(null);
-              setRevealed(false);
-              setResults([]);
+              setAnswers({});
               setFinished(false);
               setStartedAt(Date.now());
             }}
@@ -126,24 +160,34 @@ export function PracticeRunner({
   }
 
   const question = questions[index]!;
+  const current = answers[question.id];
+  const revealed = current !== undefined;
+  const selected = current?.selectedIndex ?? null;
   const subject = getSubject(question.subjectId);
   const topic = getTopic(question.topicId);
   const bookmarked = user.bookmarkedQuestionIds.includes(question.id);
+  const answeredCount = results.length;
+
+  const record = (selectedIndex: number | null) =>
+    setAnswers((prev) => ({
+      ...prev,
+      [question.id]: {
+        selectedIndex,
+        correct: selectedIndex === question.correctIndex,
+        timeSpentMs: Date.now() - startedAt,
+      },
+    }));
 
   const answer = (optionIndex: number) => {
     if (revealed) return;
-    setSelected(optionIndex);
-    setRevealed(true);
-    setResults((prev) => [
-      ...prev,
-      {
-        questionId: question.id,
-        selectedIndex: optionIndex,
-        correct: optionIndex === question.correctIndex,
-        timeSpentMs: Date.now() - startedAt,
-      },
-    ]);
+    record(optionIndex);
     markActiveToday();
+  };
+
+  const goTo = (to: number) => {
+    setIndex(to);
+    setStartedAt(Date.now());
+    setPaletteOpen(false);
   };
 
   const next = () => {
@@ -151,10 +195,7 @@ export function PracticeRunner({
       setFinished(true);
       return;
     }
-    setIndex(index + 1);
-    setSelected(null);
-    setRevealed(false);
-    setStartedAt(Date.now());
+    goTo(index + 1);
   };
 
   return (
@@ -169,12 +210,42 @@ export function PracticeRunner({
             <Text style={{ color: theme.color.textFaint }}>/{questions.length}</Text>
           </Text>
           <View style={{ flex: 1 }}>
-            <ProgressBar value={((index + (revealed ? 1 : 0)) / questions.length) * 100} />
+            <ProgressBar value={(answeredCount / questions.length) * 100} />
           </View>
           <Text style={{ color: theme.color.success, fontWeight: '800', fontSize: theme.font.sm }}>
             {summary.correct} ✓
           </Text>
+          {/* The whole set, one tap away — the same palette the daily quiz has.
+              A phone has no room for a permanent sidebar, so it folds. */}
+          <Pressable
+            onPress={() => setPaletteOpen((open) => !open)}
+            accessibilityLabel={hi ? 'सभी प्रश्न' : 'All questions'}
+            style={{
+              borderWidth: 1,
+              borderColor: theme.color.border,
+              borderRadius: theme.radius.pill,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+            }}
+          >
+            <Text style={{ fontSize: theme.font.xs, fontWeight: '700' }}>
+              {paletteOpen ? '✕' : '☰'} {answeredCount}/{questions.length}
+            </Text>
+          </Pressable>
         </View>
+
+        {paletteOpen ? (
+          <View style={[s.card, { padding: theme.space.lg, marginTop: theme.space.md }]}>
+            <Palette
+              questions={questions}
+              answers={answers}
+              currentIndex={index}
+              onGo={goTo}
+              onFinish={() => setFinished(true)}
+              lang={lang}
+            />
+          </View>
+        ) : null}
 
         <View style={[s.card, { padding: theme.space.lg, marginTop: theme.space.lg }]}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
@@ -306,20 +377,15 @@ export function PracticeRunner({
           backgroundColor: theme.color.surface,
         }}
       >
+        {index > 0 ? (
+          <Button label="←" variant="outline" onPress={() => goTo(index - 1)} style={{ width: 64 }} />
+        ) : null}
         {!revealed ? (
           <Button
-            label={lang === 'hi' ? 'छोड़ें' : 'Skip'}
+            label={hi ? 'छोड़ें' : 'Skip'}
             variant="outline"
             onPress={() => {
-              setResults((prev) => [
-                ...prev,
-                {
-                  questionId: question.id,
-                  selectedIndex: null,
-                  correct: false,
-                  timeSpentMs: Date.now() - startedAt,
-                },
-              ]);
+              record(null);
               next();
             }}
             style={{ flex: 1 }}
@@ -340,6 +406,120 @@ export function PracticeRunner({
           style={{ flex: 2 }}
         />
       </View>
+    </View>
+  );
+}
+
+/**
+ * Every question in the set, as a grid of numbers.
+ *
+ * Colour is the outcome, not just "visited": a learner scanning for what to
+ * revise wants the wrong ones, and the test player's answered/not-answered
+ * split cannot express that because a test hides its marking until submission.
+ */
+function Palette({
+  questions,
+  answers,
+  currentIndex,
+  onGo,
+  onFinish,
+  lang,
+}: {
+  questions: Question[];
+  answers: Record<string, Answer>;
+  currentIndex: number;
+  onGo: (index: number) => void;
+  onFinish: () => void;
+  lang: 'en' | 'hi';
+}) {
+  const hi = lang === 'hi';
+  const colour: Record<PaletteStatus, string> = {
+    correct: theme.color.success,
+    wrong: theme.color.danger,
+    skipped: theme.color.warning,
+    unseen: theme.color.borderStrong,
+  };
+
+  const tally: Record<PaletteStatus, number> = { correct: 0, wrong: 0, skipped: 0, unseen: 0 };
+  for (const q of questions) tally[statusOf(answers[q.id])] += 1;
+
+  const legend: { status: PaletteStatus; label: string }[] = [
+    { status: 'correct', label: hi ? 'सही' : 'Correct' },
+    { status: 'wrong', label: hi ? 'ग़लत' : 'Wrong' },
+    { status: 'skipped', label: hi ? 'छोड़े' : 'Skipped' },
+    { status: 'unseen', label: hi ? 'बाकी' : 'Left' },
+  ];
+
+  return (
+    <View>
+      <Text style={s.title}>{hi ? 'सभी प्रश्न' : 'All questions'}</Text>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
+        {legend.map((item) => (
+          <View key={item.status} style={[s.row, { gap: 6 }]}>
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 4,
+                backgroundColor: colour[item.status],
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: '800',
+                  color: item.status === 'unseen' ? theme.color.text : '#fff',
+                }}
+              >
+                {tally[item.status]}
+              </Text>
+            </View>
+            <Text style={s.faint}>{item.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
+        {questions.map((q, i) => {
+          const status = statusOf(answers[q.id]);
+          return (
+            <Pressable
+              key={q.id}
+              onPress={() => onGo(i)}
+              style={{
+                width: 36,
+                height: 32,
+                borderRadius: 6,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colour[status],
+                borderWidth: i === currentIndex ? 2 : 0,
+                borderColor: theme.color.ink,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: theme.font.xs,
+                  fontWeight: '800',
+                  color: status === 'unseen' ? theme.color.text : '#fff',
+                }}
+              >
+                {i + 1}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Button
+        label={hi ? 'परिणाम देखें' : 'See result'}
+        variant="dark"
+        onPress={onFinish}
+        style={{ marginTop: 14 }}
+      />
     </View>
   );
 }
