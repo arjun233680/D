@@ -48,7 +48,7 @@ Commands, all from `adhyapak/`:
 ```bash
 npm run typecheck        # all workspaces
 npm run lint             # 9 pre-existing warnings, 0 errors — keep it at 0 errors
-npm test                 # 270 tests
+npm test                 # 294 tests
 npm run build            # website static export
 npm run content:map      # regenerate the HTET topic map from topic-map.json
 npm run content:verify   # assert 30 CDP + 10 Haryana GK per paper
@@ -88,6 +88,23 @@ npm run content:verify   # assert 30 CDP + 10 Haryana GK per paper
    guard test that fails if an app imports `QUESTIONS` or
    `previousYearQuestions`.
 
+   `TestResult.rank`, `.percentile` and `.totalCandidates` are **optional** and
+   absent unless `submit_attempt` returned them. Grading on the device produces
+   no rank, because a device does not know how anybody else did. Every screen
+   drops the tile rather than filling it.
+
+8. **The learner belongs to Postgres.** Goal, language, bookmarks, saved notes,
+   enrolments and practised days are rows, read through `getCurrentUser()` and
+   written back through the repository. The stores apply the change locally and
+   push it through; `localStorage` is the guest and offline path, not the
+   source of truth. Signing out clears the cached copy — a shared phone is the
+   normal case.
+
+9. **Nothing bundled is a person.** `GUEST_USER` is the signed-out learner and
+   claims nothing: no name, no email, no goal, no streak. There is a guard test
+   asserting that, and a second one that fails on any real email address in any
+   source file — the repository is public.
+
 ---
 
 ## What the learner sees now
@@ -104,6 +121,13 @@ Three deliberate exceptions, all reasoned:
   KVS, NVS") — descriptive text in the taxonomy, not navigation
 - the **Studio** keeps every exam, because an educator publishes across the
   catalogue
+
+**Signing in is real.** `/sign-in` on the website and `(auth)/login` on the
+phone both do email and password against Supabase, with creating an account
+beside it, and both keep "continue without an account" as a first-class option.
+Sign-up reports "check your inbox" separately from "you are signed in", because
+a project with email confirmation on returns no session. `/studio/sign-in` stays
+separate — it is for staff and it says staff things.
 
 **One exam window everywhere.** Mocks, previous-year papers, subject practice,
 topic practice and bookmarks all open the same window: clock, section tabs,
@@ -147,6 +171,18 @@ Worth knowing so they are not reintroduced:
   the third wrong answer was labelled Q3 when it was Q17
 - **the drafts screen fetched 200 and stopped** — an 840-row import looked like
   an import that had written 200. `listDraftQuestions` now pages.
+- **the learner-side database was never called.** `getCurrentUser`,
+  `toggleBookmarkRemote`, `startAttempt`, `submitAttempt` and the rest each had
+  one occurrence in the repository — their own definition. Everything lived in
+  `localStorage`, so a second device met a stranger
+- **`DEMO_USER` was the initial state of both apps** — named Arjun, carrying a
+  real email address into a public repo, with a twelve-day streak, two
+  bookmarks and an enrolment nobody had made. A first install opened on
+  somebody else's progress, and the streak went out on its own a day later
+- **the result screen invented a rank.** `gradeAttempt` ran the percentage
+  through a logistic curve against a seeded field size, so answering one
+  question of forty-five reported "rank #1,80,000 of 1,80,000, 0.5 percentile"
+  under the heading "Where you stand"
 
 ---
 
@@ -159,7 +195,22 @@ visible to anon, 840 published, 30/10 per paper holding — but **not** against
 production. If a task depends on the live database, say so rather than assuming.
 
 The sandbox also blocks arbitrary web fetches. `WebSearch` works; `WebFetch` to
-sites like `bseh.org.in` returns `EGRESS_BLOCKED`.
+sites like `bseh.org.in` returns `EGRESS_BLOCKED`. `github.io` is blocked too,
+so the deployed site cannot be opened from here — the live links are read off
+the workflow and the green Actions run, not from having loaded the page.
+
+**Sign-in has never been run against a real Supabase project.** The whole auth
+and profile path was verified in Chromium against both static exports: with
+credentials inlined the forms are enabled, without them they are disabled behind
+the "no database in this build" notice, and a mock runs end to end with no
+console errors. But no account has been created, no confirmation email sent, no
+profile row read back, and no attempt written. The branch that puts the rank
+tiles back has never executed.
+
+One local trap worth knowing: **Metro caches hard enough to ignore new
+credentials.** An `expo export` picked up neither `EXPO_PUBLIC_*` variable and
+produced a byte-identical bundle until `--clear`. CI builds on a fresh runner,
+so this bites locally and not on deploy.
 
 ---
 
