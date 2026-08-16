@@ -55,8 +55,7 @@ export default function BatchScreen() {
             {t(batch.schedule, lang)}
           </Text>
           <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: theme.font.xs, marginTop: 4 }}>
-            {formatDate(batch.startsAt, lang)} → {formatDate(batch.endsAt, lang)} ·{' '}
-            {formatCount(batch.enrolled)} {lang === 'hi' ? 'नामांकित' : 'enrolled'}
+            {formatDate(batch.startsAt, lang)} → {formatDate(batch.endsAt, lang)}
           </Text>
           <Button
             label={enrolled ? `✓ ${t(UI.enrolled, lang)}` : t(UI.enroll, lang)}

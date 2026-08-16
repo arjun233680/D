@@ -136,9 +136,6 @@ export default function DoubtsPage() {
                         {a.isEducator ? (
                           <Badge tone="brand">{lang === 'hi' ? 'शिक्षक' : 'Educator'}</Badge>
                         ) : null}
-                        <span className="text-[11px] text-[var(--color-faint)]">
-                          👍 {a.upvotes}
-                        </span>
                       </div>
                       <p className="mt-1.5 text-[13px] leading-relaxed">{t(a.body, lang)}</p>
                     </div>

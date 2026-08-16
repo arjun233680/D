@@ -64,7 +64,6 @@ export default function StudioScreen() {
         src: file?.uri ?? '',
         thumbnail: subject.color,
         durationSeconds: 0,
-        views: 0,
         publishedAt: now.slice(0, 10),
         access,
         language: lang,

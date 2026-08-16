@@ -9,7 +9,7 @@ export const EDUCATORS: Educator[] = [
     id: 'edu-anjali',
     name: 'Anjali Verma',
     avatar: '👩‍🏫',
-    headline: { en: 'CDP & Pedagogy — 9 years, 4L+ learners', hi: 'CDP एवं शिक्षाशास्त्र — 9 वर्ष, 4 लाख+ शिक्षार्थी' },
+    headline: { en: 'CDP & Pedagogy — 9 years', hi: 'CDP एवं शिक्षाशास्त्र — 9 वर्ष' },
     subjects: ['cdp'],
     experienceYears: 9,
     languages: ['hi', 'en'],

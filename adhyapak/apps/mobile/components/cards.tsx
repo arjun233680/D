@@ -94,9 +94,6 @@ export function BatchCard({ batch, full }: { batch: Batch; full?: boolean }) {
           <Text style={[s.faint, { marginTop: 4 }]} numberOfLines={1}>
             {t(batch.schedule, lang)}
           </Text>
-          <Text style={[s.faint, { marginTop: 2 }]}>
-            {formatCount(batch.enrolled)} {lang === 'hi' ? 'नामांकित' : 'enrolled'}
-          </Text>
         </View>
       </Touch>
   );
@@ -152,7 +149,7 @@ export function VideoCard({ video, full }: { video: Video; full?: boolean }) {
             {t(video.title, lang)}
           </Text>
           <Text style={[s.faint, { marginTop: 4 }]} numberOfLines={1}>
-            {educator?.avatar} {educator?.name} · {formatCount(video.views)}
+            {educator?.avatar} {educator?.name}
           </Text>
         </View>
       </Touch>

@@ -85,7 +85,6 @@ export default function StudioPage() {
         src: file ? URL.createObjectURL(file) : '',
         thumbnail: subject.color,
         durationSeconds: duration,
-        views: 0,
         publishedAt: now.slice(0, 10),
         access,
         language,

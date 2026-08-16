@@ -219,7 +219,13 @@ export interface Video {
   src: string;
   thumbnail: string;
   durationSeconds: number;
-  views: number;
+  /**
+   * View count is deliberately absent. It was a number in the bundle — 41200,
+   * 28700 — shown to a learner as "41.2K views" on lessons nobody had watched,
+   * because the file behind every one of them is a Big Buck Bunny sample clip.
+   * `videos.views` exists in Postgres and defaults to 0; when something counts
+   * it, this can come back counted.
+   */
   publishedAt: string;
   access: ContentAccess;
   language: Lang;
@@ -279,7 +285,11 @@ export interface Batch {
   /** Weekly live-class schedule, human readable. */
   schedule: Bilingual;
   language: Lang;
-  enrolled: number;
+  /**
+   * Enrolment count is deliberately absent, for the same reason: "15.7K
+   * enrolled" described a batch nobody had joined. `batches.enrolled` exists in
+   * Postgres and defaults to 0.
+   */
   access: ContentAccess;
   thumbnail: string;
   color: string;
@@ -503,7 +513,6 @@ export interface Doubt {
   question: Bilingual;
   askedAt: string;
   answers: DoubtAnswer[];
-  upvotes: number;
 }
 
 export interface DoubtAnswer {
@@ -512,5 +521,4 @@ export interface DoubtAnswer {
   isEducator: boolean;
   body: Bilingual;
   answeredAt: string;
-  upvotes: number;
 }

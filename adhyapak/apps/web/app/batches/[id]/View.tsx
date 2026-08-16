@@ -58,8 +58,7 @@ export default function BatchPage({ params }: { params: Promise<{ id: string }> 
             <h1 className="mt-3 text-2xl leading-tight font-extrabold">{t(batch.title, lang)}</h1>
             <p className="mt-2 text-[13px] text-white/85">{t(batch.schedule, lang)}</p>
             <p className="mt-1 text-[12px] text-white/70">
-              {formatDate(batch.startsAt, lang)} → {formatDate(batch.endsAt, lang)} ·{' '}
-              {formatCount(batch.enrolled)} {lang === 'hi' ? 'नामांकित' : 'enrolled'}
+              {formatDate(batch.startsAt, lang)} → {formatDate(batch.endsAt, lang)}
             </p>
 
             <button

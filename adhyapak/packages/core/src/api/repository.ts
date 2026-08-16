@@ -469,7 +469,6 @@ const toVideo = (r: Record<string, unknown>): Video => ({
   src: (r.src as string) ?? '',
   thumbnail: (r.thumbnail as string) ?? '#4F46E5',
   durationSeconds: (r.duration_seconds as number) ?? 0,
-  views: (r.views as number) ?? 0,
   publishedAt: (r.published_at as string) ?? '',
   access: (r.access as Video['access']) ?? 'free',
   language: (r.language as Video['language']) ?? 'hi',

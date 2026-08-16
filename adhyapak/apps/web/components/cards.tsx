@@ -86,8 +86,7 @@ export function BatchCard({ batch }: { batch: Batch }) {
             ))}
           </div>
           <span className="text-[11px] text-[var(--color-muted)]">
-            {educators.length} {lang === 'hi' ? 'शिक्षक' : 'educators'} ·{' '}
-            {formatCount(batch.enrolled)} {lang === 'hi' ? 'नामांकित' : 'enrolled'}
+            {educators.length} {lang === 'hi' ? 'शिक्षक' : 'educators'}
           </span>
         </div>
       </div>
@@ -124,8 +123,7 @@ export function VideoCard({ video, width = 'w-[250px]' }: { video: Video; width?
           {t(video.title, lang)}
         </p>
         <p className="mt-1.5 truncate text-[11px] text-[var(--color-muted)]">
-          {educator?.avatar} {educator?.name} · {formatCount(video.views)}{' '}
-          {lang === 'hi' ? 'बार देखा' : 'views'}
+          {educator?.avatar} {educator?.name}
         </p>
       </div>
     </Link>

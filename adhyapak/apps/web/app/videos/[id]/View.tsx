@@ -107,7 +107,6 @@ export default function VideoPage({ params }: { params: Promise<{ id: string }> 
             {t(video.title, lang)}
           </h1>
           <p className="mt-1 text-[12px] text-[var(--color-muted)]">
-            {formatCount(video.views)} {lang === 'hi' ? 'बार देखा गया' : 'views'} ·{' '}
             {formatDate(video.publishedAt, lang)} · {formatDuration(video.durationSeconds)}
           </p>
         </div>

@@ -67,7 +67,6 @@ export default function VideoScreen() {
 
         <Text style={[s.h1, { marginTop: 10 }]}>{t(video.title, lang)}</Text>
         <Text style={[s.faint, { marginTop: 4 }]}>
-          {formatCount(video.views)} {lang === 'hi' ? 'बार देखा' : 'views'} ·{' '}
           {formatDate(video.publishedAt, lang)} · {formatDuration(video.durationSeconds)}
         </Text>
 
