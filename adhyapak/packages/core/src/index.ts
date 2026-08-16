@@ -42,3 +42,4 @@ export * from './api/client';
 // Authentication. The only module either app may use for supabase.auth.
 export * from './api/auth';
 export * from './api/repository';
+export * from './api/attempt-sync';

@@ -132,8 +132,12 @@ export default function TestIntroPage({ params }: { params: Promise<{ id: string
               tone={result.qualified ? 'success' : 'danger'}
             />
             <Stat label={t(UI.accuracy, lang)} value={`${result.accuracy}%`} />
-            <Stat label={t(UI.rank, lang)} value={`#${formatCount(result.rank)}`} tone="accent" />
-            <Stat label={t(UI.percentile, lang)} value={`${result.percentile}`} tone="brand" />
+            {result.rank !== undefined ? (
+              <Stat label={t(UI.rank, lang)} value={`#${formatCount(result.rank)}`} tone="accent" />
+            ) : null}
+            {result.percentile !== undefined ? (
+              <Stat label={t(UI.percentile, lang)} value={`${result.percentile}`} tone="brand" />
+            ) : null}
           </div>
           <Link
             href={`/tests/${test.id}/result`}

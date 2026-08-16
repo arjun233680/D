@@ -207,7 +207,8 @@ export default function ProfileScreen() {
                     />
                   </View>
                   <Text style={[s.faint, { marginTop: 6 }]}>
-                    {t(UI.rank, lang)} #{formatCount(r.rank)} · {t(UI.accuracy, lang)} {r.accuracy}%
+                    {r.rank !== undefined ? `${t(UI.rank, lang)} #${formatCount(r.rank)} · ` : ''}
+                    {t(UI.accuracy, lang)} {r.accuracy}%
                   </Text>
                 </Touch>
             );

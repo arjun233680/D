@@ -124,9 +124,16 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
         </div>
       </div>
 
+      {/* The rank and percentile only exist when the database graded this
+          sitting. Sat offline or signed out there is no cohort, so the two
+          tiles are dropped rather than filled with a simulation. */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label={t(UI.rank, lang)} value={`#${formatCount(result.rank)}`} tone="accent" />
-        <Stat label={t(UI.percentile, lang)} value={String(result.percentile)} tone="brand" />
+        {result.rank !== undefined ? (
+          <Stat label={t(UI.rank, lang)} value={`#${formatCount(result.rank)}`} tone="accent" />
+        ) : null}
+        {result.percentile !== undefined ? (
+          <Stat label={t(UI.percentile, lang)} value={String(result.percentile)} tone="brand" />
+        ) : null}
         <Stat label={t(UI.accuracy, lang)} value={`${result.accuracy}%`} />
         <Stat
           label={lang === 'hi' ? 'कुल समय' : 'Time taken'}
@@ -218,19 +225,26 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
             </div>
           ) : null}
 
-          <div className="card p-4">
-            <h2 className="text-[15px] font-bold">
-              {lang === 'hi' ? 'कोहॉर्ट में आपकी स्थिति' : 'Where you stand'}
-            </h2>
-            <p className="mt-2 text-[13px] text-[var(--color-muted)]">
-              {lang === 'hi'
-                ? `${formatCount(result.totalCandidates)} अभ्यर्थियों में आपकी रैंक #${formatCount(result.rank)} है, अर्थात् आप ${result.percentile} पर्सेंटाइल पर हैं।`
-                : `You are ranked #${formatCount(result.rank)} of ${formatCount(result.totalCandidates)} candidates, placing you at the ${result.percentile} percentile.`}
-            </p>
-            <div className="mt-3">
-              <ProgressBar value={result.percentile} color="var(--color-accent)" />
+          {/* Nothing stands in for this panel when the numbers are missing.
+              "Where you stand" with no cohort behind it was the sentence that
+              made a simulated rank read as a real one. */}
+          {result.rank !== undefined &&
+          result.percentile !== undefined &&
+          result.totalCandidates !== undefined ? (
+            <div className="card p-4">
+              <h2 className="text-[15px] font-bold">
+                {lang === 'hi' ? 'कोहॉर्ट में आपकी स्थिति' : 'Where you stand'}
+              </h2>
+              <p className="mt-2 text-[13px] text-[var(--color-muted)]">
+                {lang === 'hi'
+                  ? `${formatCount(result.totalCandidates)} अभ्यर्थियों में आपकी रैंक #${formatCount(result.rank)} है, अर्थात् आप ${result.percentile} पर्सेंटाइल पर हैं।`
+                  : `You are ranked #${formatCount(result.rank)} of ${formatCount(result.totalCandidates)} candidates, placing you at the ${result.percentile} percentile.`}
+              </p>
+              <div className="mt-3">
+                <ProgressBar value={result.percentile} color="var(--color-accent)" />
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="flex gap-2">
             <Link

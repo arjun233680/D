@@ -404,10 +404,21 @@ export interface TestResult {
   attempted: number;
   accuracy: number;
   totalTimeMs: number;
-  /** Simulated against the cohort — replaced by real ranks with a backend. */
-  rank: number;
-  totalCandidates: number;
-  percentile: number;
+  /**
+   * Where this sitting placed against everyone else who has sat the paper.
+   *
+   * Absent when the paper was graded on the device, which is the offline and
+   * signed-out case: there is no cohort there to be ranked against. These used
+   * to be required, and `gradeAttempt` filled them by running the percentage
+   * through a logistic curve and multiplying by a made-up field size — a
+   * learner who answered one question was told they were "rank #1,80,000 of
+   * 1,80,000, 0.5 percentile", which reads as a real standing among real
+   * candidates and is not one. Only `submit_attempt` can answer this, because
+   * only the database has the other attempts.
+   */
+  rank?: number;
+  totalCandidates?: number;
+  percentile?: number;
   qualified: boolean;
   cutoff: number;
   subjectScores: SubjectScore[];

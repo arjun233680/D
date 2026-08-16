@@ -212,7 +212,9 @@ export function TestCard({ test, width = 'w-[260px]' }: { test: Test; width?: st
             {result.score}/{result.maxScore}
           </span>
           <span className="ml-2 text-[var(--color-muted)]">
-            {t(UI.rank, lang)} #{formatCount(result.rank)}
+            {result.rank !== undefined
+              ? `${t(UI.rank, lang)} #${formatCount(result.rank)}`
+              : `${t(UI.accuracy, lang)} ${result.accuracy}%`}
           </span>
         </div>
       ) : (

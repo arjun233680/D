@@ -128,9 +128,16 @@ export default function ResultScreen() {
         </View>
       </View>
 
+      {/* Rank and percentile only exist when the database graded this sitting.
+          Offline or signed out there is no cohort, so the tiles are dropped
+          rather than filled with a simulation. */}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: theme.space.lg }}>
-        <Stat label={t(UI.rank, lang)} value={`#${formatCount(result.rank)}`} color={theme.color.accent} />
-        <Stat label={t(UI.percentile, lang)} value={String(result.percentile)} color={theme.color.primary} />
+        {result.rank !== undefined ? (
+          <Stat label={t(UI.rank, lang)} value={`#${formatCount(result.rank)}`} color={theme.color.accent} />
+        ) : null}
+        {result.percentile !== undefined ? (
+          <Stat label={t(UI.percentile, lang)} value={String(result.percentile)} color={theme.color.primary} />
+        ) : null}
         <Stat label={t(UI.accuracy, lang)} value={`${result.accuracy}%`} />
         <Stat label={lang === 'hi' ? 'समय' : 'Time'} value={formatClock(result.totalTimeMs)} />
       </View>
@@ -198,17 +205,23 @@ export default function ResultScreen() {
             )}
           </View>
 
-          <View style={[s.card, { padding: theme.space.lg }]}>
-            <Text style={s.h2}>{lang === 'hi' ? 'कोहॉर्ट में स्थिति' : 'Where you stand'}</Text>
-            <Text style={[s.muted, { marginTop: 8 }]}>
-              {lang === 'hi'
-                ? `${formatCount(result.totalCandidates)} अभ्यर्थियों में रैंक #${formatCount(result.rank)} — ${result.percentile} पर्सेंटाइल।`
-                : `Ranked #${formatCount(result.rank)} of ${formatCount(result.totalCandidates)} — ${result.percentile} percentile.`}
-            </Text>
-            <View style={{ marginTop: 12 }}>
-              <ProgressBar value={result.percentile} color={theme.color.accent} />
+          {/* No stand-in when the numbers are missing: "Where you stand" with
+              no cohort behind it is what made a simulated rank read as real. */}
+          {result.rank !== undefined &&
+          result.percentile !== undefined &&
+          result.totalCandidates !== undefined ? (
+            <View style={[s.card, { padding: theme.space.lg }]}>
+              <Text style={s.h2}>{lang === 'hi' ? 'कोहॉर्ट में स्थिति' : 'Where you stand'}</Text>
+              <Text style={[s.muted, { marginTop: 8 }]}>
+                {lang === 'hi'
+                  ? `${formatCount(result.totalCandidates)} अभ्यर्थियों में रैंक #${formatCount(result.rank)} — ${result.percentile} पर्सेंटाइल।`
+                  : `Ranked #${formatCount(result.rank)} of ${formatCount(result.totalCandidates)} — ${result.percentile} percentile.`}
+              </Text>
+              <View style={{ marginTop: 12 }}>
+                <ProgressBar value={result.percentile} color={theme.color.accent} />
+              </View>
             </View>
-          </View>
+          ) : null}
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Button

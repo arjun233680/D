@@ -183,15 +183,28 @@ describe('grading', () => {
     assert.equal(Math.round(r.accuracy), 50);
   });
 
-  it('reports a percentage of the maximum, and a percentile in range', () => {
+  it('reports a percentage of the maximum', () => {
     const test = anyTest();
     let a = start(test);
     a = answer(a, test, 0, true);
     const r = gradeAttempt(test, a);
     assert.ok(r.maxScore > 0);
     assert.equal(Math.round(r.percentage), Math.round((r.score / r.maxScore) * 100));
-    assert.ok(r.percentile >= 0 && r.percentile <= 100, `percentile was ${r.percentile}`);
-    assert.ok(r.rank >= 1, `rank was ${r.rank}`);
+  });
+
+  it('claims no rank, because a device cannot know one', () => {
+    // This used to run the percentage through a logistic curve and multiply by
+    // a seeded field size, so a learner who answered one question was told they
+    // were "#1,80,000 of 1,80,000, 0.5 percentile" — a real-sounding standing
+    // among candidates who had not sat anything. Only `submit_attempt` can
+    // answer it, because only the database holds the other attempts.
+    const test = anyTest();
+    let a = start(test);
+    a = answer(a, test, 0, true);
+    const r = gradeAttempt(test, a);
+    assert.equal(r.rank, undefined);
+    assert.equal(r.percentile, undefined);
+    assert.equal(r.totalCandidates, undefined);
   });
 
   it('qualifies exactly when the percentage reaches the cutoff', () => {

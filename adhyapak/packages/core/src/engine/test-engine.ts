@@ -145,20 +145,6 @@ export const paletteCounts = (test: Test, attempt: TestAttempt): PaletteCounts =
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
- * Deterministic cohort simulation. With a backend this is replaced by the real
- * distribution; the shape of the output never changes, so no screen is touched.
- */
-const simulateRank = (percentage: number, attempts: number) => {
-  // Teaching-exam cohorts cluster in the 45-65% band; this curve reproduces that.
-  const percentile = round2(
-    Math.min(99.98, Math.max(0.5, 100 / (1 + Math.exp(-(percentage - 52) / 9)))),
-  );
-  const totalCandidates = Math.max(1000, attempts);
-  const rank = Math.max(1, Math.round(totalCandidates * (1 - percentile / 100)));
-  return { percentile, rank, totalCandidates };
-};
-
-/**
  * Finds a question by id.
  *
  * Defaults to the bundled bank, which is where every seeded mock's questions
@@ -260,8 +246,9 @@ export const gradeAttempt = (
   const paper = test.paperId ? getPaper(test.paperId)?.paper : undefined;
   const cutoff = paper?.cutoffGeneral ?? 60;
 
-  const { percentile, rank, totalCandidates } = simulateRank(percentage, test.attempts);
-
+  // No rank, no percentile, no field size. Grading here happens on the device,
+  // and a device has no idea how anybody else did. `submitAttempt` returns
+  // those three from `submit_attempt`, which counts the real attempts.
   return {
     attemptId: attempt.id,
     testId: test.id,
@@ -274,9 +261,6 @@ export const gradeAttempt = (
     attempted,
     accuracy,
     totalTimeMs,
-    rank,
-    totalCandidates,
-    percentile,
     qualified: percentage >= cutoff,
     cutoff,
     subjectScores,

@@ -201,8 +201,9 @@ export default function ProfilePage() {
                     />
                   </div>
                   <p className="mt-1.5 text-[11px] text-[var(--color-muted)]">
-                    {t(UI.rank, lang)} #{formatCount(r.rank)} · {t(UI.accuracy, lang)} {r.accuracy}%
-                    · {t(UI.percentile, lang)} {r.percentile}
+                    {r.rank !== undefined ? `${t(UI.rank, lang)} #${formatCount(r.rank)} · ` : ''}
+                    {t(UI.accuracy, lang)} {r.accuracy}%
+                    {r.percentile !== undefined ? ` · ${t(UI.percentile, lang)} ${r.percentile}` : ''}
                   </p>
                 </Link>
               );

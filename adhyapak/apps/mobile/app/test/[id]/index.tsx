@@ -112,11 +112,13 @@ export default function TestIntroScreen() {
               color={result.qualified ? theme.color.success : theme.color.danger}
             />
             <Stat label={t(UI.accuracy, lang)} value={`${result.accuracy}%`} />
-            <Stat
-              label={t(UI.rank, lang)}
-              value={`#${formatCount(result.rank)}`}
-              color={theme.color.accent}
-            />
+            {result.rank !== undefined ? (
+              <Stat
+                label={t(UI.rank, lang)}
+                value={`#${formatCount(result.rank)}`}
+                color={theme.color.accent}
+              />
+            ) : null}
           </View>
           <Button
             label={lang === 'hi' ? 'पूरा विश्लेषण देखें' : 'View full analysis'}
