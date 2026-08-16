@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,37 +11,99 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { EXAMS, countQuestions, formatCount, theme } from '@adhyapak/core';
+import {
+  EXAMS,
+  countQuestions,
+  formatCount,
+  isBackendConfigured,
+  theme,
+  type AuthError,
+} from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { useSession } from '@/lib/session';
-import { s } from '@/components/ui';
-import { useResponsive } from '@/lib/responsive';
 
 /**
- * Sign in.
+ * Sign in, or make an account.
  *
  * Deliberately low-friction: an aspirant downloading a prep app at 11pm should
- * reach the question bank in two taps, so continuing without an account is a
+ * reach the question bank in two taps, so continuing without an account stays a
  * first-class option rather than fine print. Signing in only matters once
- * progress needs to follow them to another device.
+ * progress needs to follow them to another device — which is now something it
+ * can actually do.
+ *
+ * What this screen used to be: a name field and an optional "mobile or email"
+ * that were written to local state and nothing else. There was no account
+ * behind it, so the promise under the contact field — "lets your progress
+ * follow you to another phone" — was not true. The fields are real now, and the
+ * promise is kept by the profile row the sign-up creates.
  */
 export default function LoginScreen() {
   // The headline stat counts what the library actually holds, so it grows with
   // an import instead of being a number baked into the bundle.
   const questionCount = useAsync(() => countQuestions(), []);
   const { lang, toggleLang } = useStore();
-  const { signIn, continueAsGuest } = useSession();
-  const r = useResponsive();
+  const { signIn, signUp, continueAsGuest } = useSession();
+
+  const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [name, setName] = useState('');
-  const [contact, setContact] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<AuthError | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const hi = lang === 'hi';
-  const canSubmit = name.trim().length >= 2;
+  const noBackend = !isBackendConfigured();
+  const signingUp = mode === 'sign-up';
+  const canSubmit =
+    !busy &&
+    !noBackend &&
+    email.trim().length > 3 &&
+    password.length >= 6 &&
+    (!signingUp || name.trim().length >= 2);
 
-  const proceed = (guest: boolean) => {
-    if (guest) continueAsGuest();
-    else signIn(name, contact.trim() || undefined);
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+
+    if (signingUp) {
+      const created = await signUp(email, password, name);
+      setBusy(false);
+      if (!created.ok) {
+        setError(created.error);
+        return;
+      }
+      // A project with email confirmation on returns no session. Routing
+      // onward here would land them in an app that thinks they are signed out,
+      // so say what actually happened instead.
+      if (!created.value.session) {
+        setNotice(
+          hi
+            ? `हमने ${email.trim()} पर पुष्टिकरण लिंक भेजा है। उसे खोलकर यहाँ साइन इन करें।`
+            : `We sent a confirmation link to ${email.trim()}. Open it, then sign in here.`,
+        );
+        setMode('sign-in');
+        setPassword('');
+        return;
+      }
+    } else {
+      const entered = await signIn(email, password);
+      setBusy(false);
+      if (!entered.ok) {
+        setError(entered.error);
+        return;
+      }
+    }
+
+    // The gate in _layout routes on `onboarded`, which the store sets from the
+    // profile — a returning learner skips the goal picker, a new one does not.
+    router.replace('/(auth)/goal');
+  };
+
+  const asGuest = () => {
+    continueAsGuest();
     router.replace('/(auth)/goal');
   };
 
@@ -77,7 +140,7 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
 
-          <View style={{ alignItems: 'center', marginTop: theme.space.xxl }}>
+          <View style={{ alignItems: 'center', marginTop: theme.space.xl }}>
             <View
               style={{
                 width: 76,
@@ -117,64 +180,134 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          <View style={{ marginTop: theme.space.xxl, gap: theme.space.lg }}>
+          {noBackend ? (
+            <Text style={styles.warning}>
+              {hi
+                ? '⚠️ इस बिल्ड में कोई डेटाबेस नहीं है, इसलिए खाता बनाना संभव नहीं। बिना खाते के पूरा प्रश्न बैंक खुला है।'
+                : '⚠️ This build has no database, so accounts are not possible. The full question bank is open without one.'}
+            </Text>
+          ) : null}
+
+          <View style={{ marginTop: theme.space.xl, gap: theme.space.lg }}>
+            {signingUp ? (
+              <View>
+                <Text style={styles.label}>{hi ? 'आपका नाम' : 'Your name'}</Text>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={hi ? 'जैसे: अर्जुन' : 'e.g. Arjun'}
+                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  style={styles.input}
+                  autoCapitalize="words"
+                  editable={!busy && !noBackend}
+                  returnKeyType="next"
+                />
+              </View>
+            ) : null}
+
             <View>
-              <Text style={styles.label}>{hi ? 'आपका नाम' : 'Your name'}</Text>
+              <Text style={styles.label}>{hi ? 'ईमेल' : 'Email'}</Text>
               <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder={hi ? 'जैसे: अर्जुन' : 'e.g. Arjun'}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@example.com"
                 placeholderTextColor="rgba(255,255,255,0.4)"
                 style={styles.input}
-                autoCapitalize="words"
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                editable={!busy && !noBackend}
                 returnKeyType="next"
               />
             </View>
 
             <View>
-              <Text style={styles.label}>
-                {hi ? 'मोबाइल या ईमेल (वैकल्पिक)' : 'Mobile or email (optional)'}
-              </Text>
+              <Text style={styles.label}>{hi ? 'पासवर्ड' : 'Password'}</Text>
               <TextInput
-                value={contact}
-                onChangeText={setContact}
-                placeholder={hi ? '98XXXXXXXX' : '98XXXXXXXX'}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••"
                 placeholderTextColor="rgba(255,255,255,0.4)"
                 style={styles.input}
+                secureTextEntry
                 autoCapitalize="none"
-                keyboardType="email-address"
+                autoComplete={signingUp ? 'new-password' : 'current-password'}
+                editable={!busy && !noBackend}
+                returnKeyType="go"
+                onSubmitEditing={() => {
+                  if (canSubmit) void submit();
+                }}
               />
               <Text style={styles.hint}>
-                {hi
-                  ? 'इससे आपकी प्रगति दूसरे फ़ोन पर भी मिलेगी।'
-                  : 'Lets your progress follow you to another phone.'}
+                {signingUp
+                  ? hi
+                    ? 'कम से कम छह अक्षर। साइन इन करने पर आपकी प्रगति हर डिवाइस पर साथ चलेगी।'
+                    : 'At least six characters. Signing in carries your progress to every device.'
+                  : hi
+                    ? 'इससे आपकी प्रगति दूसरे फ़ोन पर भी मिलेगी।'
+                    : 'Lets your progress follow you to another phone.'}
               </Text>
             </View>
           </View>
 
+          {error ? (
+            <Text style={styles.error}>✕ {hi ? error.hi : error.en}</Text>
+          ) : null}
+          {notice ? <Text style={styles.notice}>✉️ {notice}</Text> : null}
+
           <Pressable
-            onPress={() => proceed(false)}
+            onPress={submit}
             disabled={!canSubmit}
             style={{
               backgroundColor: canSubmit ? theme.color.primary : 'rgba(255,255,255,0.15)',
               borderRadius: theme.radius.md,
               paddingVertical: 17,
               alignItems: 'center',
-              marginTop: theme.space.xxl,
+              marginTop: theme.space.xl,
             }}
+          >
+            {busy ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text
+                style={{
+                  color: canSubmit ? '#fff' : 'rgba(255,255,255,0.5)',
+                  fontSize: theme.font.base,
+                  fontFamily: theme.family.display,
+                }}
+              >
+                {signingUp ? (hi ? 'खाता बनाएँ' : 'Create account') : hi ? 'साइन इन' : 'Sign in'}
+              </Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              setMode(signingUp ? 'sign-in' : 'sign-up');
+              setError(null);
+              setNotice(null);
+            }}
+            disabled={noBackend}
+            style={{ paddingVertical: 14, alignItems: 'center' }}
           >
             <Text
               style={{
-                color: canSubmit ? '#fff' : 'rgba(255,255,255,0.5)',
-                fontSize: theme.font.base,
-                fontFamily: theme.family.display,
+                color: noBackend ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.9)',
+                fontSize: theme.font.sm,
+                fontFamily: theme.family.bodyMedium,
               }}
             >
-              {hi ? 'आगे बढ़ें' : 'Continue'}
+              {signingUp
+                ? hi
+                  ? 'पहले से खाता है? साइन इन करें'
+                  : 'Already have an account? Sign in'
+                : hi
+                  ? 'खाता नहीं है? बनाएँ'
+                  : 'No account yet? Create one'}
             </Text>
           </Pressable>
 
-          <Pressable onPress={() => proceed(true)} style={{ paddingVertical: 18, alignItems: 'center' }}>
+          <Pressable onPress={asGuest} style={{ paddingVertical: 14, alignItems: 'center' }}>
             <Text
               style={{
                 color: 'rgba(255,255,255,0.75)',
@@ -196,7 +329,14 @@ export default function LoginScreen() {
           >
             {[
               { value: `${EXAMS.length}`, label: hi ? 'परीक्षाएँ' : 'Exams' },
-              { value: formatCount(questionCount.data ?? 0), label: hi ? 'प्रश्न' : 'Questions' },
+              // A dash while the count is in flight. `?? 0` rendered a
+              // confident "0 questions" for as long as the request took, which
+              // on a slow connection is the first thing a learner reads about
+              // the library — and it is a number nothing has proved yet.
+              {
+                value: questionCount.data === undefined ? '—' : formatCount(questionCount.data),
+                label: hi ? 'प्रश्न' : 'Questions',
+              },
               { value: hi ? 'हिं/EN' : 'Hi/EN', label: hi ? 'द्विभाषी' : 'Bilingual' },
             ].map((stat) => (
               <View key={stat.label} style={{ alignItems: 'center' }}>
@@ -250,5 +390,30 @@ const styles = {
     fontSize: theme.font.xs,
     fontFamily: theme.family.body,
     marginTop: theme.space.sm,
+  },
+  warning: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: theme.font.xs,
+    fontFamily: theme.family.body,
+    lineHeight: theme.line.sm,
+    marginTop: theme.space.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
+  },
+  error: {
+    color: '#FCA5A5',
+    fontSize: theme.font.sm,
+    fontFamily: theme.family.bodyMedium,
+    marginTop: theme.space.lg,
+  },
+  notice: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: theme.font.sm,
+    fontFamily: theme.family.body,
+    lineHeight: theme.line.sm,
+    marginTop: theme.space.lg,
   },
 } as const;
