@@ -66,8 +66,8 @@ describe('every auth error is renderable', () => {
   // often as an educator meets them on sign-in, and an English-only failure on
   // a Hindi screen is the one place the bilingual promise would break first.
   for (const [name, attempt] of [
-    ['signing in', () => signInWithPassword('a@b.c', 'x')],
-    ['signing up', () => signUpWithPassword('a@b.c', 'x', 'A')],
+    ['signing in', () => signInWithPassword('someone@example.com', 'x')],
+    ['signing up', () => signUpWithPassword('someone@example.com', 'x', 'A')],
     ['signing out', () => signOut()],
   ] as const) {
     it(`carries both languages when ${name}`, async () => {

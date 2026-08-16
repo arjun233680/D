@@ -43,8 +43,10 @@ function GoalSwitcher() {
           <span className="block text-[10px] leading-tight font-medium text-[var(--color-faint)]">
             {lang === 'hi' ? 'लक्ष्य' : 'Goal'}
           </span>
+          {/* A dash read as a broken control. Nobody has a goal until they
+              choose one, so the button says what to do about it instead. */}
           <span className="block truncate text-[13px] leading-tight font-bold">
-            {exam?.shortName ?? '—'}
+            {exam?.shortName ?? (lang === 'hi' ? 'चुनें' : 'Choose')}
           </span>
         </span>
         <span className="text-[10px] text-[var(--color-faint)]">▼</span>
@@ -163,13 +165,25 @@ export function AppShell({ children }: { children: ReactNode }) {
           <LangToggle />
           <GoalSwitcher />
 
-          <Link
-            href="/profile"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--color-ink)] text-base text-white"
-            title={user.name}
-          >
-            {user.avatar}
-          </Link>
+          {/* Signed out, the avatar was a face with nobody behind it — it linked
+              to a profile page describing a learner who did not exist. Offer the
+              way to become one instead. */}
+          {user.signedIn && user.id ? (
+            <Link
+              href="/profile"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--color-ink)] text-base text-white"
+              title={user.name || undefined}
+            >
+              {user.avatar}
+            </Link>
+          ) : (
+            <Link
+              href="/sign-in"
+              className="shrink-0 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-[12px] font-bold transition-colors hover:border-[var(--color-line-strong)]"
+            >
+              {lang === 'hi' ? 'साइन इन' : 'Sign in'}
+            </Link>
+          )}
         </div>
       </header>
 

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import {
   BATCHES,
+  EXAMS,
   TESTS,
   currentStreak,
   getExam,
@@ -81,17 +82,32 @@ export default function HomePage() {
   );
   const timeline = (upcoming.length ? upcoming : (exam?.updates ?? []).slice(-2)).slice(0, 3);
 
+  // Nobody has a goal until they choose one, and the whole dashboard is scoped
+  // by it — the countdown, the cut-off, the next mock, the recommended topic.
+  // It used to open on CTET's because the bundled learner was seeded with it,
+  // which meant a first-time visitor was shown a countdown to an exam they had
+  // never said they were sitting.
+  if (!exam) return <GoalPicker />;
+
   return (
     <div className="space-y-8 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
       {/* Goal + progress */}
       <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Link
-          href={`/goal/${exam?.slug ?? 'ctet'}`}
+          href={`/goal/${exam.slug}`}
           className="relative overflow-hidden rounded-2xl px-5 py-6 text-white sm:px-7"
           style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}cc 100%)` }}
         >
+          {/* A signed-out learner has no name, and "Hello, " with nothing
+              after it is worse than no greeting. */}
           <p className="text-[13px] text-white/75">
-            {hi ? `नमस्ते, ${user.name}` : `Hello, ${user.name}`}
+            {user.name
+              ? hi
+                ? `नमस्ते, ${user.name}`
+                : `Hello, ${user.name}`
+              : hi
+                ? 'नमस्ते'
+                : 'Hello'}
           </p>
           <h1 className="mt-1 text-[22px] leading-tight font-extrabold sm:text-3xl">
             {t(exam?.name ?? UI.tagline, lang)}
@@ -339,5 +355,63 @@ function Action({
         {cta}
       </span>
     </Link>
+  );
+}
+
+/**
+ * The first screen of a brand-new visit: choose what you are preparing for.
+ *
+ * Deliberately the whole page rather than a banner above an empty dashboard.
+ * Every panel below the fold — countdown, cut-off, next mock, weak topic — is
+ * scoped to the goal, so with none chosen there is nothing truthful to render
+ * underneath. Choosing writes `set_goal` for a signed-in learner and stays
+ * local for everybody else, which is the same contract as the goal switcher in
+ * the header.
+ */
+function GoalPicker() {
+  const { lang, setGoal } = useStore();
+  const hi = lang === 'hi';
+
+  return (
+    <div className="space-y-6 px-4 pt-8 pb-12 sm:px-0">
+      <header>
+        <h1 className="text-2xl font-extrabold sm:text-3xl">
+          {hi ? 'आप कौन-सी परीक्षा दे रहे हैं?' : 'Which exam are you preparing for?'}
+        </h1>
+        <p className="mt-1.5 text-[13px] text-[var(--color-muted)]">
+          {hi
+            ? 'यही तय करता है कि कौन-से विषय, टेस्ट, बैच और कट-ऑफ दिखें। इसे ऊपर दाईं ओर से कभी भी बदला जा सकता है।'
+            : 'This decides which subjects, tests, batches and cut-offs you see. You can change it any time from the top right.'}
+        </p>
+      </header>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {EXAMS.map((e) => (
+          <button
+            key={e.id}
+            type="button"
+            onClick={() => setGoal(e.id, e.papers[0]?.id)}
+            className="card flex items-center gap-3 p-4 text-left transition-colors hover:border-[var(--color-brand)]"
+          >
+            <span className="text-2xl">{e.emoji}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[14px] font-bold">{e.shortName}</span>
+              <span className="block truncate text-[12px] text-[var(--color-muted)]">
+                {t(e.name, lang)}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <p className="text-[12px] text-[var(--color-muted)]">
+        {hi
+          ? 'साइन इन करने पर यह चुनाव आपके खाते में सहेजा जाता है और हर डिवाइस पर साथ चलता है।'
+          : 'Signed in, this choice is saved to your account and follows you to every device.'}{' '}
+        <Link href="/sign-in" className="font-bold text-[var(--color-brand)] underline">
+          {hi ? 'साइन इन' : 'Sign in'}
+        </Link>
+      </p>
+    </div>
   );
 }

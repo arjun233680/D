@@ -165,28 +165,40 @@ export const DOUBTS: Doubt[] = [
   },
 ];
 
-/** The signed-in demo learner. Replace with the authenticated user when a backend exists. */
-export const DEMO_USER: User = {
-  id: 'user-demo',
-  name: 'Arjun',
+/**
+ * Where a learner starts before they are anyone: no account, no goal, nothing
+ * practised.
+ *
+ * This replaces a `DEMO_USER` that shipped as the initial state of both apps
+ * and was not a placeholder in any meaningful sense. It was named Arjun, it
+ * carried a real person's email address into a public repository, and it
+ * claimed a twelve-day streak, two bookmarks, two saved notes and an enrolment
+ * in a CTET batch. A first-time install opened on somebody else's progress —
+ * `currentStreak` counts consecutive days ending today, so the flame even went
+ * out on its own a day later, which read as a streak the learner had broken.
+ *
+ * Nothing here is invented. The empty strings and empty arrays are the true
+ * answers for somebody who has not signed in: `goalExamId` is blank rather than
+ * 'ctet' because having no goal is what routes them to the picker, and
+ * `joinedAt` is blank because they have not joined.
+ *
+ * The signed-in learner is assembled by `getCurrentUser()` from Postgres. This
+ * value is only ever the signed-out one.
+ */
+export const GUEST_USER: User = {
+  id: '',
+  name: '',
   avatar: '🧑‍🎓',
   role: 'learner',
-  email: 'creativelearningk12@gmail.com',
-  goalExamId: 'ctet',
-  targetPaperId: 'ctet-p1',
+  goalExamId: '',
   language: 'hi',
-  state: 'Haryana',
-  joinedAt: '2026-06-01',
-  streakDays: 12,
-  activeDates: [
-    '2026-08-02', '2026-08-03', '2026-08-04', '2026-08-05', '2026-08-06',
-    '2026-08-07', '2026-08-08', '2026-08-09', '2026-08-10', '2026-08-11',
-    '2026-08-12', '2026-08-13',
-  ],
+  joinedAt: '',
+  streakDays: 0,
+  activeDates: [],
   subscription: 'free',
   signedIn: false,
   onboarded: false,
-  bookmarkedQuestionIds: ['q-cdp-007', 'q-math-007'],
-  savedNoteIds: ['note-cdp-01', 'note-gk-01'],
-  enrolledBatchIds: ['batch-ctet-p1-foundation'],
+  bookmarkedQuestionIds: [],
+  savedNoteIds: [],
+  enrolledBatchIds: [],
 };
