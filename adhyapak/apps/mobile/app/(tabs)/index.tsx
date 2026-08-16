@@ -363,23 +363,11 @@ export default function DashboardScreen() {
             )}
           </View>
 
-          {/* Today's plan, and this exam's cycle updates beside it on desktop */}
-          {r.isDesktop && updates ? (
-            <View style={{ flexDirection: 'row', gap: theme.space.xxl, marginTop: theme.space.xxl }}>
-              <View style={{ flex: 1.6 }}>{plan}</View>
-              <View style={{ flex: 1 }}>{updates}</View>
-            </View>
-          ) : (
-            <>
-              <View style={{ marginTop: theme.space.xxl }}>{plan}</View>
-              {updates ? <View style={{ marginTop: theme.space.xxl }}>{updates}</View> : null}
-            </>
-          )}
-
-          {/* Library — shortcuts to routes without their own tab, and so the
-              least important thing on this screen. Six large tiles took a full
-              band of a phone screen to say what a row of chips says, and the
-              space belongs to the work above. */}
+          {/* Library — shortcuts to the sections that carry the material.
+              Directly under the goal as a quick-access row: six large tiles
+              used to take a full band of a phone screen to say what a row of
+              chips says, so promoting it now costs almost no height and does
+              not push the day's work off the first screen. */}
           <View style={{ marginTop: theme.space.xxl }}>
             <Eyebrow text={hi ? 'सामग्री' : 'Library'} />
           </View>
@@ -425,6 +413,20 @@ export default function DashboardScreen() {
               </Pressable>
             ))}
           </View>
+
+          {/* Today's plan, and this exam's cycle updates beside it on desktop */}
+          {r.isDesktop && updates ? (
+            <View style={{ flexDirection: 'row', gap: theme.space.xxl, marginTop: theme.space.xxl }}>
+              <View style={{ flex: 1.6 }}>{plan}</View>
+              <View style={{ flex: 1 }}>{updates}</View>
+            </View>
+          ) : (
+            <>
+              <View style={{ marginTop: theme.space.xxl }}>{plan}</View>
+              {updates ? <View style={{ marginTop: theme.space.xxl }}>{updates}</View> : null}
+            </>
+          )}
+
         </Content>
       </ScrollView>
     </SafeAreaView>

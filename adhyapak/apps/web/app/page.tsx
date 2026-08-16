@@ -245,7 +245,35 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* ------------------------------------------------ 2. the work, and only
+      {/* ---------------------------------------------------------- 2. the shelf
+          Shortcuts to the sections that carry the actual material. They sit
+          directly under the goal as a slim quick-access bar rather than a band
+          of large tiles further down — one row costs almost no height, so
+          promoting it does not push the day's work below the fold. */}
+      <section>
+        <SectionHeading title={hi ? 'सामग्री' : 'Library'} />
+        <div className="rail flex gap-2.5 pb-1 sm:flex-wrap">
+          {LIBRARY.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="card flex shrink-0 items-center gap-2.5 py-2.5 pr-4 pl-2.5 transition-colors hover:border-[var(--color-line-strong)]"
+            >
+              <span
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[15px]"
+                style={{ background: `${item.color}1a` }}
+              >
+                {item.icon}
+              </span>
+              <span className="text-[13px] font-semibold whitespace-nowrap">
+                {t(item.label, lang)}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ------------------------------------------------ 3. the work, and only
           then the news. A live class jumps the queue while it is on air. */}
       <section className="grid gap-8 lg:grid-cols-[1.7fr_1fr]">
         <div>
@@ -317,34 +345,6 @@ export default function HomePage() {
             </ol>
           </div>
         ) : null}
-      </section>
-
-      {/* ------------------------------------------------------- 3. navigation
-          These are shortcuts to pages that are already in the header, so they
-          are the least important thing here. They used to be six large tiles
-          taking a full screen band; a single compact row says the same thing
-          and leaves the space to the work above. */}
-      <section>
-        <SectionHeading title={hi ? 'सामग्री' : 'Library'} />
-        <div className="rail flex gap-2.5 pb-1 sm:flex-wrap">
-          {LIBRARY.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="card flex shrink-0 items-center gap-2.5 py-2.5 pr-4 pl-2.5 transition-colors hover:border-[var(--color-line-strong)]"
-            >
-              <span
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[15px]"
-                style={{ background: `${item.color}1a` }}
-              >
-                {item.icon}
-              </span>
-              <span className="text-[13px] font-semibold whitespace-nowrap">
-                {t(item.label, lang)}
-              </span>
-            </Link>
-          ))}
-        </div>
       </section>
 
       {/* ----------------------------------------------------------- 4. the pitch */}
