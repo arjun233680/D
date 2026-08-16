@@ -5,6 +5,7 @@ import {
   BATCHES,
   TESTS,
   currentStreak,
+  formatDate,
   getExam,
   getPaper,
   getSubject,
@@ -183,11 +184,7 @@ export default function DashboardScreen() {
         {timeline.map((u) => (
           <View key={`${u.date}-${u.title.en}`} style={[s.card, { padding: theme.space.lg }]}>
             <Text style={[s.faint, { fontFamily: theme.family.bodySemi, color: palette.accent }]}>
-              {new Date(u.date).toLocaleDateString(hi ? 'hi-IN' : 'en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
+              {formatDate(u.date, lang)}
             </Text>
             <Text style={[s.title, { marginTop: 4 }]}>{t(u.title, lang)}</Text>
             <Text style={[s.muted, { marginTop: 4 }]}>{t(u.detail, lang)}</Text>

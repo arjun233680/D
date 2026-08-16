@@ -422,7 +422,7 @@ export function TestPlayer({
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            aria-label="Close"
+            aria-label={lang === 'hi' ? 'बंद करें' : 'Close'}
             className="absolute inset-0 bg-black/40"
             onClick={() => setPaletteOpen(false)}
           />

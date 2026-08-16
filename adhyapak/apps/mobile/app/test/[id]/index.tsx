@@ -21,7 +21,11 @@ export default function TestIntroScreen() {
   if (!test) {
     return (
       <View style={[s.screen, { padding: theme.space.lg }]}>
-        <EmptyState icon="🎯" title="Not found" body="This test no longer exists." />
+        <EmptyState
+          icon="🎯"
+          title={lang === 'hi' ? 'नहीं मिला' : 'Not found'}
+          body={lang === 'hi' ? 'यह टेस्ट अब मौजूद नहीं है।' : 'This test no longer exists.'}
+        />
       </View>
     );
   }

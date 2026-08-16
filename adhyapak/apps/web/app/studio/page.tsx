@@ -244,7 +244,9 @@ export default function StudioPage() {
               className={field}
               value={titleEn}
               onChange={(e) => setTitleEn(e.target.value)}
-              placeholder="Piaget stages — full revision"
+              placeholder={
+                lang === 'hi' ? 'पियाजे की अवस्थाएँ — पूर्ण पुनरावृत्ति' : 'Piaget stages — full revision'
+              }
             />
           </div>
           <div>

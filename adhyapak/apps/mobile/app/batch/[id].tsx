@@ -27,7 +27,11 @@ export default function BatchScreen() {
   if (!batch) {
     return (
       <View style={[s.screen, { padding: theme.space.lg }]}>
-        <EmptyState icon="🎥" title="Not found" body="This batch has ended." />
+        <EmptyState
+          icon="🎥"
+          title={lang === 'hi' ? 'नहीं मिला' : 'Not found'}
+          body={lang === 'hi' ? 'यह बैच समाप्त हो चुका है।' : 'This batch has ended.'}
+        />
       </View>
     );
   }

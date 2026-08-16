@@ -97,3 +97,38 @@ describe('no personal contact detail is compiled into the apps', () => {
     assert.ok([...sourceFiles(join(ROOT, 'apps'))].length > 40, 'the walk found the sources');
   });
 });
+
+describe('no screen speaks only English', () => {
+  /**
+   * Every user-facing string is `Bilingual`, and Hindi is required to publish.
+   * The four "Not found" screens in the mobile app were not: an aspirant
+   * reading the app in Hindi hit a dead video link and was told "This video is
+   * no longer available."
+   *
+   * These are the props that put a bare string in front of somebody. A literal
+   * is only allowed where it is language-neutral — a number, an emoji, an id —
+   * so the rule is "no prose literal", checked as "no two English words in a
+   * row inside one of these props".
+   */
+  const PROPS = ['title', 'body', 'label', 'sub', 'cta', 'placeholder'];
+
+  it('never hands a bare English sentence to a title, body or label', () => {
+    const offenders: string[] = [];
+    for (const file of sourceFiles(join(ROOT, 'apps'))) {
+      const source = readFileSync(file, 'utf8');
+      for (const [i, line] of source.split('\n').entries()) {
+        for (const prop of PROPS) {
+          // `title="Two words here"` — a template or an expression is fine,
+          // because that is where `t(...)` and the ternaries live.
+          const m = new RegExp(`\\b${prop}="([A-Za-z][^"]*\\s+[A-Za-z][^"]*)"`).exec(line);
+          if (!m) continue;
+          // A11y labels are read by screen readers in the page's language and
+          // are set from `t()` elsewhere; a bare one is still worth catching,
+          // so nothing is exempted here.
+          offenders.push(`${relative(ROOT, file)}:${i + 1}  ${prop}="${m[1]}"`);
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], 'user-facing strings must carry both languages');
+  });
+});

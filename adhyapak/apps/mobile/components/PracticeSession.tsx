@@ -36,10 +36,19 @@ export function PracticeSession({
   questions,
   title,
   examId = '',
+  empty,
 }: {
   questions: Question[];
   title: string;
   examId?: string;
+  /**
+   * What to say when the set is empty. The default is written for subject and
+   * topic practice, where picking a different one is the fix. Bookmarks are the
+   * reason this is a prop: that screen has no subject to pick, and telling
+   * somebody with no bookmarks to "pick another subject" is advice they cannot
+   * act on.
+   */
+  empty?: { title: string; body: string };
 }) {
   const { lang, markActiveToday } = useStore();
   const hi = lang === 'hi';
@@ -72,8 +81,10 @@ export function PracticeSession({
       <View style={[s.screen, { padding: theme.space.lg }]}>
         <EmptyState
           icon="✍️"
-          title={hi ? 'यहाँ अभी प्रश्न नहीं हैं' : 'No questions here yet'}
-          body={hi ? 'दूसरा विषय या टॉपिक चुनें।' : 'Pick another subject or topic.'}
+          title={empty?.title ?? (hi ? 'यहाँ अभी प्रश्न नहीं हैं' : 'No questions here yet')}
+          body={
+            empty?.body ?? (hi ? 'दूसरा विषय या टॉपिक चुनें।' : 'Pick another subject or topic.')
+          }
         />
       </View>
     );

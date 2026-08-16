@@ -23,6 +23,9 @@ export default function ProfilePage() {
   const streak = currentStreak(user.activeDates);
   const attempted = Object.values(results);
   const enrolled = BATCHES.filter((b) => user.enrolledBatchIds.includes(b.id));
+  // A guest is "signed in" to the app in the routing sense without having an
+  // account; the id is what says whether there is a profile row behind them.
+  const signedIn = Boolean(user.signedIn && user.id);
 
   const bestPercentage = attempted.length
     ? Math.max(...attempted.map((r) => r.percentage))
@@ -41,21 +44,53 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
-      <header className="card flex items-center gap-4 p-5">
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-[var(--color-ink)] text-3xl">
-          {user.avatar}
-        </span>
-        <div className="min-w-0">
-          <h1 className="text-xl font-extrabold">{user.name}</h1>
-          <p className="text-[12px] text-[var(--color-muted)]">{user.email}</p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            <Badge tone="brand">
-              {user.subscription === 'free' ? t(UI.free, lang) : user.subscription}
-            </Badge>
-            {user.state ? <Badge tone="neutral">{user.state}</Badge> : null}
+      {/* Signed out there is no name, no email and no join date, and rendering
+          the card anyway produced an avatar beside an empty heading and an
+          empty line — which reads as a page that failed to load rather than as
+          a learner without an account. The settings below are still theirs to
+          change, so the page stays; only the identity block knows the
+          difference. */}
+      {signedIn ? (
+        <header className="card flex items-center gap-4 p-5">
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-[var(--color-ink)] text-3xl">
+            {user.avatar}
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-xl font-extrabold">{user.name || (lang === 'hi' ? 'शिक्षार्थी' : 'Learner')}</h1>
+            {user.email ? (
+              <p className="text-[12px] text-[var(--color-muted)]">{user.email}</p>
+            ) : null}
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <Badge tone="brand">
+                {user.subscription === 'free' ? t(UI.free, lang) : user.subscription}
+              </Badge>
+              {user.state ? <Badge tone="neutral">{user.state}</Badge> : null}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      ) : (
+        <header className="card flex flex-wrap items-center gap-4 p-5">
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-[var(--color-surface-alt)] text-3xl">
+            🧑‍🎓
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-extrabold">
+              {lang === 'hi' ? 'आप साइन इन नहीं हैं' : 'You are not signed in'}
+            </h1>
+            <p className="mt-0.5 text-[12px] text-[var(--color-muted)]">
+              {lang === 'hi'
+                ? 'नीचे की सेटिंग्स इसी ब्राउज़र में सहेजी जाती हैं। साइन इन करने पर लक्ष्य, बुकमार्क और प्रगति हर डिवाइस पर साथ चलते हैं।'
+                : 'The settings below are saved in this browser. Signing in carries your goal, bookmarks and progress to every device.'}
+            </p>
+          </div>
+          <Link
+            href="/sign-in"
+            className="rounded-full bg-[var(--color-brand)] px-4 py-2 text-[13px] font-bold text-white"
+          >
+            {lang === 'hi' ? 'साइन इन' : 'Sign in'}
+          </Link>
+        </header>
+      )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat label={lang === 'hi' ? 'श्रृंखला' : 'Streak'} value={`🔥 ${streak}`} tone="brand" />

@@ -287,7 +287,7 @@ export default function ImportPage() {
                 <input
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="HTET TGT Science 2024"
+                  placeholder={hi ? 'HTET TGT विज्ञान 2024' : 'HTET TGT Science 2024'}
                   className="mt-1 w-full rounded-lg border border-[var(--color-line)] px-3 py-2 text-[13px]"
                 />
               </div>

@@ -28,14 +28,46 @@ export const formatDuration = (seconds: number): string => {
   return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
 };
 
+/**
+ * Month names, written out rather than asked for.
+ *
+ * `toLocaleDateString('hi-IN', { month: 'short' })` looked like the obvious way
+ * to do this, and it is the reason every page carrying an October date in Hindi
+ * failed to hydrate. The month name comes from whichever CLDR the *runtime*
+ * ships, and the two runtimes involved do not agree:
+ *
+ *   Node 22 (which builds the static export):  "10 अक्टू॰ 2026"
+ *   Chromium (which renders it):               "10 अक्तू॰ 2026"
+ *
+ * One character — ट against त — and React discards the server-rendered subtree
+ * and re-renders it, reporting hydration error #418 to a console nobody is
+ * watching. Only October differs today; the point is that nothing stops the
+ * next CLDR release from moving another one, on a page nobody thought to check.
+ *
+ * So the table is ours. "अक्टू॰" matches अक्टूबर, which is how the month is
+ * actually spelled in Hindi. English is unchanged — both runtimes already
+ * agreed on it, and this keeps them agreeing on purpose rather than by luck.
+ */
+const MONTHS: Record<Lang, readonly string[]> = {
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'],
+  hi: [
+    'जन॰', 'फ़र॰', 'मार्च', 'अप्रैल', 'मई', 'जून',
+    'जुल॰', 'अग॰', 'सित॰', 'अक्टू॰', 'नव॰', 'दिस॰',
+  ],
+};
+
+/**
+ * "16 अग॰ 2026" / "16 Aug 2026". Identical in every runtime, by construction.
+ *
+ * Read in UTC. A bare `YYYY-MM-DD` is parsed as midnight UTC, so reading it
+ * back with local getters would print the previous day for anyone west of
+ * Greenwich — and, worse, would print a different day on the build machine
+ * than in the reader's browser, which is the same bug wearing a hat.
+ */
 export const formatDate = (iso: string, lang: Lang): string => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  return `${d.getUTCDate()} ${MONTHS[lang][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
 
 /** "2 days ago" / "2 दिन पहले" for feeds and doubts. */

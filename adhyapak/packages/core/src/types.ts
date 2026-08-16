@@ -334,7 +334,16 @@ export interface Test {
   marksPerQuestion: number;
   negativeMarking: number;
   access: ContentAccess;
-  attempts: number;
+  /**
+   * How many people have sat this paper is deliberately absent.
+   *
+   * It used to be a number in the bundle — 184620, 96340, 241800 — rendered to
+   * a learner as "184.6K attempts". Nobody had sat any of them. This is the
+   * same claim 0009 removed from `exams.learners`, which was showing "6.4L
+   * learners" for a platform with none, and it is the same rule: ship no number
+   * the database can be asked for. When `attempts` is read from the `attempts`
+   * table it can come back, counted rather than declared.
+   */
   /** Ordered sections; question ids resolve against the bank. */
   sections: TestSection[];
   /** Set for PYQ papers. */

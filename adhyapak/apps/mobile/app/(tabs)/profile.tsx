@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import {
   BATCHES,
   EXAMS,
@@ -21,6 +22,10 @@ export default function ProfileScreen() {
   const streak = currentStreak(user.activeDates);
   const attempted = Object.values(results);
   const enrolled = BATCHES.filter((b) => user.enrolledBatchIds.includes(b.id));
+  // A guest is past the door without having an account; the id is what says
+  // whether there is a profile row behind them.
+  const signedIn = Boolean(user.signedIn && user.id);
+  const hi = lang === 'hi';
 
   const best = attempted.length ? Math.max(...attempted.map((r) => r.percentage)) : 0;
   const avgAccuracy = attempted.length
@@ -37,28 +42,61 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
       <View style={{ padding: theme.space.lg }}>
+        {/* Signed out there is no name and no email, and rendering the card
+            anyway put an avatar beside an empty heading and an empty line —
+            which reads as a screen that failed to load rather than as a learner
+            without an account. The settings below are still theirs, so the
+            screen stays; only this block knows the difference. */}
         <View style={[s.card, s.row, { padding: theme.space.lg, gap: theme.space.lg }]}>
           <View
             style={{
               width: 60,
               height: 60,
               borderRadius: 30,
-              backgroundColor: theme.color.ink,
+              backgroundColor: signedIn ? theme.color.ink : theme.color.surfaceAlt,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 28 }}>{user.avatar}</Text>
+            <Text style={{ fontSize: 28 }}>{signedIn ? user.avatar : '🧑‍🎓'}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.h1}>{user.name}</Text>
-            <Text style={s.faint}>{user.email}</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-              <Badge tone="brand">
-                {user.subscription === 'free' ? t(UI.free, lang) : user.subscription}
-              </Badge>
-              {user.state ? <Badge tone="neutral">{user.state}</Badge> : null}
-            </View>
+            {signedIn ? (
+              <>
+                <Text style={s.h1}>{user.name || (hi ? 'शिक्षार्थी' : 'Learner')}</Text>
+                {user.email ? <Text style={s.faint}>{user.email}</Text> : null}
+                <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+                  <Badge tone="brand">
+                    {user.subscription === 'free' ? t(UI.free, lang) : user.subscription}
+                  </Badge>
+                  {user.state ? <Badge tone="neutral">{user.state}</Badge> : null}
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={s.h1}>{hi ? 'आप साइन इन नहीं हैं' : 'Not signed in'}</Text>
+                <Text style={[s.faint, { marginTop: 2 }]}>
+                  {hi
+                    ? 'नीचे की सेटिंग्स इसी फ़ोन में सहेजी जाती हैं। साइन इन करने पर लक्ष्य, बुकमार्क और प्रगति हर डिवाइस पर साथ चलते हैं।'
+                    : 'The settings below are saved on this phone. Signing in carries your goal, bookmarks and progress to every device.'}
+                </Text>
+                <Pressable
+                  onPress={() => router.push('/(auth)/login')}
+                  style={{
+                    alignSelf: 'flex-start',
+                    marginTop: 10,
+                    backgroundColor: theme.color.primary,
+                    borderRadius: theme.radius.pill,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
+                    {hi ? 'साइन इन' : 'Sign in'}
+                  </Text>
+                </Pressable>
+              </>
+            )}
           </View>
         </View>
       </View>

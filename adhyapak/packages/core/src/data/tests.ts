@@ -37,7 +37,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'free',
-    attempts: 184620,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [
       section('sec-cdp', 'Child Development & Pedagogy', 'बाल विकास एवं शिक्षाशास्त्र', 'cdp', 15),
@@ -57,7 +56,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'free',
-    attempts: 96340,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [
       section('sec-cdp', 'Child Development & Pedagogy', 'बाल विकास एवं शिक्षाशास्त्र', 'cdp', 10),
@@ -76,7 +74,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'free',
-    attempts: 241800,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [section('sec-cdp', 'Child Development & Pedagogy', 'बाल विकास एवं शिक्षाशास्त्र', 'cdp', 15)],
   },
@@ -90,7 +87,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'free',
-    attempts: 128900,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [
       section('sec-cdp', 'Child Development & Pedagogy', 'बाल विकास एवं शिक्षाशास्त्र', 'cdp', 12),
@@ -110,7 +106,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'free',
-    attempts: 64200,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [
       section('sec-cdp', 'Child Development & Pedagogy', 'बाल विकास एवं शिक्षाशास्त्र', 'cdp', 12),
@@ -131,7 +126,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'free',
-    attempts: 152400,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [
       section('sec-cdp', 'Child Development & Pedagogy', 'बाल विकास एवं शिक्षाशास्त्र', 'cdp', 12),
@@ -151,7 +145,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0.25,
     access: 'plus',
-    attempts: 58700,
     instructions: [
       ...STANDARD_INSTRUCTIONS,
       { en: '0.25 marks are deducted for every wrong answer. Skipping costs nothing.', hi: 'प्रत्येक गलत उत्तर पर 0.25 अंक काटे जाते हैं। प्रश्न छोड़ने पर कोई हानि नहीं।' },
@@ -175,7 +168,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'plus',
-    attempts: 71300,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [
       section('sec-eng', 'General English', 'सामान्य अंग्रेज़ी', 'english', 4),
@@ -198,7 +190,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'free',
-    attempts: 312600,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [
       {
@@ -218,7 +209,6 @@ export const TESTS: Test[] = [
     marksPerQuestion: 1,
     negativeMarking: 0,
     access: 'free',
-    attempts: 48200,
     instructions: STANDARD_INSTRUCTIONS,
     sections: [
       {

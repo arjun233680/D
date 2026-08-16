@@ -300,7 +300,6 @@ export const pyqTestFromQuestions = (
     // No TET-style paper deducts, and inventing a penalty would misreport a score.
     negativeMarking: 0,
     access: 'free',
-    attempts: 0,
     year: options.year,
     sections: [...bySubject].map(([subjectId, questionIds]) => ({
       id: `${options.id}-${subjectId}`,

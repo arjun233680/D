@@ -28,7 +28,13 @@ export default function VideoScreen() {
   if (!video) {
     return (
       <View style={[s.screen, { padding: theme.space.lg }]}>
-        <EmptyState icon="🎥" title="Not found" body="This video is no longer available." />
+        <EmptyState
+          icon="🎥"
+          title={lang === 'hi' ? 'नहीं मिला' : 'Not found'}
+          body={
+            lang === 'hi' ? 'यह वीडियो अब उपलब्ध नहीं है।' : 'This video is no longer available.'
+          }
+        />
       </View>
     );
   }

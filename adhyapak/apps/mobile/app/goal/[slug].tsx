@@ -24,7 +24,15 @@ export default function GoalScreen() {
   if (!exam) {
     return (
       <View style={[s.screen, { padding: theme.space.lg }]}>
-        <EmptyState icon="🎯" title="Not found" body="This exam is not in the catalogue." />
+        <EmptyState
+          icon="🎯"
+          title={lang === 'hi' ? 'नहीं मिला' : 'Not found'}
+          body={
+            lang === 'hi'
+              ? 'यह परीक्षा सूची में नहीं है।'
+              : 'This exam is not in the catalogue.'
+          }
+        />
       </View>
     );
   }

@@ -6,6 +6,7 @@ import {
   EXAMS,
   TESTS,
   currentStreak,
+  formatDate,
   getExam,
   getPaper,
   getSubject,
@@ -330,11 +331,7 @@ export default function HomePage() {
               {timeline.map((u) => (
                 <li key={`${u.date}-${u.title.en}`} className="card p-4">
                   <p className="text-[11px] font-bold tracking-wide" style={{ color: accent }}>
-                    {new Date(u.date).toLocaleDateString(hi ? 'hi-IN' : 'en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+                    {formatDate(u.date, lang)}
                   </p>
                   <h3 className="mt-1 text-[14px] leading-snug font-bold">{t(u.title, lang)}</h3>
                   <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-muted)]">

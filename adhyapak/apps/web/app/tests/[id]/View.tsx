@@ -49,14 +49,13 @@ export default function TestIntroPage({ params }: { params: Promise<{ id: string
         </div>
         <h1 className="mt-3 text-xl font-extrabold sm:text-2xl">{t(test.title, lang)}</h1>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {/* Three facts about the paper, all of them checkable from it. The
+            fourth used to be "Attempts", counted from a number in the bundle
+            that no database had ever been asked for. */}
+        <div className="mt-4 grid grid-cols-3 gap-2">
           <Stat label={lang === 'hi' ? 'प्रश्न' : 'Questions'} value={String(count)} />
           <Stat label={lang === 'hi' ? 'अंक' : 'Marks'} value={String(count * test.marksPerQuestion)} />
           <Stat label={lang === 'hi' ? 'अवधि' : 'Duration'} value={`${test.durationMinutes}m`} />
-          <Stat
-            label={lang === 'hi' ? 'प्रयास' : 'Attempts'}
-            value={formatCount(test.attempts)}
-          />
         </div>
       </header>
 

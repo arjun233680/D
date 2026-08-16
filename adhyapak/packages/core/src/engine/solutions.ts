@@ -42,7 +42,7 @@ export interface SolutionFilterOption {
 const LABELS: Record<SolutionFilter, { en: string; hi: string }> = {
   all: { en: 'All', hi: 'सभी' },
   correct: { en: 'Correct', hi: 'सही' },
-  incorrect: { en: 'Incorrect', hi: 'ग़लत' },
+  incorrect: { en: 'Incorrect', hi: 'गलत' },
   unattempted: { en: 'Unattempted', hi: 'अनुत्तरित' },
 };
 

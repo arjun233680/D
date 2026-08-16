@@ -23,6 +23,11 @@ export default function VideoPage({ params }: { params: Promise<{ id: string }> 
   const { lang, uploadedVideos } = useStore();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [activeChapter, setActiveChapter] = useState(0);
+  // A <video> whose source fails renders a black rectangle and says nothing.
+  // On a patchy connection — which is most of this audience, most of the time —
+  // that is indistinguishable from an app that is broken, so the failure gets
+  // a sentence and a way out of it.
+  const [failed, setFailed] = useState(false);
 
   const video = [...uploadedVideos, ...VIDEOS].find((v) => v.id === id);
   if (!video) notFound();
@@ -50,7 +55,7 @@ export default function VideoPage({ params }: { params: Promise<{ id: string }> 
         </Link>
       </div>
 
-      <div className="bg-black sm:rounded-2xl sm:overflow-hidden">
+      <div className="relative bg-black sm:overflow-hidden sm:rounded-2xl">
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={videoRef}
@@ -58,8 +63,32 @@ export default function VideoPage({ params }: { params: Promise<{ id: string }> 
           controls
           playsInline
           preload="metadata"
+          onError={() => setFailed(true)}
+          onLoadedMetadata={() => setFailed(false)}
           className="aspect-video w-full bg-black"
         />
+        {failed ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 px-6 text-center">
+            <p className="text-[14px] font-bold text-white">
+              {lang === 'hi' ? 'वीडियो नहीं चल सका' : 'This video would not load'}
+            </p>
+            <p className="max-w-sm text-[12px] leading-relaxed text-white/70">
+              {lang === 'hi'
+                ? 'कनेक्शन जाँचिए और दोबारा कोशिश कीजिए। नीचे के नोट्स और अध्याय बिना वीडियो के भी खुले हैं।'
+                : 'Check your connection and try again. The notes and chapters below are readable without it.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setFailed(false);
+                videoRef.current?.load();
+              }}
+              className="rounded-full bg-white px-4 py-2 text-[12px] font-bold text-[var(--color-ink)]"
+            >
+              {lang === 'hi' ? 'दोबारा कोशिश करें' : 'Try again'}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-5 px-4 sm:px-0">

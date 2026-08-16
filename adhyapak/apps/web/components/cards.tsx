@@ -217,11 +217,7 @@ export function TestCard({ test, width = 'w-[260px]' }: { test: Test; width?: st
               : `${t(UI.accuracy, lang)} ${result.accuracy}%`}
           </span>
         </div>
-      ) : (
-        <div className="mt-3 text-[11px] text-[var(--color-faint)]">
-          {formatCount(test.attempts)} {lang === 'hi' ? 'बार दिया गया' : 'attempts'}
-        </div>
-      )}
+      ) : null}
     </Link>
   );
 }

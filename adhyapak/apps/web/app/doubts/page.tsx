@@ -1,12 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { DOUBTS, SUBJECTS, getSubject, t, timeAgo } from '@adhyapak/core';
+import { DOUBTS, SUBJECTS, formatDate, getSubject, t, timeAgo } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useMounted } from '@/lib/useMounted';
 import { Badge, EmptyState } from '@/components/ui';
 
 export default function DoubtsPage() {
   const { lang, user } = useStore();
+  // "3 दिन पहले" is computed from the clock, and this page is a static export
+  // served long after it was built. Rendered on both sides it is a hydration
+  // mismatch; rendered after mount it is an update. Until then the exact date
+  // stands in, which is a true statement rather than a placeholder.
+  const mounted = useMounted();
   const [subjectId, setSubjectId] = useState('all');
   const [draft, setDraft] = useState('');
   const [asked, setAsked] = useState<string[]>([]);
@@ -105,7 +111,7 @@ export default function DoubtsPage() {
                   <span className="text-lg">{d.avatar}</span>
                   <span className="text-[13px] font-bold">{d.askedBy}</span>
                   <span className="text-[11px] text-[var(--color-faint)]">
-                    {timeAgo(d.askedAt, lang)}
+                    {mounted ? timeAgo(d.askedAt, lang) : formatDate(d.askedAt, lang)}
                   </span>
                   <div className="flex-1" />
                   {subject ? (

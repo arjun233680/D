@@ -56,7 +56,7 @@ function GoalSwitcher() {
         <>
           <button
             type="button"
-            aria-label="Close"
+            aria-label={lang === 'hi' ? 'बंद करें' : 'Close'}
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setOpen(false)}
           />
@@ -101,7 +101,7 @@ function LangToggle() {
     <button
       type="button"
       onClick={toggleLang}
-      title="Switch language"
+      title={lang === 'hi' ? 'भाषा बदलें' : 'Switch language'}
       className="flex items-center gap-1 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-1.5 text-[12px] font-bold transition-colors hover:border-[var(--color-line-strong)]"
     >
       <span className={lang === 'hi' ? 'text-[var(--color-brand)]' : 'text-[var(--color-faint)]'}>
