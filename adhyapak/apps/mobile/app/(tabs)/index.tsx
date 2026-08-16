@@ -83,75 +83,88 @@ export default function DashboardScreen() {
   const upcoming = (exam?.updates ?? []).filter((u) => new Date(u.date).getTime() >= Date.now() - 86_400_000);
   const timeline = (upcoming.length ? upcoming : (exam?.updates ?? []).slice(-2)).slice(0, 2);
 
+  // Ordered by what a candidate opens the app for. The first becomes the
+  // primary card; the rest are quieter rows. Every row used to carry the same
+  // filled accent pill, so the section that exists to answer "what should I do
+  // first" answered it four times at once.
+  const actions = [
+    dailyQuiz && {
+      key: 'quiz',
+      icon: '⚡',
+      tint: theme.color.primaryLight,
+      title: hi ? 'आज की प्रश्नोत्तरी' : "Today's quiz",
+      sub: `10 ${hi ? 'प्रश्न' : 'questions'} · 10 ${hi ? 'मिनट' : 'min'}`,
+      cta: hi ? 'शुरू करें' : 'Start',
+      accent: palette.accent,
+      go: () => router.push(`/test/${dailyQuiz.id}`),
+    },
+    suggested && {
+      key: 'topic',
+      icon: '🎯',
+      tint: theme.color.warningLight,
+      title: weakTopicId
+        ? hi ? 'कमज़ोर टॉपिक सुधारें' : 'Fix your weak topic'
+        : hi ? 'सर्वाधिक भार वाला टॉपिक' : 'Highest-weightage topic',
+      sub: `${getSubject(suggested.subjectId)?.icon ?? ''} ${t(suggested.name, lang)}`,
+      cta: hi ? 'अभ्यास करें' : 'Practise',
+      accent: palette.accent,
+      go: () => router.push(`/practice/topic/${suggested.id}`),
+    },
+    nextMock && {
+      key: 'mock',
+      icon: '📝',
+      tint: theme.color.accentLight,
+      title: hi ? 'अगला मॉक टेस्ट' : 'Next mock test',
+      sub: t(nextMock.title, lang),
+      cta: hi ? 'टेस्ट दें' : 'Attempt',
+      accent: palette.accent,
+      go: () => router.push(`/test/${nextMock.id}`),
+    },
+    myBatch && {
+      key: 'batch',
+      icon: '🎓',
+      tint: theme.color.infoLight,
+      title: hi ? 'आपका बैच' : 'Your batch',
+      sub: t(myBatch.title, lang),
+      cta: hi ? 'खोलें' : 'Open',
+      accent: palette.accent,
+      go: () => router.push(`/batch/${myBatch.id}`),
+    },
+  ].filter(Boolean) as ActionItem[];
+
+  // A live class outranks the list while it is on air, and only while it is.
+  const liveNow = live[0];
+
   const plan = (
     <>
-      <Text style={[s.h2, { marginBottom: theme.space.md }]}>
-        {hi ? 'आज क्या करें' : 'What to do today'}
-      </Text>
-      <View style={{ gap: theme.space.md }}>
-        {dailyQuiz ? (
-          <Action
-            icon="⚡"
-            tint={theme.color.primaryLight}
-            title={hi ? 'आज की प्रश्नोत्तरी' : "Today's quiz"}
-            sub={`10 ${hi ? 'प्रश्न' : 'questions'} · 10 min`}
-            cta={hi ? 'शुरू करें' : 'Start'}
-            accent={palette.accent}
-            onPress={() => router.push(`/test/${dailyQuiz.id}`)}
-          />
-        ) : null}
-
-        {suggested ? (
-          <Action
-            icon="🎯"
-            tint={theme.color.warningLight}
-            title={
-              weakTopicId
-                ? hi ? 'कमजोर टॉपिक सुधारें' : 'Fix your weak topic'
-                : hi ? 'सर्वाधिक भार वाला टॉपिक' : 'Highest-weightage topic'
-            }
-            sub={`${getSubject(suggested.subjectId)?.icon ?? ''} ${t(suggested.name, lang)}`}
-            cta={hi ? 'अभ्यास' : 'Practise'}
-            accent={palette.accent}
-            onPress={() => router.push(`/practice/topic/${suggested.id}`)}
-          />
-        ) : null}
-
-        {nextMock ? (
-          <Action
-            icon="📝"
-            tint={theme.color.accentLight}
-            title={hi ? 'अगला मॉक टेस्ट' : 'Next mock test'}
-            sub={t(nextMock.title, lang)}
-            cta={hi ? 'दें' : 'Attempt'}
-            accent={palette.accent}
-            onPress={() => router.push(`/test/${nextMock.id}`)}
-          />
-        ) : null}
-
-        {live.length ? (
+      <Eyebrow text={hi ? 'आज क्या करें' : 'What to do today'} />
+      <View style={{ gap: theme.space.sm }}>
+        {liveNow ? (
           <Action
             icon="🔴"
             tint={theme.color.dangerLight}
             title={hi ? 'अभी लाइव क्लास' : 'Live class now'}
-            sub={t(live[0]!.title, lang)}
+            sub={t(liveNow.title, lang)}
             cta={hi ? 'जुड़ें' : 'Join'}
             accent={theme.color.danger}
-            onPress={() => router.push(`/video/${live[0]!.id}`)}
+            primary
+            onPress={() => router.push(`/video/${liveNow.id}`)}
           />
         ) : null}
 
-        {myBatch ? (
+        {actions.map((a, i) => (
           <Action
-            icon="🎓"
-            tint={theme.color.infoLight}
-            title={hi ? 'आपका बैच' : 'Your batch'}
-            sub={t(myBatch.title, lang)}
-            cta={hi ? 'खोलें' : 'Open'}
-            accent={palette.accent}
-            onPress={() => router.push(`/batch/${myBatch.id}`)}
+            key={a.key}
+            icon={a.icon}
+            tint={a.tint}
+            title={a.title}
+            sub={a.sub}
+            cta={a.cta}
+            accent={a.accent}
+            primary={!liveNow && i === 0}
+            onPress={a.go}
           />
-        ) : null}
+        ))}
       </View>
     </>
   );
@@ -159,14 +172,14 @@ export default function DashboardScreen() {
   const updates = timeline.length ? (
     <>
       <View style={[s.row, { justifyContent: 'space-between', marginBottom: theme.space.md }]}>
-        <Text style={s.h2}>{hi ? `${exam?.shortName} अपडेट` : `${exam?.shortName} updates`}</Text>
-        <Pressable onPress={() => router.push(`/goal/${exam?.slug ?? 'ctet'}`)}>
+        <Eyebrow text={hi ? `${exam?.shortName} अपडेट` : `${exam?.shortName} updates`} flush />
+        <Pressable onPress={() => (exam ? router.push(`/goal/${exam.slug}`) : undefined)}>
           <Text style={{ color: palette.accent, fontFamily: theme.family.bodySemi, fontSize: theme.font.sm }}>
             {hi ? 'सभी' : 'All'}
           </Text>
         </Pressable>
       </View>
-      <View style={{ gap: theme.space.md }}>
+      <View style={{ gap: theme.space.sm }}>
         {timeline.map((u) => (
           <View key={`${u.date}-${u.title.en}`} style={[s.card, { padding: theme.space.lg }]}>
             <Text style={[s.faint, { fontFamily: theme.family.bodySemi, color: palette.accent }]}>
@@ -244,16 +257,25 @@ export default function DashboardScreen() {
               screen the three metrics sit beside it instead of under it. */}
           <View style={{ flexDirection: r.isPhone ? 'column' : 'row', gap: theme.space.lg }}>
             <Pressable
-              onPress={() => router.push(`/goal/${exam?.slug ?? 'ctet'}`)}
+              onPress={() => (exam ? router.push(`/goal/${exam.slug}`) : undefined)}
               style={{
                 flex: r.isPhone ? undefined : 2,
                 backgroundColor: palette.accent,
                 borderRadius: theme.radius.xl,
-                padding: theme.space.xl,
+                paddingHorizontal: theme.space.xl,
+                paddingVertical: theme.space.xxl,
               }}
             >
-              <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: theme.font.sm, fontFamily: theme.family.body }}>
-                {hi ? `नमस्ते, ${user.name}` : `Hello, ${user.name}`}
+              <Text
+                style={{
+                  color: 'rgba(255,255,255,0.7)',
+                  fontSize: theme.font.xs,
+                  fontFamily: theme.family.bodySemi,
+                  letterSpacing: 1.4,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {hi ? 'आपका लक्ष्य' : 'Your goal'}
               </Text>
               <Text
                 style={{
@@ -261,34 +283,84 @@ export default function DashboardScreen() {
                   fontSize: r.isPhone ? theme.font.lg : theme.font.xl,
                   lineHeight: r.isPhone ? theme.line.lg : theme.line.xl,
                   fontFamily: theme.family.displayBold,
-                  marginTop: 4,
+                  marginTop: 6,
                 }}
               >
                 {exam ? t(exam.name, lang) : ''}
               </Text>
               {paper ? (
-                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: theme.font.sm, fontFamily: theme.family.body, marginTop: 2 }}>
+                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: theme.font.sm, fontFamily: theme.family.body, marginTop: 3 }}>
                   {t(paper.name, lang)}
                 </Text>
               ) : null}
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm, marginTop: theme.space.lg }}>
+              {/* Set as display numerals rather than another row of pills: the
+                  countdown is the only figure here that moves on its own and
+                  the only one a candidate checks daily. */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.xl, marginTop: theme.space.xl }}>
                 {countdown !== null ? (
-                  <Pill text={`⏳ ${countdown} ${hi ? 'दिन शेष' : 'days left'}`} strong />
+                  <HeroFigure value={`${countdown}`} label={hi ? 'दिन शेष' : 'days left'} />
                 ) : null}
-                {paper ? <Pill text={`🎯 ${hi ? 'कट-ऑफ' : 'Cut-off'} ${paper.cutoffGeneral}%`} /> : null}
+                {paper ? (
+                  <HeroFigure value={`${paper.cutoffGeneral}%`} label={hi ? 'कट-ऑफ' : 'cut-off'} />
+                ) : null}
                 {exam?.vacancies ? (
-                  <Pill text={`📋 ${exam.vacancies.toLocaleString('en-IN')} ${hi ? 'पद' : 'posts'}`} />
+                  <HeroFigure
+                    value={exam.vacancies.toLocaleString('en-IN')}
+                    label={hi ? 'पद' : 'posts'}
+                  />
                 ) : null}
               </View>
             </Pressable>
 
-            {/* Progress — three numbers that actually move */}
-            <View style={{ flex: r.isPhone ? undefined : 1, flexDirection: 'row', gap: theme.space.md }}>
-              <Metric label={hi ? 'श्रृंखला' : 'Streak'} value={`${streak}`} unit={hi ? 'दिन' : 'days'} accent={palette.accent} />
-              <Metric label={hi ? 'टेस्ट दिए' : 'Tests'} value={`${attempts.length}`} unit={hi ? 'पूर्ण' : 'done'} accent={theme.color.accent} />
-              <Metric label={hi ? 'शुद्धता' : 'Accuracy'} value={`${avgAccuracy}%`} unit={hi ? 'औसत' : 'avg'} accent={theme.color.success} />
-            </View>
+            {/* Progress, or the reason there is none yet.
+                Three metrics reading 0, 0 and 0% used to sit here at the same
+                weight as the goal itself — the loudest thing on a new learner's
+                first screen was three zeros. Until there is something to
+                report, the space says what to do instead. */}
+            {attempts.length ? (
+              <View
+                style={[
+                  s.card,
+                  { flex: r.isPhone ? undefined : 1, padding: theme.space.lg, justifyContent: 'center' },
+                ]}
+              >
+                <Eyebrow text={hi ? 'आपकी प्रगति' : 'Your progress'} />
+                <View style={{ flexDirection: 'row', gap: theme.space.md }}>
+                  <Metric label={hi ? 'श्रृंखला' : 'Streak'} value={`${streak}`} unit={hi ? 'दिन' : 'days'} accent={palette.accent} />
+                  <Metric label={hi ? 'टेस्ट' : 'Tests'} value={`${attempts.length}`} unit={hi ? 'पूर्ण' : 'done'} accent={theme.color.accent} />
+                  <Metric label={hi ? 'शुद्धता' : 'Accuracy'} value={`${avgAccuracy}%`} unit={hi ? 'औसत' : 'avg'} accent={theme.color.success} />
+                </View>
+              </View>
+            ) : (
+              <View
+                style={[
+                  s.card,
+                  { flex: r.isPhone ? undefined : 1, padding: theme.space.lg, justifyContent: 'center', gap: 10 },
+                ]}
+              >
+                <Eyebrow text={hi ? 'शुरुआत करें' : 'Get started'} />
+                <Text style={[s.title, { lineHeight: theme.line.base }]}>
+                  {hi
+                    ? 'पहला टेस्ट दीजिए — उसके बाद यहाँ आपकी श्रृंखला, शुद्धता और कमज़ोर टॉपिक दिखेंगे।'
+                    : 'Sit your first test — your streak, accuracy and weak topics appear here afterwards.'}
+                </Text>
+                <Pressable
+                  onPress={() => router.push('/(tabs)/tests')}
+                  style={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: palette.accent,
+                    borderRadius: theme.radius.pill,
+                    paddingHorizontal: 16,
+                    paddingVertical: 9,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
+                    {hi ? 'टेस्ट सीरीज़ खोलें' : 'Open test series'}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
           </View>
 
           {/* Today's plan, and this exam's cycle updates beside it on desktop */}
@@ -304,40 +376,47 @@ export default function DashboardScreen() {
             </>
           )}
 
-          {/* Library — only routes without their own tab */}
-          <Text style={[s.h2, { marginTop: theme.space.xxl, marginBottom: theme.space.md }]}>
-            {hi ? 'सामग्री' : 'Library'}
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+          {/* Library — shortcuts to routes without their own tab, and so the
+              least important thing on this screen. Six large tiles took a full
+              band of a phone screen to say what a row of chips says, and the
+              space belongs to the work above. */}
+          <View style={{ marginTop: theme.space.xxl }}>
+            <Eyebrow text={hi ? 'सामग्री' : 'Library'} />
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm }}>
             {SHORTCUTS.map((item) => (
               <Pressable
                 key={item.href}
                 onPress={() => router.push(item.href as never)}
-                style={{
-                  width: r.isPhone ? '33.333%' : '16.666%',
-                  alignItems: 'center',
-                  paddingVertical: theme.space.md,
-                }}
+                style={[
+                  s.card,
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 9,
+                    paddingLeft: 9,
+                    paddingRight: 14,
+                    paddingVertical: 9,
+                  },
+                ]}
               >
                 <View
                   style={{
-                    width: theme.icon.xxl,
-                    height: theme.icon.xxl,
-                    borderRadius: theme.radius.md,
+                    width: 30,
+                    height: 30,
+                    borderRadius: 9,
                     backgroundColor: `${item.color}1a`,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: theme.icon.md }}>{item.icon}</Text>
+                  <Text style={{ fontSize: 15 }}>{item.icon}</Text>
                 </View>
                 <Text
                   style={{
-                    fontSize: theme.font.xs,
-                    fontFamily: theme.family.bodyMedium,
+                    fontSize: theme.font.sm,
+                    fontFamily: theme.family.bodySemi,
                     color: theme.color.text,
-                    marginTop: 8,
-                    textAlign: 'center',
                   }}
                   numberOfLines={1}
                 >
@@ -352,24 +431,66 @@ export default function DashboardScreen() {
   );
 }
 
-function Pill({ text, strong }: { text: string; strong?: boolean }) {
+interface ActionItem {
+  key: string;
+  icon: string;
+  tint: string;
+  title: string;
+  sub: string;
+  cta: string;
+  accent: string;
+  go: () => void;
+}
+
+/**
+ * A section label.
+ *
+ * A small tracked-out uppercase line rather than another `s.h2`: with four
+ * headings at that weight down one screen, the labels competed with the content
+ * they were labelling.
+ */
+function Eyebrow({ text, flush }: { text: string; flush?: boolean }) {
   return (
-    <View
+    <Text
       style={{
-        backgroundColor: strong ? '#fff' : 'rgba(255,255,255,0.18)',
-        borderRadius: theme.radius.pill,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        fontSize: theme.font.xs,
+        fontFamily: theme.family.bodySemi,
+        color: theme.color.textFaint,
+        letterSpacing: 1.3,
+        textTransform: 'uppercase',
+        marginBottom: flush ? 0 : theme.space.md,
       }}
     >
+      {text}
+    </Text>
+  );
+}
+
+/** One figure in the goal card — the number first, what it means underneath. */
+function HeroFigure({ value, label }: { value: string; label: string }) {
+  return (
+    <View>
       <Text
         style={{
-          color: strong ? theme.color.ink : '#fff',
-          fontSize: theme.font.xs,
-          fontFamily: theme.family.bodySemi,
+          color: '#fff',
+          fontSize: 32,
+          lineHeight: 34,
+          fontFamily: theme.family.displayBold,
         }}
       >
-        {text}
+        {value}
+      </Text>
+      <Text
+        style={{
+          color: 'rgba(255,255,255,0.75)',
+          fontSize: theme.font.xs,
+          fontFamily: theme.family.bodySemi,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          marginTop: 5,
+        }}
+      >
+        {label}
       </Text>
     </View>
   );
@@ -387,9 +508,9 @@ function Metric({
   accent: string;
 }) {
   return (
-    <View style={[s.card, { flex: 1, padding: theme.space.lg, justifyContent: 'center' }]}>
+    <View style={{ flex: 1 }}>
       <Text style={[s.numeric, { fontSize: theme.font.xl, color: accent }]}>{value}</Text>
-      <Text style={[s.faint, { marginTop: 2 }]} numberOfLines={1}>
+      <Text style={[s.faint, { marginTop: 3 }]} numberOfLines={1}>
         {label}
       </Text>
       <Text style={[s.faint, { color: theme.color.textFaint }]} numberOfLines={1}>
@@ -399,7 +520,15 @@ function Metric({
   );
 }
 
-/** A single next-step row: what it is, why, and one button. */
+/**
+ * A single next-step row: what it is, why, and one button.
+ *
+ * `primary` is given to exactly one row on the screen. Every row used to carry
+ * the same filled accent pill, so the section that exists to answer "what
+ * should I do first" answered it four times at once. The primary row is
+ * slightly taller and tinted and keeps the filled button; the rest get a quiet
+ * outline.
+ */
 function Action({
   icon,
   tint,
@@ -407,6 +536,7 @@ function Action({
   sub,
   cta,
   accent,
+  primary = false,
   onPress,
 }: {
   icon: string;
@@ -415,21 +545,34 @@ function Action({
   sub: string;
   cta: string;
   accent: string;
+  primary?: boolean;
   onPress: () => void;
 }) {
+  const size = primary ? 46 : 40;
   return (
-    <Pressable onPress={onPress} style={[s.card, s.row, { padding: theme.space.lg, gap: theme.space.lg }]}>
+    <Pressable
+      onPress={onPress}
+      style={[
+        s.card,
+        s.row,
+        {
+          padding: primary ? theme.space.lg : theme.space.md,
+          gap: theme.space.md,
+        },
+        primary ? { borderColor: `${accent}59`, backgroundColor: `${accent}0d` } : null,
+      ]}
+    >
       <View
         style={{
-          width: theme.icon.xl,
-          height: theme.icon.xl,
+          width: size,
+          height: size,
           borderRadius: theme.radius.md,
           backgroundColor: tint,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: theme.icon.sm }}>{icon}</Text>
+        <Text style={{ fontSize: primary ? 22 : 18 }}>{icon}</Text>
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.title} numberOfLines={1}>
@@ -439,18 +582,34 @@ function Action({
           {sub}
         </Text>
       </View>
-      <View
-        style={{
-          backgroundColor: accent,
-          borderRadius: theme.radius.pill,
-          paddingHorizontal: 16,
-          paddingVertical: 9,
-        }}
-      >
-        <Text style={{ color: '#fff', fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
-          {cta}
-        </Text>
-      </View>
+      {primary ? (
+        <View
+          style={{
+            backgroundColor: accent,
+            borderRadius: theme.radius.pill,
+            paddingHorizontal: 16,
+            paddingVertical: 9,
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
+            {cta}
+          </Text>
+        </View>
+      ) : (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.color.border,
+            borderRadius: theme.radius.pill,
+            paddingHorizontal: 13,
+            paddingVertical: 7,
+          }}
+        >
+          <Text style={{ color: accent, fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
+            {cta}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }

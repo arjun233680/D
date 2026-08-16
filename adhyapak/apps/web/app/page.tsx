@@ -89,151 +89,219 @@ export default function HomePage() {
   // never said they were sitting.
   if (!exam) return <GoalPicker />;
 
+  // Ordered by what a candidate opens the app for. The first one becomes the
+  // primary card; the rest are secondary rows. Nothing is padded out to a fixed
+  // count — an empty slot would push the real work further down the page.
+  const actions = [
+    dailyQuiz && {
+      href: `/tests/${dailyQuiz.id}`,
+      icon: '⚡',
+      tint: 'var(--color-brand-light)',
+      title: hi ? 'आज की प्रश्नोत्तरी' : "Today's quiz",
+      sub: `10 ${hi ? 'प्रश्न' : 'questions'} · 10 ${hi ? 'मिनट' : 'min'}`,
+      cta: hi ? 'शुरू करें' : 'Start',
+    },
+    suggested && {
+      href: `/practice/topic/${suggested.id}`,
+      icon: '🎯',
+      tint: 'var(--color-warning-light)',
+      title: weakTopicId
+        ? hi ? 'कमज़ोर टॉपिक सुधारें' : 'Fix your weak topic'
+        : hi ? 'सर्वाधिक भार वाला टॉपिक' : 'Highest-weightage topic',
+      sub: `${getSubject(suggested.subjectId)?.icon ?? ''} ${t(suggested.name, lang)}`,
+      cta: hi ? 'अभ्यास करें' : 'Practise',
+    },
+    nextMock && {
+      href: `/tests/${nextMock.id}`,
+      icon: '📝',
+      tint: 'var(--color-accent-light)',
+      title: hi ? 'अगला मॉक टेस्ट' : 'Next mock test',
+      sub: t(nextMock.title, lang),
+      cta: hi ? 'टेस्ट दें' : 'Attempt',
+    },
+    myBatch && {
+      href: `/batches/${myBatch.id}`,
+      icon: '🎓',
+      tint: 'var(--color-info-light)',
+      title: hi ? 'आपका बैच' : 'Your batch',
+      sub: t(myBatch.title, lang),
+      cta: hi ? 'खोलें' : 'Open',
+    },
+  ].filter(Boolean) as ActionItem[];
+
+  // A live class outranks everything else on the list while it is on air, and
+  // only while it is on air — so it is not part of the ordered list above.
+  const liveNow = live[0];
+
   return (
-    <div className="space-y-8 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
-      {/* Goal + progress */}
-      <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+    <div className="space-y-10 px-4 pt-4 pb-10 sm:px-0 sm:pt-6">
+      {/* ---------------------------------------------------------- 1. the goal
+          The exam, the paper, and the one genuinely urgent fact: how long is
+          left. The countdown is set as a display numeral rather than another
+          pill, because it is the only number on this page that changes on its
+          own and the only one a candidate checks daily. */}
+      <section className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
         <Link
           href={`/goal/${exam.slug}`}
-          className="relative overflow-hidden rounded-2xl px-5 py-6 text-white sm:px-7"
-          style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}cc 100%)` }}
+          className="group relative isolate overflow-hidden rounded-3xl px-6 py-7 text-white shadow-[0_18px_40px_-24px_rgba(11,17,32,0.55)] sm:px-8 sm:py-8"
+          style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}d9 55%, ${accent}b3 100%)` }}
         >
-          {/* A signed-out learner has no name, and "Hello, " with nothing
-              after it is worse than no greeting. */}
-          <p className="text-[13px] text-white/75">
-            {user.name
-              ? hi
-                ? `नमस्ते, ${user.name}`
-                : `Hello, ${user.name}`
-              : hi
-                ? 'नमस्ते'
-                : 'Hello'}
-          </p>
-          <h1 className="mt-1 text-[22px] leading-tight font-extrabold sm:text-3xl">
-            {t(exam?.name ?? UI.tagline, lang)}
-          </h1>
-          {paper ? <p className="mt-1 text-[13px] text-white/85">{t(paper.name, lang)}</p> : null}
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            {countdown !== null ? (
-              <span className="rounded-full bg-white px-3.5 py-1.5 text-[12px] font-bold text-[var(--color-ink)]">
-                ⏳ {countdown} {hi ? 'दिन शेष' : 'days left'}
-              </span>
-            ) : null}
-            {paper ? (
-              <span className="rounded-full bg-white/20 px-3.5 py-1.5 text-[12px] font-bold backdrop-blur">
-                🎯 {hi ? 'कट-ऑफ' : 'Cut-off'} {paper.cutoffGeneral}%
-              </span>
-            ) : null}
-            {exam?.vacancies ? (
-              <span className="rounded-full bg-white/20 px-3.5 py-1.5 text-[12px] font-bold backdrop-blur">
-                📋 {exam.vacancies.toLocaleString('en-IN')} {hi ? 'पद' : 'posts'}
-              </span>
-            ) : null}
-          </div>
-          <span className="pointer-events-none absolute -right-4 -bottom-6 text-[130px] leading-none opacity-15 select-none">
-            {exam?.emoji}
+          {/* A soft highlight in the top-left keeps a flat gradient from reading
+              like a plain colour block. Purely decorative, hence aria-hidden. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -top-24 -left-16 h-64 w-64 rounded-full bg-white/15 blur-2xl"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -right-6 -bottom-10 text-[150px] leading-none opacity-[0.14] select-none"
+          >
+            {exam.emoji}
           </span>
+
+          <div className="relative">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-white/70 uppercase">
+              {hi ? 'आपका लक्ष्य' : 'Your goal'}
+            </p>
+            <h1 className="mt-2 text-[24px] leading-[1.15] font-extrabold tracking-tight sm:text-[32px]">
+              {t(exam.name, lang)}
+            </h1>
+            {paper ? (
+              <p className="mt-1.5 text-[13px] font-medium text-white/85">{t(paper.name, lang)}</p>
+            ) : null}
+
+            <div className="mt-6 flex flex-wrap items-end gap-x-7 gap-y-4">
+              {countdown !== null ? (
+                <div>
+                  <p className="text-[34px] leading-none font-extrabold tabular-nums sm:text-[40px]">
+                    {countdown}
+                  </p>
+                  <p className="mt-1.5 text-[11px] font-semibold tracking-wide text-white/75 uppercase">
+                    {hi ? 'दिन शेष' : 'days left'}
+                  </p>
+                </div>
+              ) : null}
+              {paper ? (
+                <div>
+                  <p className="text-[34px] leading-none font-extrabold tabular-nums sm:text-[40px]">
+                    {paper.cutoffGeneral}%
+                  </p>
+                  <p className="mt-1.5 text-[11px] font-semibold tracking-wide text-white/75 uppercase">
+                    {hi ? 'कट-ऑफ' : 'cut-off'}
+                  </p>
+                </div>
+              ) : null}
+              {exam.vacancies ? (
+                <div>
+                  <p className="text-[34px] leading-none font-extrabold tabular-nums sm:text-[40px]">
+                    {exam.vacancies.toLocaleString('en-IN')}
+                  </p>
+                  <p className="mt-1.5 text-[11px] font-semibold tracking-wide text-white/75 uppercase">
+                    {hi ? 'पद' : 'posts'}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </Link>
 
-        <div className="grid grid-cols-3 gap-3">
-          <Metric label={hi ? 'श्रृंखला' : 'Streak'} value={`${streak}`} unit={hi ? 'दिन' : 'days'} color={accent} />
-          <Metric label={hi ? 'टेस्ट दिए' : 'Tests'} value={`${attempts.length}`} unit={hi ? 'पूर्ण' : 'done'} color="var(--color-accent)" />
-          <Metric label={hi ? 'शुद्धता' : 'Accuracy'} value={`${avgAccuracy}%`} unit={hi ? 'औसत' : 'avg'} color="var(--color-success)" />
-        </div>
+        {/* Progress, or the reason there is none yet.
+            Three metrics reading 0, 0 and 0% used to sit here at the same
+            visual weight as the goal itself — the loudest thing on a new
+            learner's first screen was three zeros. Until there is something to
+            report, the space says what to do instead. */}
+        {attempts.length ? (
+          <div className="card flex flex-col justify-center gap-4 p-5">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-[var(--color-faint)] uppercase">
+              {hi ? 'आपकी प्रगति' : 'Your progress'}
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              <Metric label={hi ? 'श्रृंखला' : 'Streak'} value={`${streak}`} unit={hi ? 'दिन' : 'days'} color={accent} />
+              <Metric label={hi ? 'टेस्ट' : 'Tests'} value={`${attempts.length}`} unit={hi ? 'पूर्ण' : 'done'} color="var(--color-accent)" />
+              <Metric label={hi ? 'शुद्धता' : 'Accuracy'} value={`${avgAccuracy}%`} unit={hi ? 'औसत' : 'avg'} color="var(--color-success)" />
+            </div>
+            <Link href="/profile" className="text-[12px] font-bold" style={{ color: accent }}>
+              {hi ? 'पूरी प्रगति देखें →' : 'See full progress →'}
+            </Link>
+          </div>
+        ) : (
+          <div className="card flex flex-col justify-center gap-2.5 p-5">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-[var(--color-faint)] uppercase">
+              {hi ? 'शुरुआत करें' : 'Get started'}
+            </p>
+            <p className="text-[15px] leading-snug font-bold">
+              {hi
+                ? 'पहला टेस्ट दीजिए — उसके बाद यहाँ आपकी श्रृंखला, शुद्धता और कमज़ोर टॉपिक दिखेंगे।'
+                : 'Sit your first test — your streak, accuracy and weak topics appear here afterwards.'}
+            </p>
+            <Link
+              href="/tests"
+              className="mt-1 w-fit rounded-full px-4 py-2 text-[12px] font-bold text-white"
+              style={{ background: accent }}
+            >
+              {hi ? 'टेस्ट सीरीज़ खोलें' : 'Open test series'}
+            </Link>
+          </div>
+        )}
       </section>
 
-      {/* Today's plan, with this exam's cycle updates beside it on a wide screen */}
-      <section className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
+      {/* ------------------------------------------------ 2. the work, and only
+          then the news. A live class jumps the queue while it is on air. */}
+      <section className="grid gap-8 lg:grid-cols-[1.7fr_1fr]">
         <div>
-          <h2 className="mb-3 text-[17px] font-extrabold">
-            {hi ? 'आज क्या करें' : 'What to do today'}
-          </h2>
-          <div className="space-y-3">
-            {dailyQuiz ? (
-              <Action
-                href={`/tests/${dailyQuiz.id}`}
-                icon="⚡"
-                tint="var(--color-brand-light)"
-                title={hi ? 'आज की प्रश्नोत्तरी' : "Today's quiz"}
-                sub={`10 ${hi ? 'प्रश्न' : 'questions'} · 10 min`}
-                cta={hi ? 'शुरू करें' : 'Start'}
-                accent={accent}
-              />
-            ) : null}
+          <SectionHeading title={hi ? 'आज क्या करें' : 'What to do today'} />
 
-            {suggested ? (
+          <div className="space-y-2.5">
+            {liveNow ? (
               <Action
-                href={`/practice/topic/${suggested.id}`}
-                icon="🎯"
-                tint="var(--color-warning-light)"
-                title={
-                  weakTopicId
-                    ? hi ? 'कमजोर टॉपिक सुधारें' : 'Fix your weak topic'
-                    : hi ? 'सर्वाधिक भार वाला टॉपिक' : 'Highest-weightage topic'
-                }
-                sub={`${getSubject(suggested.subjectId)?.icon ?? ''} ${t(suggested.name, lang)}`}
-                cta={hi ? 'अभ्यास' : 'Practise'}
-                accent={accent}
-              />
-            ) : null}
-
-            {nextMock ? (
-              <Action
-                href={`/tests/${nextMock.id}`}
-                icon="📝"
-                tint="var(--color-accent-light)"
-                title={hi ? 'अगला मॉक टेस्ट' : 'Next mock test'}
-                sub={t(nextMock.title, lang)}
-                cta={hi ? 'दें' : 'Attempt'}
-                accent={accent}
-              />
-            ) : null}
-
-            {live.length ? (
-              <Action
-                href={`/videos/${live[0]!.id}`}
+                href={`/videos/${liveNow.id}`}
                 icon="🔴"
                 tint="var(--color-danger-light)"
                 title={hi ? 'अभी लाइव क्लास' : 'Live class now'}
-                sub={t(live[0]!.title, lang)}
+                sub={t(liveNow.title, lang)}
                 cta={hi ? 'जुड़ें' : 'Join'}
                 accent="var(--color-danger)"
+                primary
               />
             ) : null}
 
-            {myBatch ? (
+            {actions.map((a, i) => (
               <Action
-                href={`/batches/${myBatch.id}`}
-                icon="🎓"
-                tint="var(--color-info-light)"
-                title={hi ? 'आपका बैच' : 'Your batch'}
-                sub={t(myBatch.title, lang)}
-                cta={hi ? 'खोलें' : 'Open'}
+                key={a.href}
+                href={a.href}
+                icon={a.icon}
+                tint={a.tint}
+                title={a.title}
+                sub={a.sub}
+                cta={a.cta}
                 accent={accent}
+                // Exactly one filled button on the page. Five identical green
+                // pills gave a candidate no idea which one to press first,
+                // which is the whole job of this section.
+                primary={!liveNow && i === 0}
               />
+            ))}
+
+            {!liveNow && actions.length === 0 ? (
+              <p className="card p-4 text-[13px] text-[var(--color-muted)]">
+                {hi
+                  ? 'इस लक्ष्य के लिए अभी कोई सुझाव नहीं। अभ्यास से शुरू कीजिए।'
+                  : 'Nothing to suggest for this goal yet. Start with practice.'}
+              </p>
             ) : null}
           </div>
         </div>
 
         {timeline.length ? (
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[17px] font-extrabold">
-                {hi ? `${exam?.shortName} अपडेट` : `${exam?.shortName} updates`}
-              </h2>
-              <Link
-                href={`/goal/${exam?.slug ?? 'ctet'}`}
-                className="text-[13px] font-bold"
-                style={{ color: accent }}
-              >
-                {hi ? 'सभी' : 'All'}
-              </Link>
-            </div>
-            <div className="space-y-3">
+            <SectionHeading
+              title={hi ? `${exam.shortName} अपडेट` : `${exam.shortName} updates`}
+              action={{ href: `/goal/${exam.slug}`, label: hi ? 'सभी' : 'All', color: accent }}
+            />
+            <ol className="space-y-2.5">
               {timeline.map((u) => (
-                <article key={`${u.date}-${u.title.en}`} className="card p-4">
-                  <p className="text-[11px] font-bold" style={{ color: accent }}>
+                <li key={`${u.date}-${u.title.en}`} className="card p-4">
+                  <p className="text-[11px] font-bold tracking-wide" style={{ color: accent }}>
                     {new Date(u.date).toLocaleDateString(hi ? 'hi-IN' : 'en-IN', {
                       day: 'numeric',
                       month: 'short',
@@ -244,30 +312,34 @@ export default function HomePage() {
                   <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-muted)]">
                     {t(u.detail, lang)}
                   </p>
-                </article>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
         ) : null}
       </section>
 
-      {/* Library — one tap each, no content repeated from the pages themselves */}
+      {/* ------------------------------------------------------- 3. navigation
+          These are shortcuts to pages that are already in the header, so they
+          are the least important thing here. They used to be six large tiles
+          taking a full screen band; a single compact row says the same thing
+          and leaves the space to the work above. */}
       <section>
-        <h2 className="mb-3 text-[17px] font-extrabold">{hi ? 'सामग्री' : 'Library'}</h2>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        <SectionHeading title={hi ? 'सामग्री' : 'Library'} />
+        <div className="rail flex gap-2.5 pb-1 sm:flex-wrap">
           {LIBRARY.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="card flex flex-col items-center gap-2 px-1 py-4 transition-shadow hover:shadow-md"
+              className="card flex shrink-0 items-center gap-2.5 py-2.5 pr-4 pl-2.5 transition-colors hover:border-[var(--color-line-strong)]"
             >
               <span
-                className="grid h-14 w-14 place-items-center rounded-2xl text-2xl"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[15px]"
                 style={{ background: `${item.color}1a` }}
               >
                 {item.icon}
               </span>
-              <span className="text-center text-[12px] leading-tight font-semibold">
+              <span className="text-[13px] font-semibold whitespace-nowrap">
                 {t(item.label, lang)}
               </span>
             </Link>
@@ -275,9 +347,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SEO / value footer — the website half of the product */}
-      <footer className="mt-4 border-t border-[var(--color-line)] pt-8">
-        <h2 className="text-[15px] font-bold">
+      {/* ----------------------------------------------------------- 4. the pitch */}
+      <footer className="border-t border-[var(--color-line)] pt-7">
+        <h2 className="text-[14px] font-bold">
           {hi
             ? 'अध्यापक — शिक्षक भर्ती परीक्षाओं की संपूर्ण तैयारी'
             : 'Adhyapak — complete preparation for teaching exams'}
@@ -296,6 +368,50 @@ export default function HomePage() {
   );
 }
 
+interface ActionItem {
+  href: string;
+  icon: string;
+  tint: string;
+  title: string;
+  sub: string;
+  cta: string;
+}
+
+/**
+ * A section label.
+ *
+ * A small tracked-out uppercase eyebrow rather than another 17px extrabold
+ * heading: with four of them down the page, headings at that weight competed
+ * with the content they were labelling.
+ */
+function SectionHeading({
+  title,
+  action,
+}: {
+  title: string;
+  action?: { href: string; label: string; color: string };
+}) {
+  return (
+    <div className="mb-3 flex items-baseline justify-between gap-3">
+      <h2 className="text-[12px] font-bold tracking-[0.12em] text-[var(--color-faint)] uppercase">
+        {title}
+      </h2>
+      {action ? (
+        <Link href={action.href} className="text-[12px] font-bold" style={{ color: action.color }}>
+          {action.label}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * One progress figure.
+ *
+ * No card of its own any more — three bordered boxes inside a bordered panel
+ * was a frame around a frame. The panel groups them; these just have to be
+ * readable and aligned, which is what the tabular numerals are for.
+ */
 function Metric({
   label,
   value,
@@ -308,17 +424,25 @@ function Metric({
   color: string;
 }) {
   return (
-    <div className="card p-4">
-      <p className="text-2xl font-extrabold tabular-nums" style={{ color }}>
+    <div>
+      <p className="text-[22px] leading-none font-extrabold tabular-nums" style={{ color }}>
         {value}
       </p>
-      <p className="mt-0.5 truncate text-[11px] font-semibold text-[var(--color-muted)]">{label}</p>
+      <p className="mt-1.5 truncate text-[11px] font-semibold text-[var(--color-muted)]">{label}</p>
       <p className="truncate text-[11px] text-[var(--color-faint)]">{unit}</p>
     </div>
   );
 }
 
-/** A single next-step row: what it is, why, and one button. */
+/**
+ * A single next-step row: what it is, why, and one button.
+ *
+ * `primary` is given to exactly one row on the page. Every row used to carry
+ * the same filled accent pill, so the section that exists to answer "what
+ * should I do first" answered it four times at once. The primary row is a
+ * little taller, tinted, and keeps the filled button; the rest get a quiet
+ * outline and lean on the chevron.
+ */
 function Action({
   href,
   icon,
@@ -327,6 +451,7 @@ function Action({
   sub,
   cta,
   accent,
+  primary = false,
 }: {
   href: string;
   icon: string;
@@ -335,25 +460,45 @@ function Action({
   sub: string;
   cta: string;
   accent: string;
+  primary?: boolean;
 }) {
   return (
-    <Link href={href} className="card flex items-center gap-4 p-4 transition-shadow hover:shadow-md">
+    <Link
+      href={href}
+      className={`card flex items-center gap-4 transition-all hover:-translate-y-px hover:shadow-[0_10px_24px_-16px_rgba(11,17,32,0.4)] ${
+        primary ? 'p-4 sm:p-5' : 'p-3.5'
+      }`}
+      style={primary ? { borderColor: `${accent}59`, background: `${accent}0a` } : undefined}
+    >
       <span
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xl"
+        className={`grid shrink-0 place-items-center rounded-xl ${
+          primary ? 'h-12 w-12 text-[22px]' : 'h-10 w-10 text-[18px]'
+        }`}
         style={{ background: tint }}
       >
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-bold">{title}</span>
+        <span className={`block truncate font-bold ${primary ? 'text-[15px]' : 'text-[14px]'}`}>
+          {title}
+        </span>
         <span className="block truncate text-[12px] text-[var(--color-muted)]">{sub}</span>
       </span>
-      <span
-        className="shrink-0 rounded-full px-4 py-2 text-[12px] font-bold text-white"
-        style={{ background: accent }}
-      >
-        {cta}
-      </span>
+      {primary ? (
+        <span
+          className="shrink-0 rounded-full px-4 py-2 text-[12px] font-bold text-white"
+          style={{ background: accent }}
+        >
+          {cta}
+        </span>
+      ) : (
+        <span
+          className="shrink-0 rounded-full border border-[var(--color-line)] px-3.5 py-1.5 text-[12px] font-bold"
+          style={{ color: accent }}
+        >
+          {cta}
+        </span>
+      )}
     </Link>
   );
 }
