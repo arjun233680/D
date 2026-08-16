@@ -87,13 +87,28 @@ export default function VideosPage() {
           </div>
         </section>
       ) : (
+        /* "Pick another subject" is only advice when another subject has one.
+           With the library empty it is the same dead end the bookmarks screen
+           used to offer, so the message depends on which is true. */
         <EmptyState
           icon="🎥"
-          title={lang === 'hi' ? 'इस विषय में वीडियो नहीं' : 'No videos in this subject'}
+          title={
+            all.length
+              ? lang === 'hi'
+                ? 'इस विषय में वीडियो नहीं'
+                : 'No videos in this subject'
+              : lang === 'hi'
+                ? 'अभी कोई वीडियो नहीं'
+                : 'No lessons yet'
+          }
           body={
-            lang === 'hi'
-              ? 'दूसरा विषय चुनें या स्टूडियो से अपना वीडियो अपलोड करें।'
-              : 'Pick another subject, or upload your own from the Studio.'
+            all.length
+              ? lang === 'hi'
+                ? 'दूसरा विषय चुनें या स्टूडियो से अपना वीडियो अपलोड करें।'
+                : 'Pick another subject, or upload your own from the Studio.'
+              : lang === 'hi'
+                ? 'कोई कक्षा अभी प्रकाशित नहीं हुई। शिक्षक हैं तो स्टूडियो से पहली अपलोड कीजिए — नोट्स, प्रश्न बैंक और टेस्ट अभी भी खुले हैं।'
+                : 'No classes have been published yet. If you teach, upload the first from the Studio — the notes, question bank and tests are open in the meantime.'
           }
         />
       )}

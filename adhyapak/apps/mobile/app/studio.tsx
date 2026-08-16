@@ -3,7 +3,6 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import {
-  EDUCATORS,
   EXAMS,
   SUBJECTS,
   t,
@@ -24,13 +23,12 @@ type Mode = 'video' | 'note';
  * immediately and swaps to a CDN URL the day storage is wired up.
  */
 export default function StudioScreen() {
-  const { lang, addVideo, addNote, uploadedVideos, uploadedNotes } = useStore();
+  const { lang, user, addVideo, addNote, uploadedVideos, uploadedNotes } = useStore();
   const [mode, setMode] = useState<Mode>('video');
   const [titleEn, setTitleEn] = useState('');
   const [titleHi, setTitleHi] = useState('');
   const [desc, setDesc] = useState('');
   const [subjectId, setSubjectId] = useState(SUBJECTS[0]!.id);
-  const [educatorId, setEducatorId] = useState(EDUCATORS[0]!.id);
   const [access, setAccess] = useState<ContentAccess>('free');
   const [examIds, setExamIds] = useState<string[]>(['ctet']);
   const [file, setFile] = useState<{ uri: string; name: string; size?: number } | null>(null);
@@ -58,7 +56,7 @@ export default function StudioScreen() {
         id,
         title,
         description: { en: desc, hi: desc },
-        educatorId,
+        educatorId: user.id,
         subjectId,
         examIds,
         src: file?.uri ?? '',
@@ -77,7 +75,7 @@ export default function StudioScreen() {
         title,
         subjectId,
         examIds,
-        educatorId,
+        educatorId: user.id,
         fileUrl: file?.uri,
         pages: 1,
         downloads: 0,
@@ -212,35 +210,6 @@ export default function StudioScreen() {
                 }}
               >
                 {sub.icon} {t(sub.name, lang)}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        <Text style={[s.faint, { fontWeight: '700' }]}>{lang === 'hi' ? 'शिक्षक' : 'Educator'}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {EDUCATORS.map((e) => (
-            <Pressable
-              key={e.id}
-              onPress={() => setEducatorId(e.id)}
-              style={{
-                backgroundColor: educatorId === e.id ? theme.color.ink : theme.color.surface,
-                borderWidth: 1,
-                borderColor: educatorId === e.id ? 'transparent' : theme.color.border,
-                borderRadius: theme.radius.pill,
-                paddingHorizontal: 12,
-                paddingVertical: 7,
-                marginRight: 8,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: theme.font.xs,
-                  fontWeight: '600',
-                  color: educatorId === e.id ? '#fff' : theme.color.textMuted,
-                }}
-              >
-                {e.avatar} {e.name}
               </Text>
             </Pressable>
           ))}

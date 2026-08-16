@@ -37,9 +37,13 @@ export default function BatchesScreen() {
         )}
         ListEmptyComponent={
           <EmptyState
-            icon="🎥"
-            title={lang === 'hi' ? 'बैच नहीं मिले' : 'No batches found'}
-            body={lang === 'hi' ? 'दूसरी परीक्षा चुनें।' : 'Try another exam.'}
+            icon="🎓"
+            title={lang === 'hi' ? 'अभी कोई बैच नहीं' : 'No batches yet'}
+            body={
+              lang === 'hi'
+                ? 'लाइव कक्षाएँ अभी शुरू नहीं हुई हैं। तब तक प्रश्न बैंक, नोट्स और मॉक टेस्ट खुले हैं।'
+                : 'Live classes have not started yet. The question bank, notes and mock tests are open.'
+            }
           />
         }
       />

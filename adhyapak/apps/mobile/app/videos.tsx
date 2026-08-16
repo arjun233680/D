@@ -49,8 +49,18 @@ export default function VideosScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="🎥"
-            title={lang === 'hi' ? 'वीडियो नहीं' : 'No videos'}
-            body={lang === 'hi' ? 'दूसरा विषय चुनें।' : 'Try another subject.'}
+            title={
+              all.length
+                ? lang === 'hi' ? 'इस विषय में वीडियो नहीं' : 'No videos in this subject'
+                : lang === 'hi' ? 'अभी कोई वीडियो नहीं' : 'No lessons yet'
+            }
+            body={
+              all.length
+                ? lang === 'hi' ? 'दूसरा विषय चुनें।' : 'Try another subject.'
+                : lang === 'hi'
+                  ? 'कोई कक्षा अभी प्रकाशित नहीं हुई। नोट्स, प्रश्न बैंक और टेस्ट खुले हैं।'
+                  : 'No classes have been published yet. The notes, question bank and tests are open.'
+            }
           />
         }
       />

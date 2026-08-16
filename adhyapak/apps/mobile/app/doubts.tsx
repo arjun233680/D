@@ -2,7 +2,7 @@ import { FlatList, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { DOUBTS, getSubject, t, theme, timeAgo } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { Badge, s } from '@/components/ui';
+import { Badge, EmptyState, s } from '@/components/ui';
 
 export default function DoubtsScreen() {
   const { lang } = useStore();
@@ -15,6 +15,19 @@ export default function DoubtsScreen() {
       contentContainerStyle={{ padding: theme.space.lg, gap: theme.space.md }}
       ListHeaderComponent={
         <Stack.Screen options={{ title: lang === 'hi' ? 'शंका समाधान' : 'Doubts' }} />
+      }
+      /* A FlatList with nothing in it renders nothing at all, so with the
+         bundled doubts gone this screen was a title over blank space. */
+      ListEmptyComponent={
+        <EmptyState
+          icon="💬"
+          title={lang === 'hi' ? 'अभी कोई शंका नहीं' : 'No doubts yet'}
+          body={
+            lang === 'hi'
+              ? 'जब शिक्षार्थी प्रश्न पूछना शुरू करेंगे, वे उत्तरों सहित यहाँ दिखेंगे।'
+              : 'Once learners start asking, their questions and the answers appear here.'
+          }
+        />
       }
       renderItem={({ item }) => {
         const subject = getSubject(item.subjectId);

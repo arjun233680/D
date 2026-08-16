@@ -87,77 +87,14 @@ export const CURRENT_AFFAIRS: CurrentAffair[] = [
   },
 ];
 
-export const DOUBTS: Doubt[] = [
-  {
-    id: 'doubt-001',
-    askedBy: 'Kavita M.',
-    avatar: '🙋‍♀️',
-    subjectId: 'cdp',
-    question: {
-      en: 'In conservation tasks, is it egocentrism or centration that stops a 5-year-old from answering correctly?',
-      hi: 'संरक्षण कार्यों में 5 वर्ष के बालक को सही उत्तर देने से अहंकेंद्रितता रोकती है या केंद्रीकरण?',
-    },
-    askedAt: '2026-08-12T09:20:00+05:30',
-    answers: [
-      {
-        id: 'ans-001',
-        by: 'Anjali Verma',
-        isEducator: true,
-        body: {
-          en: 'Centration. The child focuses on one dimension — usually the height of the glass — and ignores width. Egocentrism is the inability to take another person\'s viewpoint, tested by the three-mountain task, not the conservation task.',
-          hi: 'केंद्रीकरण। बालक एक ही आयाम पर ध्यान देता है — प्रायः गिलास की ऊँचाई — तथा चौड़ाई की उपेक्षा करता है। अहंकेंद्रितता दूसरे के दृष्टिकोण को न समझ पाना है, जिसकी जाँच त्रि-पर्वत कार्य से होती है, संरक्षण कार्य से नहीं।',
-        },
-        answeredAt: '2026-08-12T10:05:00+05:30',
-      },
-    ],
-  },
-  {
-    id: 'doubt-002',
-    askedBy: 'Rohit S.',
-    avatar: '🙋‍♂️',
-    subjectId: 'math',
-    question: {
-      en: 'For DSSSB, should I attempt every question given the 0.25 negative marking?',
-      hi: 'DSSSB में 0.25 ऋणात्मक अंकन को देखते हुए क्या मुझे हर प्रश्न करना चाहिए?',
-    },
-    askedAt: '2026-08-11T18:40:00+05:30',
-    answers: [
-      {
-        id: 'ans-002',
-        by: 'Neha Bansal',
-        isEducator: true,
-        body: {
-          en: 'Attempt when you can eliminate at least two options — then the expected value is positive. A blind guess across four options loses marks on average. Pure guessing is the single biggest score leak in DSSSB.',
-          hi: 'जब आप कम से कम दो विकल्प हटा सकें तभी प्रयास करें — तब अपेक्षित मान धनात्मक होता है। चार विकल्पों में अंधा अनुमान औसतन अंक घटाता है। DSSSB में शुद्ध अनुमान ही सबसे बड़ा स्कोर नुकसान है।',
-        },
-        answeredAt: '2026-08-11T20:15:00+05:30',
-      },
-    ],
-  },
-  {
-    id: 'doubt-003',
-    askedBy: 'Sneha P.',
-    avatar: '👩‍🎓',
-    subjectId: 'evs',
-    question: {
-      en: 'How much of EVS is pedagogy in CTET Paper 1?',
-      hi: 'CTET पेपर 1 में EVS का कितना भाग शिक्षाशास्त्र होता है?',
-    },
-    askedAt: '2026-08-10T14:10:00+05:30',
-    answers: [
-      {
-        id: 'ans-003',
-        by: 'Priya Sharma',
-        isEducator: true,
-        body: {
-          en: 'Roughly 10 of the 30 questions are pedagogy — concept, scope, approaches, activities, experimentation, CCE and teaching material. It is the most predictable third of the section.',
-          hi: 'लगभग 30 में से 10 प्रश्न शिक्षाशास्त्र के होते हैं — अवधारणा, क्षेत्र, उपागम, गतिविधियाँ, प्रयोग, CCE तथा शिक्षण सामग्री। यह खंड का सर्वाधिक पूर्वानुमेय एक-तिहाई भाग है।',
-        },
-        answeredAt: '2026-08-10T15:30:00+05:30',
-      },
-    ],
-  },
-];
+/**
+ * No bundled doubts.
+ *
+ * "Kavita M." and "Rohit S." asked questions that "Anjali Verma" answered, and
+ * the whole exchange was rendered as a community that does not exist. The
+ * answers were sound pedagogy; presenting them as somebody's reply was not.
+ */
+export const DOUBTS: Doubt[] = [];
 
 /**
  * Where a learner starts before they are anyone: no account, no goal, nothing

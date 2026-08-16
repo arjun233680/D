@@ -52,13 +52,16 @@ export default function BatchesPage() {
           ))}
         </div>
       ) : (
+        /* This used to say "pick another exam — new batches are added
+           continuously". No exam has one, and none are being added, so it said
+           two false things to somebody who had just found an empty page. */
         <EmptyState
-          icon="🎥"
-          title={lang === 'hi' ? 'इस परीक्षा हेतु बैच नहीं' : 'No batches for this exam yet'}
+          icon="🎓"
+          title={lang === 'hi' ? 'अभी कोई बैच नहीं' : 'No batches yet'}
           body={
             lang === 'hi'
-              ? 'दूसरी परीक्षा चुनें — नए बैच लगातार जुड़ रहे हैं।'
-              : 'Pick another exam — new batches are added continuously.'
+              ? 'लाइव कक्षाएँ अभी शुरू नहीं हुई हैं। तब तक प्रश्न बैंक, नोट्स और मॉक टेस्ट पूरी तरह खुले हैं।'
+              : 'Live classes have not started yet. The question bank, notes and mock tests are fully open in the meantime.'
           }
         />
       )}

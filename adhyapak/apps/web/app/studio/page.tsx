@@ -3,7 +3,6 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  EDUCATORS,
   EXAMS,
   SUBJECTS,
   t,
@@ -27,7 +26,7 @@ type Mode = 'video' | 'note';
  * CDN URL returned by the storage service and nothing else changes.
  */
 export default function StudioPage() {
-  const { lang, addVideo, addNote, uploadedVideos, uploadedNotes } = useStore();
+  const { lang, user, addVideo, addNote, uploadedVideos, uploadedNotes } = useStore();
   const [mode, setMode] = useState<Mode>('video');
   const [titleEn, setTitleEn] = useState('');
   const [titleHi, setTitleHi] = useState('');
@@ -35,7 +34,6 @@ export default function StudioPage() {
   const [descHi, setDescHi] = useState('');
   const [subjectId, setSubjectId] = useState(SUBJECTS[0]!.id);
   const [examIds, setExamIds] = useState<string[]>(['ctet']);
-  const [educatorId, setEducatorId] = useState(EDUCATORS[0]!.id);
   const [access, setAccess] = useState<ContentAccess>('free');
   const [language, setLanguage] = useState<Lang>('hi');
   const [file, setFile] = useState<File | null>(null);
@@ -79,7 +77,7 @@ export default function StudioPage() {
         id,
         title,
         description: { en: descEn, hi: descHi || descEn },
-        educatorId,
+        educatorId: user.id,
         subjectId,
         examIds,
         src: file ? URL.createObjectURL(file) : '',
@@ -98,7 +96,7 @@ export default function StudioPage() {
         title,
         subjectId,
         examIds,
-        educatorId,
+        educatorId: user.id,
         fileUrl: file ? URL.createObjectURL(file) : undefined,
         pages: 1,
         downloads: 0,
@@ -285,16 +283,6 @@ export default function StudioPage() {
               {SUBJECTS.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.icon} {t(s.name, lang)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <span className={label}>{lang === 'hi' ? 'शिक्षक' : 'Educator'}</span>
-            <select className={field} value={educatorId} onChange={(e) => setEducatorId(e.target.value)}>
-              {EDUCATORS.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name}
                 </option>
               ))}
             </select>
