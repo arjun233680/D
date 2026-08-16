@@ -7,6 +7,7 @@ import {
   resolveStudioAccess,
   signInWithPassword,
   signOut,
+  signUpWithPassword,
 } from '../src/index.ts';
 
 /**
@@ -28,6 +29,12 @@ describe('with no backend configured', () => {
 
   it('refuses to sign in rather than throwing', async () => {
     const result = await signInWithPassword('someone@example.com', 'password');
+    assert.equal(result.ok, false);
+    assert.equal(result.ok === false && result.error.kind, 'no-backend');
+  });
+
+  it('refuses to create an account rather than throwing', async () => {
+    const result = await signUpWithPassword('someone@example.com', 'password', 'Someone');
     assert.equal(result.ok, false);
     assert.equal(result.ok === false && result.error.kind, 'no-backend');
   });
@@ -55,16 +62,25 @@ describe('with no backend configured', () => {
 });
 
 describe('every auth error is renderable', () => {
-  it('carries both languages', async () => {
-    const result = await signInWithPassword('a@b.c', 'x');
-    assert.equal(result.ok, false);
-    if (result.ok) return;
-    assert.ok(result.error.en.length > 0, 'English message');
-    assert.ok(result.error.hi.length > 0, 'Hindi message');
-    assert.notEqual(result.error.en, result.error.hi, 'not the same string twice');
-    // Devanagari, not a transliteration of the English.
-    assert.match(result.error.hi, /[ऀ-ॿ]/);
-  });
+  // Both funnels are covered: a learner meets these on the sign-up form as
+  // often as an educator meets them on sign-in, and an English-only failure on
+  // a Hindi screen is the one place the bilingual promise would break first.
+  for (const [name, attempt] of [
+    ['signing in', () => signInWithPassword('a@b.c', 'x')],
+    ['signing up', () => signUpWithPassword('a@b.c', 'x', 'A')],
+    ['signing out', () => signOut()],
+  ] as const) {
+    it(`carries both languages when ${name}`, async () => {
+      const result = await attempt();
+      assert.equal(result.ok, false);
+      if (result.ok) return;
+      assert.ok(result.error.en.length > 0, 'English message');
+      assert.ok(result.error.hi.length > 0, 'Hindi message');
+      assert.notEqual(result.error.en, result.error.hi, 'not the same string twice');
+      // Devanagari, not a transliteration of the English.
+      assert.match(result.error.hi, /[ऀ-ॿ]/);
+    });
+  }
 });
 
 describe('the three Studio states stay distinct', () => {

@@ -29,7 +29,14 @@ import { getBackend } from './client';
 /** A human-readable failure, in both languages, ready to render. */
 export interface AuthError {
   /** Machine-readable, for the rare caller that branches on the cause. */
-  kind: 'no-backend' | 'invalid-credentials' | 'rate-limited' | 'network' | 'unknown';
+  kind:
+    | 'no-backend'
+    | 'invalid-credentials'
+    | 'email-taken'
+    | 'weak-password'
+    | 'rate-limited'
+    | 'network'
+    | 'unknown';
   en: string;
   hi: string;
 }
@@ -67,6 +74,24 @@ const toAuthError = (raw: unknown): AuthError => {
       kind: 'invalid-credentials',
       en: 'That email and password did not match an account.',
       hi: 'यह ईमेल और पासवर्ड किसी खाते से मेल नहीं खाते।',
+    };
+  }
+  // Sign-up, unlike sign-in, *must* say that an address is taken: the person
+  // typing it is trying to create that account, and "something went wrong"
+  // leaves them retrying a password they never set. The enumeration this leaks
+  // is one Supabase already leaks on this endpoint.
+  if (lower.includes('already registered') || lower.includes('already exists')) {
+    return {
+      kind: 'email-taken',
+      en: 'An account with that email already exists. Sign in instead.',
+      hi: 'इस ईमेल से खाता पहले से मौजूद है। इसके बजाय साइन इन करें।',
+    };
+  }
+  if (lower.includes('password should be') || lower.includes('weak password')) {
+    return {
+      kind: 'weak-password',
+      en: 'That password is too short. Use at least six characters.',
+      hi: 'यह पासवर्ड बहुत छोटा है। कम से कम छह अक्षर लगाएँ।',
     };
   }
   if (lower.includes('rate limit') || lower.includes('too many')) {
@@ -139,9 +164,9 @@ export const onAuthStateChange = (listener: (state: AuthState) => void): (() => 
 /**
  * Email and password.
  *
- * The method the Studio uses today, because an operator account is created by
- * hand in the Supabase dashboard and has a password. P3 adds the methods a
- * learner will actually use; this one stays for staff.
+ * Used by both funnels now: staff accounts are made by hand in the Supabase
+ * dashboard, learners make their own through `signUpWithPassword`. Google and
+ * phone OTP are still to come and land in this module, not beside it.
  */
 export const signInWithPassword = async (
   email: string,
@@ -157,6 +182,60 @@ export const signInWithPassword = async (
     });
     if (error) return { ok: false, error: toAuthError(error) };
     return { ok: true, value: stateFrom(data.session) };
+  } catch (thrown) {
+    return { ok: false, error: toAuthError(thrown) };
+  }
+};
+
+/**
+ * What happened after a successful sign-up.
+ *
+ * `session` is null when the project has "Confirm email" switched on: the
+ * account exists, but nobody is signed in until the link in the inbox is
+ * clicked. A screen that assumed a session here would send a learner into an
+ * app that thinks they are signed out, so the caller is made to look.
+ */
+export interface SignUpOutcome {
+  state: AuthState;
+  /** False when a confirmation email has to be clicked before signing in. */
+  session: boolean;
+}
+
+/**
+ * Creates a learner account.
+ *
+ * The name is passed as user metadata rather than written to `profiles`
+ * afterwards, because the `on_auth_user_created` trigger reads
+ * `raw_user_meta_data->>'name'` when it inserts the profile row. Writing it
+ * here means the profile is correct from the instant it exists; a follow-up
+ * update would leave a window where the learner is "Learner", and would fail
+ * outright when the project requires email confirmation and there is no
+ * session to authorise the write.
+ */
+export const signUpWithPassword = async (
+  email: string,
+  password: string,
+  name: string,
+): Promise<AuthResult<SignUpOutcome>> => {
+  const db = getBackend();
+  if (!db) return { ok: false, error: NO_BACKEND };
+
+  try {
+    const { data, error } = await db.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { data: { name: name.trim() } },
+    });
+    if (error) return { ok: false, error: toAuthError(error) };
+    return {
+      ok: true,
+      value: {
+        state: data.session
+          ? stateFrom(data.session)
+          : { userId: null, email: data.user?.email ?? undefined, backendConfigured: true },
+        session: Boolean(data.session),
+      },
+    };
   } catch (thrown) {
     return { ok: false, error: toAuthError(thrown) };
   }

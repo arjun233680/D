@@ -5,12 +5,18 @@ import {
   buildPracticeSet,
   countQuestions,
   fetchNote,
+  getCurrentUser,
   isBackendConfigured,
   listNotes,
   listPyqYears,
   listQuestions,
   listTests,
   listTopicFrequency,
+  setGoalRemote,
+  toggleBookmarkRemote,
+  toggleEnrolmentRemote,
+  toggleSavedNoteRemote,
+  updateProfileRemote,
 } from '../src/index.ts';
 
 /**
@@ -127,5 +133,29 @@ describe('the offline path matches the practice engine', () => {
       viaRepository.map((q) => q.id),
       direct.map((q) => q.id),
     );
+  });
+});
+
+describe("the learner's own record, with nothing to write to", () => {
+  /**
+   * These are the writes that used to not exist: a goal, a language, a
+   * bookmark and an enrolment all lived in `localStorage` and nowhere else, so
+   * signing in on a second phone produced a stranger with an empty streak.
+   *
+   * Offline they must not throw and must not claim success. The store applies
+   * the change locally first and reads the boolean to decide whether it is
+   * still only local — a `true` here would tell it the write had landed in
+   * Postgres, and the retry that would have carried it there never happens.
+   */
+  it('reports every learner write as not-persisted rather than throwing', async () => {
+    assert.equal(await setGoalRemote('htet', 'htet-prt'), false);
+    assert.equal(await updateProfileRemote({ name: 'Someone', language: 'en' }), false);
+    assert.equal(await toggleBookmarkRemote('q-cdp-007', true), false);
+    assert.equal(await toggleSavedNoteRemote('note-cdp-01', true), false);
+    assert.equal(await toggleEnrolmentRemote('batch-ctet-p1-foundation', true), false);
+  });
+
+  it('has no current user offline, so nothing renders a half-real profile', async () => {
+    assert.equal(await getCurrentUser(), null);
   });
 });

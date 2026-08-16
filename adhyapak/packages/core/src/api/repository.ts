@@ -20,7 +20,7 @@ import { NOTES } from '../data/notes';
 import { VIDEOS } from '../data/videos';
 import { BATCHES } from '../data/batches';
 import { CURRENT_AFFAIRS } from '../data/feeds';
-import { buildPracticeSet, type PracticeFilter } from '../engine/practice';
+import { buildPracticeSet, currentStreak, type PracticeFilter } from '../engine/practice';
 import { formatPyq } from '../content/types';
 import type { ContentQuestion, ContentStatus, PyqRef } from '../content/types';
 import { fingerprint } from '../content/duplicates';
@@ -506,7 +506,25 @@ export const listBatches = (examId?: string): Promise<Batch[]> =>
 
 /* ----------------------------------------------------------------- writes */
 
-/** Signed-in learner, or null when running signed-out or offline. */
+/**
+ * The signed-in learner, assembled from the database, or null when signed out
+ * or offline.
+ *
+ * Every field here is read from Postgres rather than defaulted. Three used not
+ * to be, and each one lied in its own way:
+ *
+ *   `goal_exam_id` fell back to `'ctet'`, so an account that had never chosen a
+ *   goal was shown a CTET home screen — and `onboarded` was never set at all,
+ *   so nothing sent them to the goal picker to correct it.
+ *
+ *   `elective_subject_id` was not selected, so a Level 2 candidate signing in on
+ *   a second device lost the elective that decides which subjects they are
+ *   tested on.
+ *
+ *   `streak_days` was the literal `0`, which every screen then ignored in favour
+ *   of `currentStreak(activeDates)`. Deriving it from the same dates keeps the
+ *   field honest for anything that does read it.
+ */
 export const getCurrentUser = async (): Promise<User | null> => {
   const db = getBackend();
   if (!db) return null;
@@ -527,6 +545,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
     db.from('enrolments').select('batch_id'),
   ]);
 
+  const activeDates = (days ?? []).map((d: { day: string }) => d.day);
+
   return {
     id: profile.id,
     name: profile.name,
@@ -534,18 +554,131 @@ export const getCurrentUser = async (): Promise<User | null> => {
     role: profile.role === 'admin' ? 'educator' : profile.role,
     phone: profile.phone ?? undefined,
     email: auth.user.email ?? undefined,
-    goalExamId: profile.goal_exam_id ?? 'ctet',
+    // No goal is a real state — it is what sends a new account to the picker.
+    goalExamId: profile.goal_exam_id ?? '',
     targetPaperId: profile.target_paper_id ?? undefined,
+    electiveSubjectId: profile.elective_subject_id ?? undefined,
     language: (profile.language as Lang) ?? 'hi',
     state: profile.state ?? undefined,
     joinedAt: profile.created_at,
-    streakDays: 0,
-    activeDates: (days ?? []).map((d: { day: string }) => d.day),
+    streakDays: currentStreak(activeDates),
+    activeDates,
     subscription: profile.subscription,
+    signedIn: true,
+    onboarded: Boolean(profile.onboarded_at),
     bookmarkedQuestionIds: (marks ?? []).map((b: { question_id: string }) => b.question_id),
     savedNoteIds: (saved ?? []).map((s: { note_id: string }) => s.note_id),
     enrolledBatchIds: (joined ?? []).map((e: { batch_id: string }) => e.batch_id),
   };
+};
+
+/* ------------------------------------------------- the learner's own record
+ *
+ * Everything below writes something the learner owns — their goal, their
+ * language, their bookmarks, the batches they joined. All of it used to live
+ * only in `localStorage`, which meant a learner who signed in on a second
+ * device arrived as a stranger with an empty streak.
+ *
+ * Each returns a boolean rather than throwing: the caller has already applied
+ * the change locally and needs to know whether it also reached Postgres, not to
+ * unwind a UI that has already moved on. False means "still only local", which
+ * is the honest state offline and the state the store retries from.
+ */
+
+/**
+ * Records the chosen goal through `set_goal`, which also stamps `onboarded_at`.
+ *
+ * The elective is a separate write because `set_goal` predates electives and
+ * takes only the exam and paper. Sending it through the RPC would mean changing
+ * a function signature that is already deployed; a profile update covers it
+ * under the same `profiles_self_write` policy.
+ */
+export const setGoalRemote = async (
+  examId: string,
+  paperId?: string,
+  electiveSubjectId?: string,
+): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  const { error } = await db.rpc('set_goal', {
+    p_exam_id: examId,
+    p_paper_id: paperId ?? null,
+  });
+  if (error) return false;
+  if (electiveSubjectId === undefined) return true;
+  const { error: electiveError } = await db
+    .from('profiles')
+    .update({ elective_subject_id: electiveSubjectId })
+    .eq('id', (await db.auth.getUser()).data.user?.id ?? '');
+  return !electiveError;
+};
+
+/** The profile fields a learner can edit about themselves. */
+export interface ProfilePatch {
+  name?: string;
+  avatar?: string;
+  language?: Lang;
+  state?: string;
+  phone?: string;
+  electiveSubjectId?: string;
+}
+
+/**
+ * Saves an edited profile.
+ *
+ * Only the keys present are sent. Spreading the whole learner instead would
+ * write `null` over a phone number the form never showed.
+ */
+export const updateProfileRemote = async (patch: ProfilePatch): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  const { data: auth } = await db.auth.getUser();
+  if (!auth.user) return false;
+
+  const row: Record<string, unknown> = {};
+  if (patch.name !== undefined) row.name = patch.name;
+  if (patch.avatar !== undefined) row.avatar = patch.avatar;
+  if (patch.language !== undefined) row.language = patch.language;
+  if (patch.state !== undefined) row.state = patch.state;
+  if (patch.phone !== undefined) row.phone = patch.phone;
+  if (patch.electiveSubjectId !== undefined) row.elective_subject_id = patch.electiveSubjectId;
+  if (Object.keys(row).length === 0) return true;
+
+  const { error } = await db.from('profiles').update(row).eq('id', auth.user.id);
+  return !error;
+};
+
+/**
+ * Saves or unsaves a note.
+ *
+ * The delete filters on `user_id` as well as `note_id` even though RLS already
+ * confines it to this learner. Belt and braces: an owner policy that is ever
+ * relaxed would otherwise turn this into a statement that unsaves a note for
+ * everybody who saved it.
+ */
+export const toggleSavedNoteRemote = async (noteId: string, on: boolean): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  const { data: auth } = await db.auth.getUser();
+  if (!auth.user) return false;
+
+  const { error } = on
+    ? await db.from('saved_notes').upsert({ user_id: auth.user.id, note_id: noteId })
+    : await db.from('saved_notes').delete().eq('user_id', auth.user.id).eq('note_id', noteId);
+  return !error;
+};
+
+/** Joins or leaves a batch. */
+export const toggleEnrolmentRemote = async (batchId: string, on: boolean): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  const { data: auth } = await db.auth.getUser();
+  if (!auth.user) return false;
+
+  const { error } = on
+    ? await db.from('enrolments').upsert({ user_id: auth.user.id, batch_id: batchId })
+    : await db.from('enrolments').delete().eq('user_id', auth.user.id).eq('batch_id', batchId);
+  return !error;
 };
 
 /** Opens a paper server-side. Returns null offline, so the caller stays local. */
@@ -663,16 +796,23 @@ export const submitAttempt = async (
   };
 };
 
-export const toggleBookmarkRemote = async (questionId: string, on: boolean): Promise<void> => {
+/**
+ * Bookmarks or unbookmarks a question.
+ *
+ * The delete is scoped by `user_id` as well: RLS confines it today, but a
+ * statement whose safety depends entirely on a policy is one policy edit away
+ * from clearing every learner's bookmark of this question.
+ */
+export const toggleBookmarkRemote = async (questionId: string, on: boolean): Promise<boolean> => {
   const db = getBackend();
-  if (!db) return;
+  if (!db) return false;
   const { data: auth } = await db.auth.getUser();
-  if (!auth.user) return;
-  if (on) {
-    await db.from('bookmarks').upsert({ user_id: auth.user.id, question_id: questionId });
-  } else {
-    await db.from('bookmarks').delete().eq('question_id', questionId);
-  }
+  if (!auth.user) return false;
+
+  const { error } = on
+    ? await db.from('bookmarks').upsert({ user_id: auth.user.id, question_id: questionId })
+    : await db.from('bookmarks').delete().eq('user_id', auth.user.id).eq('question_id', questionId);
+  return !error;
 };
 
 /** Uploads a Studio file to storage and returns its public URL. */
