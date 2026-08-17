@@ -16,6 +16,7 @@ import {
   countQuestions,
   formatCount,
   isBackendConfigured,
+  isStaff,
   theme,
   type AuthError,
 } from '@adhyapak/core';
@@ -97,8 +98,13 @@ export default function LoginScreen() {
       }
     }
 
-    // The gate in _layout routes on `onboarded`, which the store sets from the
-    // profile — a returning learner skips the goal picker, a new one does not.
+    // An educator signing in came to publish, not to practise, so the role
+    // decides where they land. A learner goes on to the goal picker, which the
+    // gate in _layout skips for a returning account whose profile is onboarded.
+    if (await isStaff()) {
+      router.replace('/studio');
+      return;
+    }
     router.replace('/(auth)/goal');
   };
 

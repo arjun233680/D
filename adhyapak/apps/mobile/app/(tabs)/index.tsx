@@ -34,13 +34,14 @@ import { Content, s } from '@/components/ui';
  */
 
 /** Shortcuts to sections that do NOT have their own tab, so nothing is duplicated. */
+// Upload is not here. It is the admin module's, and it sat in a learner's
+// shortcut row offering an educator tool to somebody preparing for an exam.
 const SHORTCUTS = [
   { href: '/notes', icon: '📚', label: { en: 'Notes', hi: 'नोट्स' }, color: '#F97316' },
   { href: '/videos', icon: '🎥', label: { en: 'Videos', hi: 'वीडियो' }, color: '#DB2777' },
   { href: '/practice/pyq', icon: '📜', label: { en: 'Previous year', hi: 'विगत वर्ष' }, color: '#0891B2' },
   { href: '/doubts', icon: '💬', label: { en: 'Doubts', hi: 'शंका' }, color: '#7C3AED' },
   { href: '/current-affairs', icon: '📰', label: { en: 'Affairs', hi: 'समसामयिकी' }, color: '#DC2626' },
-  { href: '/studio', icon: '⬆️', label: { en: 'Upload', hi: 'अपलोड' }, color: '#0D9488' },
 ] as const;
 
 const daysUntil = (iso: string | undefined): number | null => {
@@ -180,6 +181,37 @@ export default function DashboardScreen() {
               <Text style={[s.faint, { fontFamily: theme.family.bodySemi }]}>{today}</Text>
             </View>
             <View style={[s.row, { gap: theme.space.sm }]}>
+              {/* Changing exam had no route from this screen at all — it lived
+                  in Profile, three taps away, while the goal decides every
+                  listing in the app. */}
+              {exam ? (
+                <Pressable
+                  onPress={() => router.push('/(auth)/goal')}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    borderWidth: 1,
+                    borderColor: `${palette.accent}59`,
+                    backgroundColor: `${palette.accent}14`,
+                    borderRadius: theme.radius.pill,
+                    paddingHorizontal: 11,
+                    paddingVertical: 7,
+                  }}
+                >
+                  <Text style={{ fontSize: 13 }}>{exam.emoji}</Text>
+                  <Text
+                    style={{
+                      fontSize: theme.font.xs,
+                      fontFamily: theme.family.bodySemi,
+                      color: palette.accent,
+                    }}
+                  >
+                    {exam.shortName}
+                  </Text>
+                  <Text style={{ fontSize: 8, color: palette.accent }}>▼</Text>
+                </Pressable>
+              ) : null}
               <Pressable
                 onPress={toggleLang}
                 style={{

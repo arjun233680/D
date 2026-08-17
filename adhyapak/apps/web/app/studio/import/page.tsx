@@ -23,6 +23,7 @@ import {
 } from '@/lib/importPipeline';
 import { Badge } from '@/components/ui';
 import { useStudioAccess } from '@/lib/useStudioAccess';
+import { StudioGate } from '@/components/StudioGate';
 
 /**
  * Bulk question import.
@@ -185,7 +186,14 @@ export default function ImportPage() {
   // credentials — which is genuinely useful, and the wizard says so plainly
   // rather than pretending the import will land.
 
+  // The wizard parses, maps, validates and de-duplicates entirely in the
+  // browser, which is why it used to render for anybody: a spreadsheet could be
+  // checked before there was a database to put it in. That is a real feature,
+  // and it is now behind the gate anyway — importing is the admin module's, and
+  // a screen the rest of the Studio refuses to show is not one this page should
+  // show either. Reverting is one wrapper.
   return (
+    <StudioGate access={access} loading={loading} lang={lang}>
     <div className="space-y-6 px-4 pt-4 pb-10 sm:px-0 sm:pt-6">
       <header>
         <Link href="/studio" className="text-[13px] font-semibold text-[var(--color-muted)]">
@@ -501,6 +509,7 @@ export default function ImportPage() {
         </section>
       ) : null}
     </div>
+    </StudioGate>
   );
 }
 

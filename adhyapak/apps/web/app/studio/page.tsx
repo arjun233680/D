@@ -14,6 +14,7 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useStudioAccess } from '@/lib/useStudioAccess';
+import { StudioGate } from '@/components/StudioGate';
 import { Badge, SectionHeader } from '@/components/ui';
 
 type Mode = 'video' | 'note';
@@ -26,6 +27,7 @@ type Mode = 'video' | 'note';
  * CDN URL returned by the storage service and nothing else changes.
  */
 export default function StudioPage() {
+  const { access: studioAccess, loading: checkingAccess } = useStudioAccess();
   const { lang, user, addVideo, addNote, uploadedVideos, uploadedNotes } = useStore();
   const [mode, setMode] = useState<Mode>('video');
   const [titleEn, setTitleEn] = useState('');
@@ -122,7 +124,11 @@ export default function StudioPage() {
   const field = 'w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-[14px] outline-none focus:border-[var(--color-brand)]';
   const label = 'mb-1 block text-[12px] font-bold text-[var(--color-muted)]';
 
+  // The Studio is the admin module. The upload form used to render for anybody
+  // who reached this page — the database would have refused the write, but a
+  // refusal at the end of a filled-in form is not the same as saying so first.
   return (
+    <StudioGate access={studioAccess} loading={checkingAccess} lang={lang}>
     <div className="space-y-6 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
       <div>
         <h1 className="text-2xl font-extrabold">{t(UI.studio, lang)}</h1>
@@ -400,6 +406,7 @@ export default function StudioPage() {
         </section>
       ) : null}
     </div>
+    </StudioGate>
   );
 }
 

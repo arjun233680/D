@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   BATCHES,
@@ -16,6 +17,7 @@ import {
   subjectsForPaperOrEmpty,
   t,
   UI,
+  type Exam,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 
@@ -30,13 +32,14 @@ import { useStore } from '@/lib/store';
  */
 
 /** Icon shortcuts. No rails: a rail here would be a second copy of a page. */
+// Upload is not here. It is the admin module's, and it sat in a learner's
+// shortcut row offering an educator tool to somebody preparing for an exam.
 const LIBRARY = [
   { href: '/notes', icon: '📚', label: { en: 'Notes', hi: 'नोट्स' }, color: '#F97316' },
   { href: '/videos', icon: '🎥', label: { en: 'Videos', hi: 'वीडियो' }, color: '#DB2777' },
   { href: '/practice/pyq', icon: '📜', label: { en: 'Previous year', hi: 'विगत वर्ष' }, color: '#0891B2' },
   { href: '/doubts', icon: '💬', label: { en: 'Doubts', hi: 'शंका' }, color: '#7C3AED' },
   { href: '/current-affairs', icon: '📰', label: { en: 'Affairs', hi: 'समसामयिकी' }, color: '#DC2626' },
-  { href: '/studio', icon: '⬆️', label: { en: 'Upload', hi: 'अपलोड' }, color: '#0D9488' },
 ];
 
 const daysUntil = (iso: string | undefined): number | null => {
@@ -145,8 +148,11 @@ export default function HomePage() {
             {formatDate(new Date().toISOString().slice(0, 10), lang)}
           </span>
         </h1>
+        {/* The exam switcher lives in the header bar, which on the website is
+            already the top-most row on the page. A second one here would be two
+            controls doing one job. This is the way into the exam's own page. */}
         <Link href={`/goal/${exam.slug}`} className="shrink-0 text-[12px] font-bold" style={{ color: accent }}>
-          {exam.shortName} →
+          {exam.emoji} {exam.shortName} →
         </Link>
       </header>
 

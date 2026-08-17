@@ -36,12 +36,13 @@ function GoalSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex max-w-[190px] items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] py-1.5 pr-2 pl-3 text-left transition-colors hover:border-[var(--color-line-strong)]"
+        title={lang === 'hi' ? 'लक्ष्य परीक्षा बदलें' : 'Change your goal exam'}
+        className="flex max-w-[190px] items-center gap-2 rounded-full border-2 border-[var(--color-brand)]/35 bg-[var(--color-brand-light)] py-1.5 pr-2 pl-3 text-left transition-colors hover:border-[var(--color-brand)]"
       >
         <span className="text-base leading-none">{exam?.emoji ?? '🎯'}</span>
         <span className="min-w-0">
           <span className="block text-[10px] leading-tight font-medium text-[var(--color-faint)]">
-            {lang === 'hi' ? 'लक्ष्य' : 'Goal'}
+            {lang === 'hi' ? 'लक्ष्य बदलें' : 'Change goal'}
           </span>
           {/* A dash read as a broken control. Nobody has a goal until they
               choose one, so the button says what to do about it instead. */}

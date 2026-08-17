@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   isBackendConfigured,
+  isStaff,
   signInWithPassword,
   signOut,
   signUpWithPassword,
@@ -62,8 +63,10 @@ export default function SignInPage() {
         return;
       }
       // The store is subscribed to auth changes and is already fetching the
-      // profile, so there is nothing to hand it here.
-      router.push('/');
+      // profile, so there is nothing to hand it here. Where to land is the one
+      // decision left, and it is the account's role that makes it: an educator
+      // signing in came to publish, not to practise.
+      router.push((await isStaff()) ? '/studio' : '/');
       return;
     }
 
@@ -81,6 +84,8 @@ export default function SignInPage() {
       setPassword('');
       return;
     }
+    // A brand-new account is a learner until somebody gives it a role, so a
+    // sign-up always lands in the student module.
     router.push('/');
   };
 

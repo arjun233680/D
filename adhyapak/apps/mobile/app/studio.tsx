@@ -13,6 +13,8 @@ import {
   type Video,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useStudioAccess } from '@/lib/useStudioAccess';
+import { StudioGate } from '@/components/StudioGate';
 import { Badge, Button, s } from '@/components/ui';
 
 type Mode = 'video' | 'note';
@@ -23,6 +25,7 @@ type Mode = 'video' | 'note';
  * immediately and swaps to a CDN URL the day storage is wired up.
  */
 export default function StudioScreen() {
+  const { access: studioAccess, loading: checkingAccess } = useStudioAccess();
   const { lang, user, addVideo, addNote, uploadedVideos, uploadedNotes } = useStore();
   const [mode, setMode] = useState<Mode>('video');
   const [titleEn, setTitleEn] = useState('');
@@ -106,7 +109,12 @@ export default function StudioScreen() {
     fontSize: theme.font.base,
   } as const;
 
+  // The Studio is the admin module: uploading and importing are staff acts, and
+  // the database says so — `commit_import_batch` raises for a non-staff caller.
+  // This screen had no check at all, so the form rendered for anybody who
+  // reached it and the refusal arrived only after it was filled in.
   return (
+    <StudioGate access={studioAccess} loading={checkingAccess} lang={lang}>
     <ScrollView style={s.screen} contentContainerStyle={{ padding: theme.space.lg, paddingBottom: 40 }}>
       <Stack.Screen options={{ title: t(UI.studio, lang) }} />
 
@@ -326,5 +334,6 @@ export default function StudioScreen() {
         </View>
       ) : null}
     </ScrollView>
+    </StudioGate>
   );
 }
