@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -13,6 +14,7 @@ import {
   UI,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { useSession } from '@/lib/session';
 import { Badge, Chip, EmptyState, ProgressBar, SectionHeader, Stat, Touch, s } from '@/components/ui';
 
 export default function ProfileScreen() {
@@ -26,6 +28,20 @@ export default function ProfileScreen() {
   // whether there is a profile row behind them.
   const signedIn = Boolean(user.signedIn && user.id);
   const hi = lang === 'hi';
+  const { signOut } = useSession();
+  const [leaving, setLeaving] = useState(false);
+
+  /**
+   * Ends the session and returns to the door. The store clears the cached
+   * learner on the auth change — including the copy in AsyncStorage, so the
+   * next person to pick up this phone does not inherit somebody else's goal.
+   */
+  const leave = async () => {
+    setLeaving(true);
+    await signOut();
+    setLeaving(false);
+    router.replace('/(auth)/login');
+  };
 
   const best = attempted.length ? Math.max(...attempted.map((r) => r.percentage)) : 0;
   const avgAccuracy = attempted.length
@@ -71,6 +87,28 @@ export default function ProfileScreen() {
                   </Badge>
                   {user.state ? <Badge tone="neutral">{user.state}</Badge> : null}
                 </View>
+                {/* There was no way out of the app at all: `signOut` existed in
+                    the session and no screen ever called it. On a shared phone
+                    that is not a missing convenience, it is a learner unable to
+                    stop being signed in. */}
+                <Pressable
+                  onPress={leave}
+                  disabled={leaving}
+                  style={{
+                    alignSelf: 'flex-start',
+                    marginTop: 12,
+                    borderWidth: 1,
+                    borderColor: theme.color.border,
+                    borderRadius: theme.radius.pill,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    opacity: leaving ? 0.5 : 1,
+                  }}
+                >
+                  <Text style={{ fontSize: theme.font.xs, fontFamily: theme.family.bodySemi, color: theme.color.textMuted }}>
+                    {leaving ? (hi ? 'रुकिए…' : 'Signing out…') : hi ? 'साइन आउट' : 'Sign out'}
+                  </Text>
+                </Pressable>
               </>
             ) : (
               <>

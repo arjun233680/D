@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   BATCHES,
@@ -10,6 +11,7 @@ import {
   getExam,
   getPaper,
   getTest,
+  signOut,
   t,
   UI,
 } from '@adhyapak/core';
@@ -26,6 +28,19 @@ export default function ProfilePage() {
   // A guest is "signed in" to the app in the routing sense without having an
   // account; the id is what says whether there is a profile row behind them.
   const signedIn = Boolean(user.signedIn && user.id);
+  const [leaving, setLeaving] = useState(false);
+
+  /**
+   * Ends the session. The store is subscribed to the auth change and clears the
+   * cached learner itself — including the copy in localStorage, so the next
+   * person to open this browser does not inherit somebody else's goal and
+   * bookmarks.
+   */
+  const leave = async () => {
+    setLeaving(true);
+    await signOut();
+    setLeaving(false);
+  };
 
   const bestPercentage = attempted.length
     ? Math.max(...attempted.map((r) => r.percentage))
@@ -67,6 +82,23 @@ export default function ProfilePage() {
               {user.state ? <Badge tone="neutral">{user.state}</Badge> : null}
             </div>
           </div>
+          {/* Signing out lived only on the sign-in page, which meant somebody
+              already signed in had to open a page that invites them to sign in
+              before they could leave. It belongs where the identity is. */}
+          <button
+            type="button"
+            onClick={leave}
+            disabled={leaving}
+            className="ml-auto shrink-0 self-start rounded-full border border-[var(--color-line)] px-3.5 py-2 text-[12px] font-bold text-[var(--color-muted)] transition-colors hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] disabled:opacity-50"
+          >
+            {leaving
+              ? lang === 'hi'
+                ? 'रुकिए…'
+                : 'Signing out…'
+              : lang === 'hi'
+                ? 'साइन आउट'
+                : 'Sign out'}
+          </button>
         </header>
       ) : (
         <header className="card flex flex-wrap items-center gap-4 p-5">

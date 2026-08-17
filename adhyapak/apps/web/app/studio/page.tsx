@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  signOut,
   EXAMS,
   SUBJECTS,
   t,
@@ -436,15 +437,20 @@ function StudioIdentity({ lang }: { lang: 'en' | 'hi' }) {
   return (
     <div className="card flex flex-wrap items-center justify-between gap-2 px-4 py-3">
       <span className="text-[13px] text-[var(--color-muted)]">{label}</span>
-      {access.kind !== 'no-backend' ? (
+      {/* Staff land here after signing in, so leaving has to be possible from
+          here too — sending an educator to the learner's profile page to sign
+          out is sending them into the other module. */}
+      {access.kind === 'staff' ? (
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="text-[13px] font-bold text-[var(--color-muted)] transition-colors hover:text-[var(--color-danger)]"
+        >
+          {hi ? 'साइन आउट' : 'Sign out'}
+        </button>
+      ) : access.kind !== 'no-backend' ? (
         <Link href="/studio/sign-in" className="text-[13px] font-bold text-[var(--color-brand)]">
-          {access.kind === 'staff'
-            ? hi
-              ? 'खाता बदलें'
-              : 'Switch account'
-            : hi
-              ? 'साइन इन'
-              : 'Sign in'}
+          {hi ? 'साइन इन' : 'Sign in'}
         </Link>
       ) : null}
     </div>

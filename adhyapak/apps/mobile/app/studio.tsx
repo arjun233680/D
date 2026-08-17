@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import {
+  signOut as signOutRemote,
   EXAMS,
   SUBJECTS,
   t,
@@ -117,6 +118,29 @@ export default function StudioScreen() {
     <StudioGate access={studioAccess} loading={checkingAccess} lang={lang}>
     <ScrollView style={s.screen} contentContainerStyle={{ padding: theme.space.lg, paddingBottom: 40 }}>
       <Stack.Screen options={{ title: t(UI.studio, lang) }} />
+
+      {/* Staff land here after signing in, so leaving has to be possible from
+          here too — sending an educator to the learner's profile tab to sign
+          out is sending them into the other module. */}
+      <View style={[s.row, { justifyContent: 'space-between', marginBottom: theme.space.md }]}>
+        <Text style={s.faint} numberOfLines={1}>
+          {studioAccess?.kind === 'staff' && studioAccess.email ? studioAccess.email : ''}
+        </Text>
+        <Pressable
+          onPress={() => void signOutRemote()}
+          style={{
+            borderWidth: 1,
+            borderColor: theme.color.border,
+            borderRadius: theme.radius.pill,
+            paddingHorizontal: 13,
+            paddingVertical: 7,
+          }}
+        >
+          <Text style={{ fontSize: theme.font.xs, fontFamily: theme.family.bodySemi, color: theme.color.textMuted }}>
+            {lang === 'hi' ? 'साइन आउट' : 'Sign out'}
+          </Text>
+        </Pressable>
+      </View>
 
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {(['video', 'note'] as Mode[]).map((m) => (
