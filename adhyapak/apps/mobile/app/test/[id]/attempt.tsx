@@ -1,17 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   createAttemptSync,
   getQuestion,
   getTest,
+  revealsDuringPaper,
   testQuestionIds,
+  type SolutionMode,
   type Question,
   type TestAttempt,
   type TestResult,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { TestPlayer } from '@/components/TestPlayer';
+import { TestInstructions } from '@/components/TestInstructions';
 import { s } from '@/components/ui';
 
 /**
@@ -40,6 +43,13 @@ export default function AttemptScreen() {
   // Recreating it — which switching language mid-paper does — is safe on
   // purpose. `startAttempt` resumes the unsubmitted attempt rather than opening
   // a second one, so the worst case is that every answer so far is sent again.
+  /**
+   * Null until the candidate has read the instructions and chosen how to sit
+   * the paper. The clock does not start before that — a timer running behind an
+   * instructions page takes time from somebody who was still reading.
+   */
+  const [mode, setMode] = useState<SolutionMode | null>(null);
+
   const sync = useRef<ReturnType<typeof createAttemptSync> | null>(null);
 
   useEffect(() => {
@@ -96,6 +106,8 @@ export default function AttemptScreen() {
     );
   }
 
+  if (!mode) return <TestInstructions test={test} onStart={setMode} />;
+
   return (
     <TestPlayer
       test={test}
@@ -103,6 +115,9 @@ export default function AttemptScreen() {
       resume={attempts[test.id]}
       onAttemptChange={onAttemptChange}
       onSubmit={onSubmit}
+      // The candidate's own choice, made before the clock started. `exam`
+      // withholds the answer and the explanation until the paper is submitted.
+      instantFeedback={revealsDuringPaper(mode)}
     />
   );
 }

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import {
   matchesSolutionFilter,
   pyqTestFromQuestions,
+  revealsDuringPaper,
   solutionFilterOptions,
   solutionOutcome,
   t,
@@ -11,11 +12,13 @@ import {
   UI,
   type Question,
   type SolutionFilter,
+  type SolutionMode,
   type TestAttempt,
   type TestResult,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { TestPlayer } from '@/components/TestPlayer';
+import { TestInstructions } from '@/components/TestInstructions';
 import { QuestionSolution } from '@/components/QuestionSolution';
 import { SolutionFilterChips } from '@/components/SolutionFilterChips';
 import { Button, EmptyState, s, Stat } from '@/components/ui';
@@ -37,6 +40,7 @@ export function PracticeSession({
   title,
   examId = '',
   empty,
+  chooseMode = false,
 }: {
   questions: Question[];
   title: string;
@@ -49,11 +53,22 @@ export function PracticeSession({
    * act on.
    */
   empty?: { title: string; body: string };
+  /**
+   * Ask how the set should be sat before starting it.
+   *
+   * On for a previous-year paper, which is a paper and deserves the same choice
+   * a mock gets. Off for a subject or topic drill, where instant marking is the
+   * whole point of the exercise and an instructions page in front of fifteen
+   * questions is a toll booth.
+   */
+  chooseMode?: boolean;
 }) {
   const { lang, markActiveToday } = useStore();
   const hi = lang === 'hi';
   const [done, setDone] = useState<{ result: TestResult; attempt: TestAttempt } | null>(null);
   const [filter, setFilter] = useState<SolutionFilter>('all');
+  // Null only while the choice is still to be made; a drill never asks.
+  const [mode, setMode] = useState<SolutionMode | null>(chooseMode ? null : 'guided');
   // Set when the learner steps back into the paper from the result, so the
   // window reopens on their own answers rather than on a blank sheet.
   const [resume, setResume] = useState<TestAttempt | undefined>(undefined);
@@ -90,6 +105,8 @@ export function PracticeSession({
     );
   }
 
+  if (!mode) return <TestInstructions test={test} onStart={setMode} />;
+
   if (!done) {
     return (
       <TestPlayer
@@ -97,7 +114,7 @@ export function PracticeSession({
         questions={questions}
         resume={resume}
         onSubmit={onSubmit}
-        instantFeedback
+        instantFeedback={revealsDuringPaper(mode)}
       />
     );
   }

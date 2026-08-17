@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { formatDate, timeAgo } from '../src/index.ts';
+import { formatDate, revealsDuringPaper, testBriefing, timeAgo } from '../src/index.ts';
 
 /**
  * Dates have to read the same everywhere they are rendered.
@@ -120,5 +120,45 @@ describe('nothing formats a date from the platform’s locale data', () => {
 
   it('is looking at real files', () => {
     assert.ok([...sourceFiles(join(ROOT, 'apps'))].length > 40, 'the walk found the sources');
+  });
+});
+
+describe('the briefing reads the paper, never a screen', () => {
+  /**
+   * The instructions page is where a wrong number costs the most: somebody
+   * plans two and a half hours around it. Every figure is therefore derived
+   * from the test, and both apps read the same one.
+   */
+  const paper = {
+    id: 't', title: { en: 'T', hi: 'T' }, examId: 'htet', type: 'mock' as const,
+    durationMinutes: 150, marksPerQuestion: 1, negativeMarking: 0,
+    access: 'free' as const, instructions: [],
+    sections: [
+      { id: 's1', name: { en: 'CDP', hi: 'सीडीपी' }, subjectId: 'cdp', questionIds: ['a', 'b', 'c'] },
+      { id: 's2', name: { en: 'Language', hi: 'भाषा' }, subjectId: 'hindi', questionIds: ['d', 'e'] },
+    ],
+  };
+
+  it('counts the questions and marks off the sections', () => {
+    const b = testBriefing(paper);
+    assert.equal(b.questionCount, 5);
+    assert.equal(b.maxMarks, 5);
+    assert.equal(b.durationMinutes, 150);
+    assert.deepEqual(
+      b.sections.map((s) => [s.name.en, s.questionCount]),
+      [['CDP', 3], ['Language', 2]],
+    );
+  });
+
+  it('multiplies by the marks the paper actually carries', () => {
+    // A paper worth 2 a question is 10 marks, not 5 — the figure a candidate
+    // divides their target by.
+    assert.equal(testBriefing({ ...paper, marksPerQuestion: 2 }).maxMarks, 10);
+  });
+
+  it('keeps the two solution modes apart', () => {
+    // The whole point of the choice: only one of them shows anything mid-paper.
+    assert.equal(revealsDuringPaper('guided'), true);
+    assert.equal(revealsDuringPaper('exam'), false);
   });
 });

@@ -1,8 +1,10 @@
 'use client';
 
-import { Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
+  revealsDuringPaper,
+  type SolutionMode,
   countQuestions,
   isBackendConfigured,
   listQuestions,
@@ -23,6 +25,7 @@ import {
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { TestPlayer } from '@/components/TestPlayer';
+import { TestInstructions } from '@/components/TestInstructions';
 import { AsyncSection, Skeleton } from '@/components/ui';
 
 /**
@@ -66,6 +69,8 @@ function PyqAttempt() {
 
   // "Back to questions" from the result comes back here with ?review=1.
   const review = params.get('review') === '1';
+  // Null until the candidate has read the instructions and chosen a mode.
+  const [mode, setMode] = useState<SolutionMode | null>(null);
   const saved = attempts[pyqTestId(selection)];
 
   const total = useAsync(() => countQuestions(model.filter), [filterKey]);
@@ -138,17 +143,24 @@ function PyqAttempt() {
       >
         {() =>
           test ? (
-            <TestPlayer
-              test={test}
-              questions={questions.data ?? []}
-              // Reopened from the result: the window refuses a paper it counts
-              // as finished, so the submission stamp is cleared to walk it again.
-              resume={
-                review && saved ? { ...saved, submittedAt: undefined } : undefined
-              }
-              onSubmit={onSubmit}
-              instantFeedback
-            />
+            // Walking your own submitted paper again is review, not a sitting:
+            // the answers are already known, so it skips the instructions and
+            // shows everything. A fresh sitting asks how it should be sat.
+            !review && !mode ? (
+              <TestInstructions test={test} onStart={setMode} />
+            ) : (
+              <TestPlayer
+                test={test}
+                questions={questions.data ?? []}
+                // Reopened from the result: the window refuses a paper it counts
+                // as finished, so the submission stamp is cleared to walk it again.
+                resume={
+                  review && saved ? { ...saved, submittedAt: undefined } : undefined
+                }
+                onSubmit={onSubmit}
+                instantFeedback={review || revealsDuringPaper(mode ?? 'exam')}
+              />
+            )
           ) : null
         }
       </AsyncSection>

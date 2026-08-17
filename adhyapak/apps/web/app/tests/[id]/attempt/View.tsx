@@ -1,18 +1,21 @@
 'use client';
 
-import { use, useCallback, useEffect, useMemo, useRef } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { notFound, useRouter } from 'next/navigation';
 import {
   createAttemptSync,
   getQuestion,
   getTest,
+  revealsDuringPaper,
   testQuestionIds,
+  type SolutionMode,
   type Question,
   type TestAttempt,
   type TestResult,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { TestPlayer } from '@/components/TestPlayer';
+import { TestInstructions } from '@/components/TestInstructions';
 
 /**
  * A seeded mock, sat.
@@ -35,6 +38,12 @@ export default function AttemptPage({ params }: { params: Promise<{ id: string }
   const { attempts, lang, saveAttempt, saveResult, markActiveToday } = useStore();
 
   const test = getTest(id);
+  /**
+   * Null until the candidate has read the instructions and chosen how to sit
+   * the paper. The clock does not start before that — a timer running behind an
+   * instructions page is time taken from somebody who was still reading.
+   */
+  const [mode, setMode] = useState<SolutionMode | null>(null);
 
   // Built in an effect rather than during render: a ref must not be written
   // while rendering, and this one is read from callbacks only.
@@ -93,6 +102,8 @@ export default function AttemptPage({ params }: { params: Promise<{ id: string }
 
   if (!test) notFound();
 
+  if (!mode) return <TestInstructions test={test} onStart={setMode} />;
+
   return (
     <TestPlayer
       test={test}
@@ -100,6 +111,9 @@ export default function AttemptPage({ params }: { params: Promise<{ id: string }
       resume={attempts[test.id]}
       onAttemptChange={onAttemptChange}
       onSubmit={onSubmit}
+      // The candidate's own choice, made before the clock started. `exam`
+      // withholds the answer and the explanation until the paper is submitted.
+      instantFeedback={revealsDuringPaper(mode)}
     />
   );
 }

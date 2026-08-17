@@ -87,7 +87,11 @@ export default function PyqAttemptScreen() {
             body: hi ? reason.hi : reason.en,
           }}
         >
-          {(list) => <PracticeSession questions={list} title={subtitle} examId={selection.examId} />}
+          {(list) => (
+            /* A previous-year paper is a paper: it gets the same choice a mock
+               gets, rather than revealing the key as you go. */
+            <PracticeSession questions={list} title={subtitle} examId={selection.examId} chooseMode />
+          )}
         </AsyncSection>
       </View>
     </View>
