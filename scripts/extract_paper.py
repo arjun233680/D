@@ -30,6 +30,7 @@ from krutidev import convert
 from parse_key import parse_key
 
 COLUMN_SPLIT = 310.0          # page is 595pt wide; the gutter sits near 310
+ROW_TOL = 4.0                 # y0 slop that still counts as "the same row"
 Q_START = re.compile(r"^\s*(\d{1,3})\s*\.\s*")
 OPTION = re.compile(r"\(\s*([1-4])\s*\)")
 HEADER = [
@@ -37,6 +38,8 @@ HEADER = [
     re.compile(r"\[\s*Level\s*[-–]\s*\d\s*/\s*\d{4}\s*\]"),
     re.compile(r"P\.\s*T\.\s*O\.?"),
 ]
+ROUGH_WORK_LABEL = re.compile(
+    r"Rough\s*Work|\[\s*FOR\s*ROUGH\s*WORK\s*\]|रफ\s*कार्य\s*के\s*लिए\s*जगह", re.I)
 
 PART_RANGES = {
     "prt": [(1, 30, "Part I – Child Development & Pedagogy"),
@@ -178,6 +181,13 @@ def page_lines(path: str, hindi_font: str):
                 text = re.sub(r"\s+", " ", text).strip()
                 if not text:
                     continue
+                if ROUGH_WORK_LABEL.search(text):
+                    # Not a dedicated blank page -- this bilingual footer
+                    # note ("रफ कार्य के लिए जगह / Space For Rough Work" /
+                    # "[FOR ROUGH WORK]") is printed on every content page
+                    # right below the real questions, so only this one line
+                    # is dropped, never the whole page.
+                    continue
                 rows.append([lang, 0 if line.x0 < gutter else 1, line.y0, line.x0, text])
 
         # Decide per page whether the two columns are a translation pair or the
@@ -201,10 +211,28 @@ def page_lines(path: str, hindi_font: str):
             for r in rows:
                 r[0] = only
 
-        # read column 0 fully, then column 1 - correct for both layouts
-        rows.sort(key=lambda r: (r[1], -r[2], r[3]))
-        for lang, col, y, _x, text in rows:
-            yield pno, lang, col, y, text
+        # read column 0 fully, then column 1 - correct for both layouts.
+        # A run split across fonts/sizes (e.g. a stacked fraction's
+        # numerator/denominator, or a Hindi clause with an English word
+        # stapled on) can come back from pdfminer as separate LTTextLine
+        # objects on the same visual row but with slightly different y0
+        # baselines (a point or two apart) -- a strict -y0 sort treats that
+        # as two different rows and can emit the second fragment before the
+        # first, or interleave it with an unrelated nearby option. Cluster
+        # lines whose y0 is within ROW_TOL into one row first, then order
+        # strictly by x0 (reading order) within the row; genuinely different
+        # rows in this layout are always many points apart.
+        for col in (0, 1):
+            col_rows = sorted((r for r in rows if r[1] == col), key=lambda r: -r[2])
+            clusters: list[list] = []
+            for r in col_rows:
+                if clusters and abs(clusters[-1][0][2] - r[2]) <= ROW_TOL:
+                    clusters[-1].append(r)
+                else:
+                    clusters.append([r])
+            for cluster in clusters:
+                for lang, c, y, _x, text in sorted(cluster, key=lambda r: r[3]):
+                    yield pno, lang, c, y, text
 
 
 def split_questions(stream, lo: int, hi: int) -> dict[int, dict[str, str]]:

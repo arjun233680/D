@@ -25,7 +25,12 @@ import sys
 from pypdf import PdfReader
 
 SET_RE = re.compile(r"Set\s*[:\-]?\s*([A-D])", re.I)
-LINE_RE = re.compile(r"(?m)^\s*(\d{3})\s+(.+?)\s*$")
+# Keys are laid out in several 30-row columns per page. Text extraction runs
+# rows left-to-right, so the last row of one column is glued directly against
+# the "QN. Ans." header of the next column with no separator, e.g.
+# "030 3QN. Ans. \n031 3". Match only a valid answer token right after the
+# question number so that trailing garbage like "QN. Ans." is never captured.
+LINE_RE = re.compile(r"(?m)^\s*(\d{3})\s+(\d\s*&\s*\d|\d|\*)")
 
 
 def parse_key(path: str, want_set: str = "A") -> dict[int, tuple[str | None, str]]:
