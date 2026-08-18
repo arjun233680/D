@@ -8,6 +8,7 @@ import {
   formatCount,
   getExam,
   getPaper,
+  getSubject,
   getTest,
   t,
   theme,
@@ -55,274 +56,225 @@ export default function ProfileScreen() {
     return { key, active: user.activeDates.includes(key) };
   });
 
+  const subject = user.electiveSubjectId ? getSubject(user.electiveSubjectId) : undefined;
+
+  const Divider = () => (
+    <View style={{ height: 1, backgroundColor: theme.color.border, marginHorizontal: theme.space.lg }} />
+  );
+
   return (
-    <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
-      <View style={{ padding: theme.space.lg }}>
-        {/* Signed out there is no name and no email, and rendering the card
-            anyway put an avatar beside an empty heading and an empty line —
-            which reads as a screen that failed to load rather than as a learner
-            without an account. The settings below are still theirs, so the
-            screen stays; only this block knows the difference. */}
-        <View style={[s.card, s.row, { padding: theme.space.lg, gap: theme.space.lg }]}>
-          <View
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: signedIn ? theme.color.ink : theme.color.surfaceAlt,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 28 }}>{signedIn ? user.avatar : '🧑‍🎓'}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            {signedIn ? (
-              <>
-                <Text style={s.h1}>{user.name || (hi ? 'शिक्षार्थी' : 'Learner')}</Text>
-                {user.email ? <Text style={s.faint}>{user.email}</Text> : null}
-                <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                  <Badge tone="brand">
-                    {user.subscription === 'free' ? t(UI.free, lang) : user.subscription}
-                  </Badge>
-                  {user.state ? <Badge tone="neutral">{user.state}</Badge> : null}
-                </View>
-                {/* There was no way out of the app at all: `signOut` existed in
-                    the session and no screen ever called it. On a shared phone
-                    that is not a missing convenience, it is a learner unable to
-                    stop being signed in. */}
-                <Pressable
-                  onPress={leave}
-                  disabled={leaving}
-                  style={{
-                    alignSelf: 'flex-start',
-                    marginTop: 12,
-                    borderWidth: 1,
-                    borderColor: theme.color.border,
-                    borderRadius: theme.radius.pill,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    opacity: leaving ? 0.5 : 1,
-                  }}
-                >
-                  <Text style={{ fontSize: theme.font.xs, fontFamily: theme.family.bodySemi, color: theme.color.textMuted }}>
-                    {leaving ? (hi ? 'रुकिए…' : 'Signing out…') : hi ? 'साइन आउट' : 'Sign out'}
-                  </Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text style={s.h1}>{hi ? 'आप साइन इन नहीं हैं' : 'Not signed in'}</Text>
-                <Text style={[s.faint, { marginTop: 2 }]}>
-                  {hi
-                    ? 'नीचे की सेटिंग्स इसी फ़ोन में सहेजी जाती हैं। साइन इन करने पर लक्ष्य, बुकमार्क और प्रगति हर डिवाइस पर साथ चलते हैं।'
-                    : 'The settings below are saved on this phone. Signing in carries your goal, bookmarks and progress to every device.'}
-                </Text>
-                <Pressable
-                  onPress={() => router.push('/(auth)/login')}
-                  style={{
-                    alignSelf: 'flex-start',
-                    marginTop: 10,
-                    backgroundColor: theme.color.primary,
-                    borderRadius: theme.radius.pill,
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
-                    {hi ? 'साइन इन' : 'Sign in'}
-                  </Text>
-                </Pressable>
-              </>
-            )}
-          </View>
+    /*
+     * Flat surfaces and hairline rules rather than a stack of bordered cards.
+     * This is a settings screen with a little history on it, and boxing every
+     * block made them all look equally important — the goal, which decides what
+     * the whole app shows, read the same as the language toggle.
+     *
+     * Order is identity, goal, activity, library, settings: who you are, what
+     * you are working towards, how it is going, what you saved, and the
+     * controls last because they are used least.
+     */
+    <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 40 }}>
+      {/* ---------------------------------------------------------- identity */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.space.lg,
+          padding: theme.space.lg,
+          paddingTop: theme.space.xl,
+          paddingBottom: theme.space.xl,
+        }}
+      >
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: theme.color.surfaceAlt,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 26 }}>{user.avatar || '🧑‍🎓'}</Text>
         </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: theme.space.lg }}>
-        <Stat
-          label={lang === 'hi' ? 'श्रृंखला' : 'Streak'}
-          value={`🔥 ${streak}`}
-          color={theme.color.primary}
-        />
-        <Stat
-          label={lang === 'hi' ? 'टेस्ट' : 'Tests'}
-          value={String(attempted.length)}
-          color={theme.color.accent}
-        />
-        <Stat
-          label={lang === 'hi' ? 'सर्वश्रेष्ठ' : 'Best'}
-          value={`${best}%`}
-          color={theme.color.success}
-        />
-        <Stat label={lang === 'hi' ? 'शुद्धता' : 'Accuracy'} value={`${avgAccuracy}%`} />
-      </View>
-
-      <View style={{ padding: theme.space.lg }}>
-        <View style={[s.card, { padding: theme.space.lg }]}>
-          <Text style={s.h2}>{lang === 'hi' ? 'पिछले 28 दिन' : 'Last 28 days'}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 12 }}>
-            {days.map((d) => (
-              <View
-                key={d.key}
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 4,
-                  backgroundColor: d.active ? theme.color.primary : theme.color.border,
-                }}
-              />
-            ))}
-          </View>
-          <Text style={[s.faint, { marginTop: 8 }]}>
-            {lang === 'hi'
-              ? 'हर हरा वर्ग वह दिन है जब आपने अभ्यास किया।'
-              : 'Each green square is a day you practised.'}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={s.h1} numberOfLines={1}>
+            {signedIn
+              ? user.name || (hi ? 'शिक्षार्थी' : 'Learner')
+              : hi
+                ? 'आप साइन इन नहीं हैं'
+                : 'Not signed in'}
+          </Text>
+          <Text style={[s.faint, { marginTop: 2 }]} numberOfLines={1}>
+            {signedIn
+              ? user.email || (hi ? 'खाता सक्रिय' : 'Account active')
+              : hi
+                ? 'सेटिंग्स इसी फ़ोन में सहेजी जाती हैं।'
+                : 'Settings are saved on this phone only.'}
           </Text>
         </View>
-      </View>
-
-      <View style={{ paddingHorizontal: theme.space.lg }}>
-        <View style={[s.card, { padding: theme.space.lg }]}>
-          <Text style={s.h2}>{lang === 'hi' ? 'आपका लक्ष्य' : 'Your goal'}</Text>
-          <View style={[s.row, { gap: theme.space.md, marginTop: 12 }]}>
-            <Text style={{ fontSize: 28 }}>{exam?.emoji}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: theme.font.base, fontWeight: '700' }}>
-                {exam ? t(exam.name, lang) : '—'}
-              </Text>
-              {paper ? <Text style={s.faint}>{t(paper.name, lang)}</Text> : null}
-            </View>
-          </View>
-
-          {exam && exam.papers.length > 1 ? (
-            <View style={{ marginTop: 12 }}>
-              <Text style={[s.faint, { marginBottom: 6, fontWeight: '700' }]}>
-                {lang === 'hi' ? 'पेपर बदलें' : 'Change paper'}
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {exam.papers.map((p) => (
-                  <Chip
-                    key={p.id}
-                    label={t(p.name, lang)}
-                    active={user.targetPaperId === p.id}
-                    onPress={() => setGoal(exam.id, p.id)}
-                  />
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          {/*
-            One button into the real picker, not a second copy of it.
-            This used to be a row of exam chips calling
-            `setGoal(e.id, e.papers[0]?.id)` — which skipped the paper question
-            and the subject question and answered both by guessing. Switching to
-            HTET picked Level 1 for a PGT candidate and left their elective
-            pointing at a subject Level 1 does not teach.
-          */}
+        {signedIn ? null : (
           <Pressable
-            onPress={() => router.push('/(auth)/goal')}
-            style={{ marginTop: 12 }}
+            onPress={() => router.push('/(auth)/login')}
+            style={{
+              backgroundColor: theme.color.primary,
+              borderRadius: theme.radius.pill,
+              paddingHorizontal: theme.space.lg,
+              paddingVertical: 9,
+            }}
           >
-            <Text style={[s.faint, { fontWeight: '700' }]}>{t(UI.changeGoal, lang)}</Text>
-            <Text style={[s.h2, { marginTop: 2 }]}>
-              {exam ? t(exam.name, lang) : lang === 'hi' ? 'कोई लक्ष्य नहीं' : 'No goal set'}{' '}
-              <Text style={{ color: theme.color.textMuted }}>›</Text>
+            <Text style={{ color: '#fff', fontSize: theme.font.sm, fontFamily: theme.family.display }}>
+              {hi ? 'साइन इन' : 'Sign in'}
             </Text>
           </Pressable>
-        </View>
+        )}
       </View>
 
+      {/* -------------------------------------------------------------- goal */}
+      {/*
+        One row into the picker, not chips for the exam and more chips for the
+        paper. Those called `setGoal` with a paper and no subject, so switching
+        to TGT here cleared the elective and offered nowhere to set it — the
+        goal came out half-answered from the one screen meant to show it.
+      */}
+      <Pressable
+        onPress={() => router.push('/(auth)/goal')}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.space.lg,
+          paddingHorizontal: theme.space.lg,
+          paddingVertical: theme.space.lg,
+        }}
+      >
+        <Text style={{ fontSize: 30 }}>{exam?.emoji ?? '🎯'}</Text>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[s.faint, { fontFamily: theme.family.bodySemi, letterSpacing: 0.6 }]}>{hi ? 'आपका लक्ष्य' : 'Your goal'}</Text>
+          <Text style={[s.h2, { marginTop: 2 }]} numberOfLines={1}>
+            {exam ? t(exam.name, lang) : hi ? 'कोई लक्ष्य नहीं चुना' : 'No goal chosen'}
+          </Text>
+          <Text style={s.faint} numberOfLines={1}>
+            {[paper ? t(paper.name, lang) : null, subject ? t(subject.name, lang) : null]
+              .filter(Boolean)
+              .join('  ·  ') || (hi ? 'चुनने के लिए टैप करें' : 'Tap to choose')}
+          </Text>
+        </View>
+        <Text style={{ color: theme.color.textMuted, fontSize: theme.font.md }}>›</Text>
+      </Pressable>
+
+      {/* ---------------------------------------------------------- activity */}
+      <Divider />
       <View style={{ padding: theme.space.lg }}>
-        <View style={[s.card, { padding: theme.space.lg }]}>
-          <Text style={s.h2}>{lang === 'hi' ? 'भाषा' : 'Language'}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-            {(['hi', 'en'] as const).map((l) => (
-              <Pressable
-                key={l}
-                onPress={() => setLang(l)}
+        <View style={{ flexDirection: 'row' }}>
+          {[
+            { label: hi ? 'श्रृंखला' : 'Streak', value: `🔥 ${streak}` },
+            { label: hi ? 'टेस्ट' : 'Tests', value: String(attempted.length) },
+            { label: hi ? 'सर्वश्रेष्ठ' : 'Best', value: `${best}%` },
+            { label: hi ? 'शुद्धता' : 'Accuracy', value: `${avgAccuracy}%` },
+          ].map((stat) => (
+            <View key={stat.label} style={{ flex: 1 }}>
+              <Text style={[s.h2, { fontVariant: ['tabular-nums'] }]}>{stat.value}</Text>
+              <Text style={s.faint}>{stat.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, marginTop: theme.space.xl }}>
+          {days.map((d) => (
+            <View
+              key={d.key}
+              style={{
+                width: `${100 / 14 - 2}%`,
+                aspectRatio: 1,
+                borderRadius: 3,
+                backgroundColor: d.active ? theme.color.primary : theme.color.border,
+              }}
+            />
+          ))}
+        </View>
+        <Text style={[s.faint, { marginTop: theme.space.sm }]}>
+          {hi
+            ? 'पिछले 28 दिन — हर हरा वर्ग वह दिन है जब आपने अभ्यास किया।'
+            : 'Last 28 days — each green square is a day you practised.'}
+        </Text>
+      </View>
+
+      {/* ----------------------------------------------------------- library */}
+      <Divider />
+      <View style={{ paddingVertical: theme.space.sm }}>
+        {[
+          { href: '/practice/bookmarks', icon: '🔖', label: hi ? 'बुकमार्क' : 'Bookmarks', count: user.bookmarkedQuestionIds.length },
+          { href: '/notes', icon: '📚', label: hi ? 'सहेजे नोट्स' : 'Saved notes', count: user.savedNoteIds.length },
+          { href: '/(tabs)/batches', icon: '🎥', label: hi ? 'आपके बैच' : 'Your batches', count: enrolled.length },
+          { href: '/(tabs)/tests', icon: '🎯', label: hi ? 'टेस्ट इतिहास' : 'Test history', count: attempted.length },
+        ].map((row) => (
+          <Pressable
+            key={row.href}
+            onPress={() => router.push(row.href as never)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.space.md,
+              paddingHorizontal: theme.space.lg,
+              paddingVertical: 14,
+            }}
+          >
+            <Text style={{ fontSize: 17 }}>{row.icon}</Text>
+            <Text style={[s.body, { flex: 1, fontFamily: theme.family.bodySemi }]}>{row.label}</Text>
+            <Text style={[s.faint, { fontVariant: ['tabular-nums'] }]}>{row.count}</Text>
+            <Text style={{ color: theme.color.textMuted }}>›</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* ---------------------------------------------------------- settings */}
+      <Divider />
+      <View style={{ padding: theme.space.lg }}>
+        <Text style={[s.faint, { fontFamily: theme.family.bodySemi, letterSpacing: 0.6 }]}>{hi ? 'भाषा' : 'Language'}</Text>
+        <View style={{ flexDirection: 'row', gap: theme.space.sm, marginTop: theme.space.md }}>
+          {(['hi', 'en'] as const).map((l) => (
+            <Pressable
+              key={l}
+              onPress={() => setLang(l)}
+              style={{
+                flex: 1,
+                borderRadius: theme.radius.md,
+                paddingVertical: 12,
+                alignItems: 'center',
+                backgroundColor: lang === l ? theme.color.ink : theme.color.surfaceAlt,
+              }}
+            >
+              <Text
                 style={{
-                  flex: 1,
-                  paddingVertical: 11,
-                  borderRadius: theme.radius.md,
-                  alignItems: 'center',
-                  backgroundColor: lang === l ? theme.color.primary : theme.color.surface,
-                  borderWidth: 1,
-                  borderColor: lang === l ? 'transparent' : theme.color.border,
+                  fontSize: theme.font.sm,
+                  fontFamily: theme.family.bodySemi,
+                  color: lang === l ? '#fff' : theme.color.textMuted,
                 }}
               >
-                <Text
-                  style={{
-                    fontWeight: '700',
-                    color: lang === l ? '#fff' : theme.color.textMuted,
-                  }}
-                >
-                  {l === 'hi' ? 'हिंदी' : 'English'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+                {l === 'hi' ? 'हिंदी' : 'English'}
+              </Text>
+            </Pressable>
+          ))}
         </View>
-      </View>
 
-      <SectionHeader title={lang === 'hi' ? 'टेस्ट इतिहास' : 'Test history'} />
-      <View style={{ paddingHorizontal: theme.space.lg, gap: theme.space.sm }}>
-        {attempted.length ? (
-          attempted.map((r) => {
-            const test = getTest(r.testId);
-            return (
-              <Touch key={r.testId} href={`/test/${r.testId}/result`} style={[s.card, { padding: theme.space.lg }]}>
-                  <View style={[s.row, { justifyContent: 'space-between', gap: 8 }]}>
-                    <Text style={{ flex: 1, fontWeight: '700', fontSize: theme.font.sm }} numberOfLines={1}>
-                      {test ? t(test.title, lang) : r.testId}
-                    </Text>
-                    <Badge tone={r.qualified ? 'success' : 'danger'}>
-                      {r.score}/{r.maxScore}
-                    </Badge>
-                  </View>
-                  <View style={{ marginTop: 8 }}>
-                    <ProgressBar
-                      value={r.percentage}
-                      color={r.qualified ? theme.color.success : theme.color.danger}
-                    />
-                  </View>
-                  <Text style={[s.faint, { marginTop: 6 }]}>
-                    {r.rank !== undefined ? `${t(UI.rank, lang)} #${formatCount(r.rank)} · ` : ''}
-                    {t(UI.accuracy, lang)} {r.accuracy}%
-                  </Text>
-                </Touch>
-            );
-          })
-        ) : (
-          <EmptyState
-            icon="🎯"
-            title={lang === 'hi' ? 'अभी कोई टेस्ट नहीं' : 'No tests yet'}
-            body={
-              lang === 'hi'
-                ? 'एक निःशुल्क मॉक से शुरुआत करें।'
-                : 'Start with a free mock test.'
-            }
-          />
-        )}
-      </View>
-
-      <SectionHeader title={lang === 'hi' ? 'आपके बैच' : 'Your batches'} />
-      <View style={{ paddingHorizontal: theme.space.lg, gap: theme.space.sm }}>
-        {enrolled.length ? (
-          enrolled.map((b) => (
-            <Touch key={b.id} href={`/batch/${b.id}`} style={[s.card, { padding: theme.space.lg }]}>
-                <Text style={{ fontWeight: '700', fontSize: theme.font.sm }}>{t(b.title, lang)}</Text>
-                <Text style={[s.faint, { marginTop: 3 }]}>{t(b.schedule, lang)}</Text>
-              </Touch>
-          ))
-        ) : (
-          <EmptyState
-            icon="🎥"
-            title={lang === 'hi' ? 'कोई बैच नहीं' : 'No batches yet'}
-            body={lang === 'hi' ? 'निःशुल्क बैच में शामिल हों।' : 'Join a free batch.'}
-          />
-        )}
+        {signedIn ? (
+          <Pressable
+            onPress={leave}
+            disabled={leaving}
+            style={{ marginTop: theme.space.xl, paddingVertical: 13, alignItems: 'center' }}
+          >
+            <Text
+              style={{
+                fontSize: theme.font.sm,
+                fontFamily: theme.family.bodySemi,
+                color: theme.color.danger,
+                opacity: leaving ? 0.5 : 1,
+              }}
+            >
+              {leaving ? (hi ? 'रुकिए…' : 'Signing out…') : hi ? 'साइन आउट' : 'Sign out'}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </ScrollView>
   );

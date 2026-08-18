@@ -150,7 +150,11 @@ describe('the selection becomes a repository filter', () => {
 describe('defaults come from the learner’s profile', () => {
   it('starts on the goal exam and target paper', () => {
     const selection = defaultPyqSelection({ goalExamId: 'htet', targetPaperId: 'htet-l2' });
-    assert.deepEqual(selection, { examId: 'htet', paperId: 'htet-l2' });
+    assert.deepEqual(selection, {
+      examId: 'htet',
+      paperId: 'htet-l2',
+      electiveSubjectId: undefined,
+    });
   });
 
   it('falls back to the first paper when none is targeted', () => {
@@ -179,6 +183,8 @@ describe('the URL and the profile combine', () => {
       paperId: 'ctet-p1',
       subjectId: undefined,
       year: undefined,
+      topicId: undefined,
+      electiveSubjectId: undefined,
     });
     assert.ok(pyqFilterModel(resolvePyqSelection(fromUrl(''), learner)).papers.length > 1);
   });
@@ -196,6 +202,8 @@ describe('the URL and the profile combine', () => {
       paperId: 'htet-l1',
       subjectId: 'cdp',
       year: undefined,
+      topicId: undefined,
+      electiveSubjectId: undefined,
     });
   });
 

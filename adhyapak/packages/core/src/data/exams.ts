@@ -53,9 +53,12 @@ export const EXAMS: Exam[] = [
     papers: [
       {
         id: 'ctet-p1',
-        name: { en: 'Paper 1 — Classes 1 to 5 (PRT)', hi: 'पेपर 1 — कक्षा 1 से 5 (PRT)' },
+        // Roman numerals: CBSE numbers CTET's papers that way in its own
+        // notification, and a candidate searching for "Paper II" should find
+        // the paper they sat spelt the way the board spelt it.
+        name: { en: 'Paper I — Classes 1 to 5 (PRT)', hi: 'पेपर I — कक्षा 1 से 5 (PRT)' },
         level: 'primary',
-        post: 'Paper 1',
+        post: 'Paper I',
         marksPerQuestion: 1,
         negativeMarking: 0,
         durationMinutes: 150,
@@ -72,9 +75,9 @@ export const EXAMS: Exam[] = [
       },
       {
         id: 'ctet-p2',
-        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
+        name: { en: 'Paper II — Classes 6 to 8', hi: 'पेपर II — कक्षा 6 से 8' },
         level: 'upper-primary',
-        post: 'Paper 2',
+        post: 'Paper II',
         marksPerQuestion: 1,
         negativeMarking: 0,
         durationMinutes: 150,
@@ -84,7 +87,7 @@ export const EXAMS: Exam[] = [
         electives: [
           {
             id: 'ctet-p2-elective',
-            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            name: { en: 'Paper II subject', hi: 'पेपर II विषय' },
             // Two choices, not three: a candidate takes mathematics and
             // science together or social studies, never one half of the first.
             choices: ['maths-science', 'sst'],

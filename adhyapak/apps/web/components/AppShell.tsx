@@ -27,72 +27,34 @@ function isActive(pathname: string, href: string) {
 }
 
 function GoalSwitcher() {
-  const { user, lang, setGoal } = useStore();
-  const [open, setOpen] = useState(false);
+  const { user, lang } = useStore();
   const exam = getExam(user.goalExamId);
 
+  /*
+   * A way into the picker, not a third copy of it.
+   *
+   * This was a dropdown of exams calling `setGoal(e.id, e.papers[0]?.id)` — the
+   * same guess the profile pages were making. It answered the paper question
+   * itself and never asked which subject, so switching to HTET picked Level 1
+   * for a PGT candidate and left their elective on a subject Level 1 does not
+   * teach. The picker on the home page asks all three.
+   */
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        title={lang === 'hi' ? 'लक्ष्य परीक्षा बदलें' : 'Change your goal exam'}
-        className="flex max-w-[190px] items-center gap-2 rounded-full border-2 border-[var(--color-brand)]/35 bg-[var(--color-brand-light)] py-1.5 pr-2 pl-3 text-left transition-colors hover:border-[var(--color-brand)]"
-      >
-        <span className="text-base leading-none">{exam?.emoji ?? '🎯'}</span>
-        <span className="min-w-0">
-          <span className="block text-[10px] leading-tight font-medium text-[var(--color-faint)]">
-            {lang === 'hi' ? 'लक्ष्य बदलें' : 'Change goal'}
-          </span>
-          {/* A dash read as a broken control. Nobody has a goal until they
-              choose one, so the button says what to do about it instead. */}
-          <span className="block truncate text-[13px] leading-tight font-bold">
-            {exam?.shortName ?? (lang === 'hi' ? 'चुनें' : 'Choose')}
-          </span>
+    <Link
+      href="/"
+      title={lang === 'hi' ? 'लक्ष्य परीक्षा बदलें' : 'Change your goal exam'}
+      className="flex max-w-[190px] items-center gap-2 rounded-full border-2 border-[var(--color-brand)]/35 bg-[var(--color-brand-light)] px-3 py-1.5 text-left transition-colors hover:border-[var(--color-brand)]"
+    >
+      <span className="text-base leading-none">🎯</span>
+      <span className="min-w-0">
+        <span className="block text-[10px] leading-tight font-medium text-[var(--color-faint)]">
+          {lang === 'hi' ? 'लक्ष्य बदलें' : 'Change goal'}
         </span>
-        <span className="text-[10px] text-[var(--color-faint)]">▼</span>
-      </button>
-
-      {open ? (
-        <>
-          <button
-            type="button"
-            aria-label={lang === 'hi' ? 'बंद करें' : 'Close'}
-            className="fixed inset-0 z-40 cursor-default"
-            onClick={() => setOpen(false)}
-          />
-          <div className="absolute right-0 z-50 mt-2 max-h-[70vh] w-[300px] overflow-y-auto rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] p-2 shadow-xl">
-            <p className="px-2 py-1.5 text-[11px] font-bold tracking-wide text-[var(--color-faint)] uppercase">
-              {t(UI.selectGoal, lang)}
-            </p>
-            {EXAMS.map((e) => (
-              <button
-                key={e.id}
-                type="button"
-                onClick={() => {
-                  setGoal(e.id, e.papers[0]?.id);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-[var(--color-surface-alt)] ${
-                  e.id === user.goalExamId ? 'bg-[var(--color-brand-light)]' : ''
-                }`}
-              >
-                <span className="text-lg">{e.emoji}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-semibold">{e.shortName}</span>
-                  <span className="block truncate text-[11px] text-[var(--color-muted)]">
-                    {t(e.name, lang)}
-                  </span>
-                </span>
-                {e.id === user.goalExamId ? (
-                  <span className="text-[var(--color-brand)]">✓</span>
-                ) : null}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : null}
-    </div>
+        <span className="block truncate text-[13px] leading-tight font-bold">
+          {exam ? exam.shortName : lang === 'hi' ? 'चुनें' : 'Choose'}
+        </span>
+      </span>
+    </Link>
   );
 }
 
