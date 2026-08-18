@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
-import { router, Stack, useRouter, useSegments } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -10,7 +10,7 @@ import {
   Poppins_700Bold,
 } from '@expo-google-fonts/poppins';
 import { Hind_400Regular, Hind_500Medium, Hind_600SemiBold } from '@expo-google-fonts/hind';
-import { accountGateReason, t, theme } from '@adhyapak/core';
+import { theme } from '@adhyapak/core';
 // Hands AsyncStorage to the backend client. Must be imported before anything
 // asks for a session, which is why it sits at the root rather than in a screen.
 import '@/lib/backend';
@@ -24,6 +24,15 @@ import { SessionProvider, useSession } from '@/lib/session';
  *   both done                -> the app
  * Runs after the persisted store has hydrated, so a returning learner never
  * sees the login screen flash before landing on home.
+ */
+/**
+ * Nothing is reachable without an account.
+ *
+ * `signedIn` means a real profile row now, not "past the door" — the guest path
+ * that used to satisfy this gate has been removed. Everything behind it is
+ * scoped to a learner: the goal reshapes every subject list, bookmarks and
+ * progress have to survive a reinstall, and an attempt is only worth submitting
+ * if there is somewhere to record it.
  */
 function AuthGate() {
   const { signedIn, onboarded } = useSession();
@@ -102,105 +111,6 @@ function Shell() {
 }
 
 
-/**
- * The one place a guest is asked to sign in.
- *
- * Mounted at the root rather than beside each button that saves something:
- * bookmark icons sit on four screens and the note one on two, and a copy of the
- * check beside each is a copy that gets forgotten on the fifth.
- */
-function AccountGate() {
-  const { gate, dismissGate, lang } = useStore();
-  if (!gate) return null;
-  const reason = accountGateReason(gate);
-  const hi = lang === 'hi';
-
-  return (
-    <Modal transparent animationType="fade" visible onRequestClose={dismissGate}>
-      <Pressable
-        onPress={dismissGate}
-        style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          justifyContent: 'flex-end',
-          padding: theme.space.lg,
-        }}
-      >
-        <Pressable
-          onPress={() => {}}
-          style={{
-            backgroundColor: theme.color.surface,
-            borderRadius: theme.radius.lg,
-            padding: theme.space.xl,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: theme.font.md,
-              fontFamily: theme.family.displayBold,
-              color: theme.color.text,
-            }}
-          >
-            {t(reason.title, lang)}
-          </Text>
-          <Text
-            style={{
-              fontSize: theme.font.sm,
-              lineHeight: theme.line.sm,
-              fontFamily: theme.family.body,
-              color: theme.color.textMuted,
-              marginTop: 6,
-            }}
-          >
-            {t(reason.body, lang)}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: theme.space.sm, marginTop: theme.space.xl }}>
-            <Pressable
-              onPress={dismissGate}
-              style={{
-                flex: 1,
-                borderRadius: theme.radius.md,
-                paddingVertical: 13,
-                alignItems: 'center',
-                backgroundColor: theme.color.surfaceAlt,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: theme.font.sm,
-                  fontFamily: theme.family.bodySemi,
-                  color: theme.color.textMuted,
-                }}
-              >
-                {hi ? 'अभी नहीं' : 'Not now'}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                dismissGate();
-                router.push('/(auth)/login');
-              }}
-              style={{
-                flex: 1,
-                borderRadius: theme.radius.md,
-                paddingVertical: 13,
-                alignItems: 'center',
-                backgroundColor: theme.color.primary,
-              }}
-            >
-              <Text
-                style={{ fontSize: theme.font.sm, fontFamily: theme.family.display, color: '#fff' }}
-              >
-                {hi ? 'साइन इन' : 'Sign in'}
-              </Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
@@ -208,7 +118,6 @@ export default function RootLayout() {
         <SessionProvider>
           <StatusBar style="dark" />
           <Shell />
-          <AccountGate />
         </SessionProvider>
       </StoreProvider>
     </SafeAreaProvider>

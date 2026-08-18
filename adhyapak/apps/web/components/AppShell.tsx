@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
-import { accountGateReason, EXAMS, getExam, t, UI } from '@adhyapak/core';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState, type ReactNode } from 'react';
+import { EXAMS, getExam, t, UI } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 
 const NAV = [
@@ -27,50 +27,43 @@ function isActive(pathname: string, href: string) {
 }
 
 
-/**
- * The one place a guest is asked to sign in.
- *
- * Rendered from the shell rather than beside each button that saves something:
- * bookmark icons sit on four screens and the note one on two, and a copy of the
- * check beside each is a copy that gets forgotten on the fifth.
- */
-function AccountGate() {
-  const { gate, dismissGate, lang } = useStore();
-  if (!gate) return null;
-  const reason = accountGateReason(gate);
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      onClick={dismissGate}
-    >
-      <div
-        className="w-full max-w-sm rounded-2xl bg-[var(--color-surface)] p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-[17px] font-extrabold">{t(reason.title, lang)}</h2>
-        <p className="mt-1.5 text-[13px] text-[var(--color-muted)]">{t(reason.body, lang)}</p>
-        <div className="mt-5 flex gap-2">
-          <button
-            type="button"
-            onClick={dismissGate}
-            className="flex-1 rounded-xl bg-[var(--color-surface-alt)] py-2.5 text-[13px] font-bold text-[var(--color-muted)]"
-          >
-            {lang === 'hi' ? 'अभी नहीं' : 'Not now'}
-          </button>
-          <Link
-            href="/sign-in"
-            onClick={dismissGate}
-            className="flex-1 rounded-xl bg-[var(--color-brand)] py-2.5 text-center text-[13px] font-bold text-white"
-          >
-            {lang === 'hi' ? 'साइन इन' : 'Sign in'}
-          </Link>
-        </div>
+/**
+ * Nothing is reachable without an account.
+ *
+ * The website had no gate at all: every route rendered for anybody, and signing
+ * in changed only whether things were saved. Everything here is scoped to a
+ * learner — the goal decides which subjects, tests and cut-offs appear at all —
+ * so a visitor was being shown a product that does not exist for them.
+ *
+ * Rendered rather than redirected while the store is still reading
+ * localStorage: a redirect fired on the first paint would bounce a signed-in
+ * learner to the door on every hard refresh, which is the failure this shape
+ * exists to avoid. `/sign-in` and the Studio stay open — the first is the door
+ * and the second has its own staff sign-in.
+ */
+function RequireAccount({ children }: { children: ReactNode }) {
+  const { user, ready, lang } = useStore();
+  const pathname = usePathname();
+  const router = useRouter();
+  const open = pathname.startsWith('/sign-in') || pathname.startsWith('/studio');
+  const allowed = open || Boolean(user.signedIn && user.id);
+
+  useEffect(() => {
+    if (ready && !allowed) router.replace('/sign-in');
+  }, [ready, allowed, router]);
+
+  if (!ready) return <div className="min-h-dvh" aria-hidden />;
+  if (!allowed) {
+    return (
+      <div className="grid min-h-dvh place-items-center px-6 text-center">
+        <p className="text-[13px] text-[var(--color-muted)]">
+          {lang === 'hi' ? 'साइन इन पर ले जा रहे हैं…' : 'Taking you to sign in…'}
+        </p>
       </div>
-    </div>
-  );
+    );
+  }
+  return <>{children}</>;
 }
 
 function GoalSwitcher() {
@@ -129,11 +122,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { lang, user } = useStore();
 
-  // The test player takes over the whole screen, like every real exam engine.
+  // The test player takes over the whole screen, like every real exam engine —
+  // but it is behind the gate too, or a paper could be sat with nowhere to
+  // record it.
   const immersive = pathname.includes('/attempt');
-  if (immersive) return <>{children}</>;
+  if (immersive) return <RequireAccount>{children}</RequireAccount>;
 
   return (
+    <RequireAccount>
     <div className="min-h-dvh">
       <header className="no-print sticky top-0 z-30 border-b border-[var(--color-line)] bg-[var(--color-surface)]/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
@@ -225,7 +221,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <div className="h-[env(safe-area-inset-bottom)]" />
       </nav>
-      <AccountGate />
     </div>
+    </RequireAccount>
   );
 }

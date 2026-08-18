@@ -1,11 +1,12 @@
 'use client';
 
-import { Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   PYQ_MODES,
   countQuestions,
+  getPaper,
   isBackendConfigured,
   listPyqYears,
   pyqModeEmptyReason,
@@ -90,6 +91,28 @@ function PyqChooser() {
   const total = useAsync(() => countQuestions(model.filter), [JSON.stringify(model.filter)]);
 
   const reason = pyqModeEmptyReason(model, selection);
+
+  /*
+   * The screen is two screens.
+   *
+   * Which paper and which subject are one question — "whose paper am I looking
+   * at" — and the three modes are a different one, asked of that paper.
+   * Showing the modes first put the second question above the first, so the
+   * tabs changed what was counted before anything had said what was being
+   * counted.
+   *
+   * After onboarding both halves are always answered, so the common case opens
+   * straight on the modes with a line saying which paper they belong to.
+   */
+  const settled =
+    Boolean(selection.paperId) &&
+    (model.electiveOptions.length === 0 || Boolean(model.electiveSubjectId));
+  const [editing, setEditing] = useState(false);
+  const choosing = editing || !settled;
+  const paper = selection.paperId ? getPaper(selection.paperId)?.paper : undefined;
+  const chosenSubject = model.electiveSubjectId
+    ? model.electiveOptions.find((o) => o.value === model.electiveSubjectId)
+    : undefined;
   const ready = !reason && total.data !== undefined && total.data > 0;
   const query = new URLSearchParams({ ...pyqSelectionToParams(selection), mode }).toString();
   const activeSubject = selection.subjectId ?? model.subjectTabs[0]?.value;
@@ -107,61 +130,93 @@ function PyqChooser() {
         </p>
       </header>
 
-      {/* Three tabs, because a learner arrives with one of three questions. */}
-      <nav className="flex border-b border-[var(--color-line)]" aria-label={hi ? 'मोड' : 'Mode'}>
-        {PYQ_MODES.map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => switchMode(m)}
-            aria-current={mode === m ? 'page' : undefined}
-            className={`flex-1 border-b-2 px-3 py-2.5 text-[13px] font-semibold transition-colors ${
-              mode === m
-                ? 'border-[var(--color-brand)] text-[var(--color-brand)]'
-                : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)]'
-            }`}
-          >
-            {t(pyqModeLabel(m), lang)}
-          </button>
-        ))}
-      </nav>
+      {/* Which paper this is about, and a way back to change it. */}
+      {!choosing ? (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="flex w-full items-center gap-2 rounded-xl bg-[var(--color-surface-alt)] px-3 py-2.5 text-left text-[13px] font-semibold transition-colors hover:bg-[var(--color-brand-light)]"
+        >
+          <span className="min-w-0 flex-1 truncate">
+            {[
+              paper ? t(paper.name, lang) : null,
+              chosenSubject ? (hi ? chosenSubject.labelHi : chosenSubject.labelEn) : null,
+            ]
+              .filter(Boolean)
+              .join('  ·  ')}
+          </span>
+          <span className="text-[var(--color-muted)]">{hi ? 'बदलें' : 'Change'}</span>
+          <span>✏️</span>
+        </button>
+      ) : null}
+
+      {/* The three questions, as three tabs — only once there is a paper for
+          them to be about. */}
+      {!choosing ? (
+        <nav className="flex border-b border-[var(--color-line)]" aria-label={hi ? 'मोड' : 'Mode'}>
+          {PYQ_MODES.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => switchMode(m)}
+              aria-current={mode === m ? 'page' : undefined}
+              className={`flex-1 border-b-2 px-3 py-2.5 text-[13px] font-semibold transition-colors ${
+                mode === m
+                  ? 'border-[var(--color-brand)] text-[var(--color-brand)]'
+                  : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)]'
+              }`}
+            >
+              {t(pyqModeLabel(m), lang)}
+            </button>
+          ))}
+        </nav>
+      ) : null}
 
       {/*
-        Which paper — the post as a candidate says it: PRT, TGT, PGT, Paper 2.
-        Inline rather than a link out to the goal screen, because looking at
-        last year's PRT paper is browsing, not changing what you prepare for.
+        Step A. Level cards, not a chip row: this is the first question the page
+        asks and its answer decides everything under it. The level from
+        onboarding arrives already chosen and can be changed here without going
+        back through it.
       */}
-      {model.paperOptions.length > 1 ? (
+      {choosing && model.paperOptions.length > 1 ? (
         <section>
-          <h2 className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
-            {hi ? 'पद' : 'Post'}
+          <h2 className="mb-2 text-[12px] font-bold text-[var(--color-muted)]">
+            {hi ? 'कौन-सा स्तर?' : 'Which level?'}
           </h2>
-          <div className="rail flex gap-2">
-            {model.paperOptions.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                // A new paper invalidates everything under it: PRT has no
-                // subject choice at all, and TGT's twelve and PGT's twenty-one
-                // share almost nothing.
-                onClick={() =>
-                  update({
-                    paperId: o.value,
-                    electiveSubjectId: undefined,
-                    subjectId: undefined,
-                    topicId: undefined,
-                  })
-                }
-                aria-pressed={selection.paperId === o.value}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
-                  selection.paperId === o.value
-                    ? 'border-transparent bg-[var(--color-ink)] text-white'
-                    : 'border-[var(--color-line)] text-[var(--color-muted)]'
-                }`}
-              >
-                {hi ? o.labelHi : o.labelEn}
-              </button>
-            ))}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {model.paperOptions.map((o) => {
+              const option = getPaper(o.value)?.paper;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() =>
+                    update({
+                      paperId: o.value,
+                      electiveSubjectId: undefined,
+                      subjectId: undefined,
+                      topicId: undefined,
+                    })
+                  }
+                  aria-pressed={selection.paperId === o.value}
+                  className={`card p-3 text-left transition-colors ${
+                    selection.paperId === o.value
+                      ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
+                      : 'hover:border-[var(--color-brand)]'
+                  }`}
+                >
+                  <span className="block text-[14px] font-bold">
+                    {hi ? o.labelHi : o.labelEn}
+                  </span>
+                  {option ? (
+                    <span className="block truncate text-[12px] text-[var(--color-muted)]">
+                      {t(option.name, lang)} · {option.totalQuestions}{' '}
+                      {hi ? 'प्रश्न' : 'questions'}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -171,10 +226,10 @@ function PyqChooser() {
         the year; TGT and PGT ask first, because until it is answered the app
         does not know which sixty of a hundred and fifty are theirs.
       */}
-      {model.electiveOptions.length > 0 ? (
+      {choosing && model.electiveOptions.length > 0 ? (
         <section>
           <h2 className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
-            {hi ? 'विषय' : 'Subject'}
+            {hi ? 'कौन-सा विषय?' : 'Which subject?'}
           </h2>
           {/* A grid once there are more than five: twelve TGT subjects and
               twenty-one PGT ones do not fit a row. */}
@@ -309,37 +364,50 @@ function PyqChooser() {
         </p>
       ) : null}
 
-      <section className="card flex flex-wrap items-center justify-between gap-3 p-4">
-        <div>
-          <p className="text-xl font-extrabold tabular-nums">
-            {total.loading ? '—' : (total.data ?? 0)}{' '}
-            <span className="text-[13px] font-semibold text-[var(--color-muted)]">
-              {hi ? 'प्रश्न' : total.data === 1 ? 'question' : 'questions'}
+      {choosing ? (
+        /* One button that closes the two steps. Counting anything here would be
+           counting a paper nobody has named yet. */
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          disabled={!settled}
+          className="w-full rounded-full bg-[var(--color-brand)] px-5 py-3 text-[14px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+        >
+          {hi ? 'आगे बढ़ें' : 'Continue'}
+        </button>
+      ) : (
+        <section className="card flex flex-wrap items-center justify-between gap-3 p-4">
+          <div>
+            <p className="text-xl font-extrabold tabular-nums">
+              {total.loading ? '—' : (total.data ?? 0)}{' '}
+              <span className="text-[13px] font-semibold text-[var(--color-muted)]">
+                {hi ? 'प्रश्न' : total.data === 1 ? 'question' : 'questions'}
+              </span>
+            </p>
+            <p className="text-[12px] text-[var(--color-muted)]">
+              {reason ? (hi ? reason.hi : reason.en) : t(pyqModeLabel(mode), lang)}
+            </p>
+          </div>
+          {ready ? (
+            <Link
+              href={`/practice/pyq/attempt?${query}`}
+              className="rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-[13px] font-bold text-white"
+            >
+              {mode === 'full-paper'
+                ? hi
+                  ? 'पूरा टेस्ट शुरू करें'
+                  : 'Start full test'
+                : hi
+                  ? 'अभ्यास शुरू करें'
+                  : 'Start practice'}
+            </Link>
+          ) : (
+            <span className="cursor-not-allowed rounded-full bg-[var(--color-line)] px-5 py-2.5 text-[13px] font-bold text-[var(--color-muted)]">
+              {hi ? 'शुरू करें' : 'Start'}
             </span>
-          </p>
-          <p className="text-[12px] text-[var(--color-muted)]">
-            {reason ? (hi ? reason.hi : reason.en) : t(pyqModeLabel(mode), lang)}
-          </p>
-        </div>
-        {ready ? (
-          <Link
-            href={`/practice/pyq/attempt?${query}`}
-            className="rounded-full bg-[var(--color-brand)] px-5 py-2.5 text-[13px] font-bold text-white"
-          >
-            {mode === 'full-paper'
-              ? hi
-                ? 'पूरा टेस्ट शुरू करें'
-                : 'Start full test'
-              : hi
-                ? 'अभ्यास शुरू करें'
-                : 'Start practice'}
-          </Link>
-        ) : (
-          <span className="cursor-not-allowed rounded-full bg-[var(--color-line)] px-5 py-2.5 text-[13px] font-bold text-[var(--color-muted)]">
-            {hi ? 'शुरू करें' : 'Start'}
-          </span>
-        )}
-      </section>
+          )}
+        </section>
+      )}
     </div>
   );
 }

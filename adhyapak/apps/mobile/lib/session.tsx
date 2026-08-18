@@ -45,10 +45,16 @@ WebBrowser.maybeCompleteAuthSession();
  */
 
 export interface Session {
-  /** False until the learner has signed in or chosen to continue without an account. */
+  /**
+   * Whether there is an account behind this session.
+   *
+   * There is no longer a third state. Continuing without an account used to be
+   * a first-class path — the product decision was that an aspirant downloading
+   * a prep app at 11pm should reach the question bank in two taps — and it has
+   * been withdrawn: the app is behind sign-in now, so `signedIn` means a real
+   * profile row rather than "past the door".
+   */
   signedIn: boolean;
-  /** Signed in locally with no account behind it: nothing here will sync. */
-  guest: boolean;
   /** False until a goal exam has been picked. Gates the whole app. */
   onboarded: boolean;
   /** Accent derived from the chosen exam, so CTET and REET look different. */
@@ -63,7 +69,6 @@ export interface Session {
   signUp: (email: string, password: string, name: string) => Promise<AuthResult<SignUpOutcome>>;
   /** Opens Google in a system auth session and finishes the exchange. */
   signInWithGoogle: () => Promise<AuthResult<AuthState>>;
-  continueAsGuest: () => void;
   chooseGoal: (examId: string, paperId?: string, electiveSubjectId?: string) => void;
   signOut: () => Promise<void>;
 }
@@ -130,18 +135,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return completeOAuthSignIn(opened.url);
   }, []);
 
-  /**
-   * Uses the app with no account at all.
-   *
-   * `signedIn` here means "past the door", not "authenticated" — it is what the
-   * gate in _layout reads. No name is invented: the old version set 'Guest',
-   * which then appeared in the greeting on the home screen as though somebody
-   * had typed it.
-   */
-  const continueAsGuest = useCallback(() => {
-    patchUser({ signedIn: true });
-  }, [patchUser]);
-
   const chooseGoal = useCallback(
     (examId: string, paperId?: string, electiveSubjectId?: string) => {
       // `setGoal` writes `set_goal` through for a signed-in learner and stays
@@ -167,8 +160,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Session>(
     () => ({
-      signedIn: Boolean(user.signedIn),
-      guest: Boolean(user.signedIn) && !user.id,
+      // Both halves: the local flag says they came through the door, the id
+      // says an account is behind it. Without the id there is nothing to sync
+      // to and nothing to come back to on another device.
+      signedIn: Boolean(user.signedIn && user.id),
       onboarded: Boolean(user.onboarded),
       palette: examTheme(exam?.color ?? theme.color.primary),
       examName: exam ? exam.name[lang] : '',
@@ -179,7 +174,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
-      continueAsGuest,
       chooseGoal,
       signOut,
     }),
@@ -194,7 +188,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
-      continueAsGuest,
       chooseGoal,
       signOut,
     ],

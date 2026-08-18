@@ -37,7 +37,10 @@ export default function GoalScreen() {
   const selected = examId ? getExam(examId) : undefined;
   const palette = examTheme(selected?.color);
 
-  // Step 2 only makes sense for exams that run more than one paper.
+  // Step 2 is asked whenever the exam runs more than one paper, and answering
+  // it is required. It used to default to `papers[0]`, so a PGT candidate who
+  // tapped HTET and then Continue was silently recorded as sitting Level 1 —
+  // the wrong syllabus, the wrong cut-off, and nothing on screen having asked.
   const needsPaper = Boolean(selected && selected.papers.length > 1);
   const [paperId, setPaperId] = useState<string | null>(null);
   const [subjectId, setSubjectId] = useState<string | null>(null);
@@ -48,7 +51,9 @@ export default function GoalScreen() {
     setSubjectId(null);
   };
 
-  const chosenPaperId = paperId ?? selected?.papers[0]?.id;
+  // No fallback. A single-paper exam has one answer and it is chosen for
+  // them; anything else has to be picked.
+  const chosenPaperId = needsPaper ? (paperId ?? undefined) : selected?.papers[0]?.id;
 
   /*
    * Step 3: the subject, for the papers that make the candidate choose one.
@@ -70,7 +75,8 @@ export default function GoalScreen() {
     setSubjectId(null);
   };
 
-  const ready = Boolean(selected) && (!needsSubject || Boolean(subjectId));
+  const ready =
+    Boolean(selected) && Boolean(chosenPaperId) && (!needsSubject || Boolean(subjectId));
 
   const confirm = () => {
     if (!selected || !ready) return;
@@ -254,7 +260,7 @@ export default function GoalScreen() {
             </Text>
             <View style={{ marginTop: theme.space.lg, gap: theme.space.md }}>
               {selected.papers.map((paper) => {
-                const on = (paperId ?? selected.papers[0]?.id) === paper.id;
+                const on = paperId === paper.id;
                 // Elective sections contribute no icon: the subject is not
                 // known until the candidate picks one.
                 const subjects = paper.sections
