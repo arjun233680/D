@@ -35,6 +35,16 @@ export interface PyqSelection {
    * in one shape.
    */
   topicId?: string;
+  /**
+   * The subject chosen while browsing, which is not the same thing as the one
+   * on the profile.
+   *
+   * A TGT candidate looking at last year's PGT paper has to say which PGT
+   * subject they want to see, and answering that here must not rewrite what
+   * they are actually preparing for. The profile is the default; this overrides
+   * it for as long as the screen is open.
+   */
+  electiveSubjectId?: string;
 }
 
 /** One option in a picker, already resolved to something renderable. */
@@ -63,7 +73,7 @@ export interface PyqFilterModel {
  * calls the paper; "Level 3 — PGT (Classes 9 to 12)" is a heading, not an
  * option in a dropdown.
  */
-const paperLabel = (paper: ExamPaper): { en: string; hi: string } =>
+export const paperLabel = (paper: ExamPaper): { en: string; hi: string } =>
   paper.post ? { en: paper.post, hi: paper.post } : { en: paper.name.en, hi: paper.name.hi };
 
 /**
@@ -171,6 +181,7 @@ export const pyqSelectionToParams = (selection: PyqSelection): Record<string, st
   if (selection.subjectId) params.subject = selection.subjectId;
   if (selection.year !== undefined) params.year = String(selection.year);
   if (selection.topicId) params.topic = selection.topicId;
+  if (selection.electiveSubjectId) params.elective = selection.electiveSubjectId;
   return params;
 };
 
@@ -185,6 +196,7 @@ export const pyqSelectionFromParams = (
     subjectId: get('subject') || undefined,
     year: Number.isInteger(year) && year > 0 ? year : undefined,
     topicId: get('topic') || undefined,
+    electiveSubjectId: get('elective') || undefined,
   };
 };
 

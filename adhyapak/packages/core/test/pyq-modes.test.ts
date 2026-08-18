@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { pyqSelectionToParams } from '../src/engine/pyq-filter';
 import {
   PYQ_MODES,
   pyqModeEmptyReason,
@@ -125,5 +126,58 @@ describe('an empty screen says what to do about it', () => {
     assert.equal(pyqModeModel('full-paper', selection, 'science').showYears, true);
     assert.equal(pyqModeModel('section', selection, 'science').showYears, true);
     assert.equal(pyqModeModel('topic', selection, 'science').showYears, false);
+  });
+});
+
+describe('the post switcher, and what it asks next', () => {
+  it('offers the exam’s posts the way a candidate says them', () => {
+    const model = pyqModeModel('full-paper', { examId: 'htet', paperId: 'htet-l1' }, undefined);
+    assert.deepEqual(
+      model.paperOptions.map((o) => o.labelEn),
+      ['PRT', 'TGT', 'PGT'],
+    );
+  });
+
+  it('asks nothing more for PRT', () => {
+    const model = pyqModeModel('full-paper', { examId: 'htet', paperId: 'htet-l1' }, undefined);
+    assert.deepEqual(model.electiveOptions, [], 'a primary paper has no subject choice');
+    assert.equal(model.needsElective, false, 'so it goes straight to the year');
+  });
+
+  it('asks which subject for TGT, and for PGT', () => {
+    for (const [paperId, count] of [
+      ['htet-l2', 12],
+      ['htet-l3', 21],
+    ] as const) {
+      const model = pyqModeModel('full-paper', { examId: 'htet', paperId }, undefined);
+      assert.equal(model.electiveOptions.length, count, paperId);
+      assert.equal(model.needsElective, true, `${paperId} waits for an answer`);
+    }
+  });
+
+  it('lets a TGT candidate browse the PGT paper without changing what they prepare for', () => {
+    // The profile says Science, a TGT subject. Reading the PGT paper means
+    // saying which PGT subject — and that answer is about this screen, not
+    // about them.
+    const browsing = { examId: 'htet', paperId: 'htet-l3', electiveSubjectId: 'physics' };
+    const model = pyqModeModel('topic', browsing, 'science');
+    assert.equal(model.electiveSubjectId, 'physics', 'the browsing choice wins');
+    assert.equal(model.needsElective, false);
+    assert.ok(model.subjectTabs.some((o) => o.value === 'physics'));
+    assert.ok(
+      !model.subjectTabs.some((o) => o.value === 'science'),
+      'and their own subject is not smuggled into a paper that does not offer it',
+    );
+  });
+
+  it('falls back to the profile when nothing is being browsed', () => {
+    const model = pyqModeModel('topic', { examId: 'htet', paperId: 'htet-l2' }, 'science');
+    assert.equal(model.electiveSubjectId, 'science');
+    assert.equal(model.needsElective, false);
+  });
+
+  it('carries the browsing subject through a link', () => {
+    const params = pyqSelectionToParams({ examId: 'htet', electiveSubjectId: 'physics' });
+    assert.equal(params.elective, 'physics');
   });
 });
