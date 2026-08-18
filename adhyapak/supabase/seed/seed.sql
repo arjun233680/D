@@ -33,7 +33,10 @@ insert into subjects (id, name, icon, color, description, sort_order) values
   ('psychology', '{"en":"Psychology","hi":"मनोविज्ञान"}'::jsonb, '🧩', '#BE185D', '{"en":"Elective subject for HTET PGT.","hi":"HTET PGT हेतु ऐच्छिक विषय।"}'::jsonb, 27),
   ('commerce', '{"en":"Commerce","hi":"वाणिज्य"}'::jsonb, '🧾', '#B91C1C', '{"en":"Elective subject for HTET PGT.","hi":"HTET PGT हेतु ऐच्छिक विषय।"}'::jsonb, 28),
   ('computer-science', '{"en":"Computer Science","hi":"कंप्यूटर विज्ञान"}'::jsonb, '🖥️', '#1D4ED8', '{"en":"Elective subject for HTET PGT. Distinct from Computer Literacy, which is the ICT block in recruitment papers.","hi":"HTET PGT हेतु ऐच्छिक विषय। कंप्यूटर साक्षरता से भिन्न, जो भर्ती पेपरों का ICT खंड है।"}'::jsonb, 29),
-  ('fine-arts', '{"en":"Fine Arts","hi":"ललित कला"}'::jsonb, '🖼️', '#D97706', '{"en":"Elective subject for HTET PGT.","hi":"HTET PGT हेतु ऐच्छिक विषय।"}'::jsonb, 30)
+  ('fine-arts', '{"en":"Fine Arts","hi":"ललित कला"}'::jsonb, '🖼️', '#D97706', '{"en":"Elective subject for HTET PGT.","hi":"HTET PGT हेतु ऐच्छिक विषय।"}'::jsonb, 30),
+  ('odia', '{"en":"Odia","hi":"ଓଡ଼ିଆ"}'::jsonb, '📗', '#0F766E', '{"en":"Odia as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.","hi":"ଓଡ଼ିଆ — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।"}'::jsonb, 6),
+  ('nepali', '{"en":"Nepali","hi":"नेपाली"}'::jsonb, '📙', '#B91C1C', '{"en":"Nepali as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.","hi":"नेपाली — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।"}'::jsonb, 6),
+  ('gujarati', '{"en":"Gujarati","hi":"ગુજરાતી"}'::jsonb, '📕', '#C2410C', '{"en":"Gujarati as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.","hi":"ગુજરાતી — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।"}'::jsonb, 6)
 on conflict (id) do nothing;
 
 insert into topics (id, subject_id, name, weightage) values
@@ -247,7 +250,14 @@ insert into exams (id, slug, name, short_name, authority, scope, state, about, f
   ('bihar-stet', 'bihar-stet', '{"en":"Bihar STET","hi":"बिहार STET"}'::jsonb, 'STET', '{"en":"Bihar School Examination Board","hi":"बिहार विद्यालय परीक्षा समिति"}'::jsonb, 'state', '{"en":"Bihar","hi":"बिहार"}'::jsonb, '{"en":"Secondary Teacher Eligibility Test for Classes 9-10 (Paper 1) and 11-12 (Paper 2) in Bihar.","hi":"बिहार में कक्षा 9-10 (पेपर 1) एवं 11-12 (पेपर 2) हेतु माध्यमिक शिक्षक पात्रता परीक्षा।"}'::jsonb, '{"en":"As notified by BSEB","hi":"BSEB द्वारा अधिसूचित"}'::jsonb, '#7E22CE', '📜', null, '[{"en":"Paper 1: Graduation with 50% + B.Ed","hi":"पेपर 1: स्नातक 50% + B.Ed"},{"en":"Paper 2: Post Graduation with 50% + B.Ed","hi":"पेपर 2: स्नातकोत्तर 50% + B.Ed"}]'::jsonb, '[{"en":"100 subject + 50 teaching aptitude marks","hi":"100 विषय + 50 शिक्षण अभिरुचि अंक"},{"en":"Gateway to BPSC TRE secondary posts","hi":"BPSC TRE माध्यमिक पदों का प्रवेश द्वार"}]'::jsonb, 'https://secondary.biharboardonline.com', null),
   ('wbtet', 'wb-tet', '{"en":"WB TET (Primary & Upper Primary)","hi":"WB TET (प्राथमिक एवं उच्च प्राथमिक)"}'::jsonb, 'WBTET', '{"en":"West Bengal Board of Primary Education","hi":"पश्चिम बंगाल प्राथमिक शिक्षा बोर्ड"}'::jsonb, 'state', '{"en":"West Bengal","hi":"पश्चिम बंगाल"}'::jsonb, '{"en":"Eligibility test for primary and upper-primary teacher posts in West Bengal government schools.","hi":"पश्चिम बंगाल के सरकारी विद्यालयों में प्राथमिक एवं उच्च प्राथमिक शिक्षक पदों हेतु पात्रता परीक्षा।"}'::jsonb, '{"en":"As notified by WBBPE","hi":"WBBPE द्वारा अधिसूचित"}'::jsonb, '#B91C1C', '🐟', null, '[{"en":"12th with 50% + D.El.Ed for primary","hi":"प्राथमिक हेतु 12वीं 50% + D.El.Ed"},{"en":"Graduation + B.Ed for upper primary","hi":"उच्च प्राथमिक हेतु स्नातक + B.Ed"}]'::jsonb, '[{"en":"150 questions, 2.5 hours","hi":"150 प्रश्न, 2.5 घंटे"},{"en":"Bengali/Hindi as Language I","hi":"भाषा I के रूप में बांग्ला/हिंदी"}]'::jsonb, 'https://wbbpe.org', null),
   ('awes', 'army-public-school', '{"en":"AWES Army Public School (PRT/TGT/PGT)","hi":"AWES आर्मी पब्लिक स्कूल (PRT/TGT/PGT)"}'::jsonb, 'APS', '{"en":"Army Welfare Education Society","hi":"आर्मी वेलफेयर एजुकेशन सोसाइटी"}'::jsonb, 'national', null, '{"en":"Online screening test for 130+ Army Public Schools. Part A is teaching aptitude and reasoning; Part B is the subject.","hi":"130+ आर्मी पब्लिक स्कूलों हेतु ऑनलाइन स्क्रीनिंग परीक्षा। भाग A शिक्षण अभिरुचि एवं तर्कशक्ति तथा भाग B विषय आधारित।"}'::jsonb, '{"en":"Annual — usually November","hi":"वार्षिक — प्रायः नवंबर"}'::jsonb, '#166534', '🎖️', null, '[{"en":"B.Ed mandatory for all posts","hi":"सभी पदों हेतु B.Ed अनिवार्य"},{"en":"Age below 40 for fresh candidates","hi":"नए अभ्यर्थियों हेतु आयु 40 वर्ष से कम"}]'::jsonb, '[{"en":"Score card valid for lifetime","hi":"स्कोर कार्ड आजीवन मान्य"},{"en":"Negative marking of 0.25","hi":"0.25 ऋणात्मक अंकन"}]'::jsonb, 'https://awesindia.com', null),
-  ('emrs', 'emrs', '{"en":"EMRS Teaching Staff (NESTS)","hi":"EMRS शिक्षण स्टाफ (NESTS)"}'::jsonb, 'EMRS', '{"en":"National Education Society for Tribal Students","hi":"राष्ट्रीय जनजातीय छात्र शिक्षा समिति"}'::jsonb, 'national', null, '{"en":"Recruitment to Eklavya Model Residential Schools for tribal students across India.","hi":"देशभर में जनजातीय छात्रों हेतु एकलव्य आदर्श आवासीय विद्यालयों में भर्ती।"}'::jsonb, '{"en":"As per NESTS notification","hi":"NESTS अधिसूचना के अनुसार"}'::jsonb, '#7C3AED', '🏞️', null, '[{"en":"TGT: Graduation + B.Ed + CTET Paper 2","hi":"TGT: स्नातक + B.Ed + CTET पेपर 2"},{"en":"PGT: Post Graduation + B.Ed","hi":"PGT: स्नातकोत्तर + B.Ed"}]'::jsonb, '[{"en":"Residential campus posting","hi":"आवासीय परिसर पदस्थापन"},{"en":"Central government pay scale","hi":"केंद्र सरकार वेतनमान"}]'::jsonb, 'https://emrs.tribal.gov.in', null)
+  ('emrs', 'emrs', '{"en":"EMRS Teaching Staff (NESTS)","hi":"EMRS शिक्षण स्टाफ (NESTS)"}'::jsonb, 'EMRS', '{"en":"National Education Society for Tribal Students","hi":"राष्ट्रीय जनजातीय छात्र शिक्षा समिति"}'::jsonb, 'national', null, '{"en":"Recruitment to Eklavya Model Residential Schools for tribal students across India.","hi":"देशभर में जनजातीय छात्रों हेतु एकलव्य आदर्श आवासीय विद्यालयों में भर्ती।"}'::jsonb, '{"en":"As per NESTS notification","hi":"NESTS अधिसूचना के अनुसार"}'::jsonb, '#7C3AED', '🏞️', null, '[{"en":"TGT: Graduation + B.Ed + CTET Paper 2","hi":"TGT: स्नातक + B.Ed + CTET पेपर 2"},{"en":"PGT: Post Graduation + B.Ed","hi":"PGT: स्नातकोत्तर + B.Ed"}]'::jsonb, '[{"en":"Residential campus posting","hi":"आवासीय परिसर पदस्थापन"},{"en":"Central government pay scale","hi":"केंद्र सरकार वेतनमान"}]'::jsonb, 'https://emrs.tribal.gov.in', null),
+  ('hptet', 'hptet', '{"en":"HP TET — Himachal Pradesh Teacher Eligibility Test","hi":"HP TET — हिमाचल प्रदेश शिक्षक पात्रता परीक्षा"}'::jsonb, 'HP TET', '{"en":"Himachal Pradesh Board of School Education (HPBOSE), Dharamshala","hi":"हिमाचल प्रदेश स्कूल शिक्षा बोर्ड (HPBOSE), धर्मशाला"}'::jsonb, 'state', '{"en":"Himachal Pradesh","hi":"हिमाचल प्रदेश"}'::jsonb, '{"en":"Required for teaching posts in Himachal Pradesh government and aided schools. Conducted by HPBOSE, usually alongside the TET for non-medical and medical subjects.","hi":"हिमाचल प्रदेश के सरकारी एवं सहायता प्राप्त विद्यालयों में शिक्षक पदों हेतु आवश्यक। HPBOSE द्वारा आयोजित।"}'::jsonb, '{"en":"Usually twice a year","hi":"प्रायः वर्ष में दो बार"}'::jsonb, '#0369A1', '🏔️', null, '[{"en":"Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed","hi":"पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed"},{"en":"Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed","hi":"पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed"}]'::jsonb, '[{"en":"150 questions, 150 marks, 150 minutes","hi":"150 प्रश्न, 150 अंक, 150 मिनट"},{"en":"Language I is Hindi, Language II is English","hi":"भाषा I हिंदी, भाषा II अंग्रेज़ी"},{"en":"No negative marking","hi":"कोई नकारात्मक अंकन नहीं"}]'::jsonb, 'https://hpbose.org', null),
+  ('pstet', 'pstet', '{"en":"PSTET — Punjab State Teacher Eligibility Test","hi":"PSTET — पंजाब राज्य शिक्षक पात्रता परीक्षा"}'::jsonb, 'PSTET', '{"en":"Punjab School Education Board (PSEB), Mohali","hi":"पंजाब स्कूल शिक्षा बोर्ड (PSEB), मोहाली"}'::jsonb, 'state', '{"en":"Punjab","hi":"पंजाब"}'::jsonb, '{"en":"Mandatory for teaching posts in Punjab government schools. Language I is Punjabi, which is also the medium for a large share of the paper.","hi":"पंजाब के सरकारी विद्यालयों में शिक्षक पदों हेतु अनिवार्य। भाषा I पंजाबी है।"}'::jsonb, '{"en":"Announced by PSEB — typically annual","hi":"PSEB द्वारा घोषित — प्रायः वार्षिक"}'::jsonb, '#CA8A04', '🌾', null, '[{"en":"Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed","hi":"पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed"},{"en":"Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed","hi":"पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed"}]'::jsonb, '[{"en":"150 questions, 150 marks, 150 minutes","hi":"150 प्रश्न, 150 अंक, 150 मिनट"},{"en":"Language I is Punjabi, Language II is English","hi":"भाषा I पंजाबी, भाषा II अंग्रेज़ी"},{"en":"No negative marking","hi":"कोई नकारात्मक अंकन नहीं"}]'::jsonb, 'https://pseb.ac.in', null),
+  ('utet', 'utet', '{"en":"UTET — Uttarakhand Teacher Eligibility Test","hi":"UTET — उत्तराखंड शिक्षक पात्रता परीक्षा"}'::jsonb, 'UTET', '{"en":"Uttarakhand Board of School Education (UBSE), Ramnagar","hi":"उत्तराखंड विद्यालयी शिक्षा परिषद (UBSE), रामनगर"}'::jsonb, 'state', '{"en":"Uttarakhand","hi":"उत्तराखंड"}'::jsonb, '{"en":"Required for primary and upper-primary teaching posts in Uttarakhand. Certificate validity follows the NCTE norm.","hi":"उत्तराखंड में प्राथमिक एवं उच्च प्राथमिक शिक्षक पदों हेतु आवश्यक।"}'::jsonb, '{"en":"Announced by UBSE — typically annual","hi":"UBSE द्वारा घोषित — प्रायः वार्षिक"}'::jsonb, '#15803D', '⛰️', null, '[{"en":"Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed","hi":"पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed"},{"en":"Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed","hi":"पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed"}]'::jsonb, '[{"en":"150 questions, 150 marks, 150 minutes","hi":"150 प्रश्न, 150 अंक, 150 मिनट"},{"en":"Language I is Hindi, Language II is English","hi":"भाषा I हिंदी, भाषा II अंग्रेज़ी"},{"en":"No negative marking","hi":"कोई नकारात्मक अंकन नहीं"}]'::jsonb, 'https://ukutet.com', null),
+  ('jtet', 'jtet', '{"en":"JTET — Jharkhand Teacher Eligibility Test","hi":"JTET — झारखंड शिक्षक पात्रता परीक्षा"}'::jsonb, 'JTET', '{"en":"Jharkhand Academic Council (JAC), Ranchi","hi":"झारखंड अधिविद्य परिषद (JAC), राँची"}'::jsonb, 'state', '{"en":"Jharkhand","hi":"झारखंड"}'::jsonb, '{"en":"Required for teaching posts in Jharkhand government schools. The state offers several regional and tribal languages as Language II.","hi":"झारखंड के सरकारी विद्यालयों में शिक्षक पदों हेतु आवश्यक। भाषा II में कई क्षेत्रीय एवं जनजातीय भाषाएँ उपलब्ध हैं।"}'::jsonb, '{"en":"Announced by JAC — irregular","hi":"JAC द्वारा घोषित — अनियमित"}'::jsonb, '#7C2D12', '🌳', null, '[{"en":"Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed","hi":"पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed"},{"en":"Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed","hi":"पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed"}]'::jsonb, '[{"en":"150 questions, 150 marks, 150 minutes","hi":"150 प्रश्न, 150 अंक, 150 मिनट"},{"en":"Language I is Hindi, Language II is English","hi":"भाषा I हिंदी, भाषा II अंग्रेज़ी"},{"en":"No negative marking","hi":"कोई नकारात्मक अंकन नहीं"}]'::jsonb, 'https://jac.jharkhand.gov.in', null),
+  ('otet', 'otet', '{"en":"OTET — Odisha Teacher Eligibility Test","hi":"OTET — ओडिशा शिक्षक पात्रता परीक्षा"}'::jsonb, 'OTET', '{"en":"Board of Secondary Education, Odisha (BSE Odisha), Cuttack","hi":"माध्यमिक शिक्षा बोर्ड, ओडिशा (BSE Odisha), कटक"}'::jsonb, 'state', '{"en":"Odisha","hi":"ओडिशा"}'::jsonb, '{"en":"Required for teaching posts in Odisha government and aided schools. Language I is Odia.","hi":"ओडिशा के सरकारी एवं सहायता प्राप्त विद्यालयों में शिक्षक पदों हेतु आवश्यक। भाषा I ओड़िया है।"}'::jsonb, '{"en":"Announced by BSE Odisha — typically annual","hi":"BSE ओडिशा द्वारा घोषित — प्रायः वार्षिक"}'::jsonb, '#0891B2', '🛕', null, '[{"en":"Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed","hi":"पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed"},{"en":"Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed","hi":"पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed"}]'::jsonb, '[{"en":"150 questions, 150 marks, 150 minutes","hi":"150 प्रश्न, 150 अंक, 150 मिनट"},{"en":"Language I is Odia, Language II is English","hi":"भाषा I ओड़िया, भाषा II अंग्रेज़ी"},{"en":"No negative marking","hi":"कोई नकारात्मक अंकन नहीं"}]'::jsonb, 'https://bseodisha.ac.in', null),
+  ('sktet', 'sktet', '{"en":"Sikkim TET — Sikkim Teacher Eligibility Test","hi":"सिक्किम TET — सिक्किम शिक्षक पात्रता परीक्षा"}'::jsonb, 'Sikkim TET', '{"en":"Human Resource Development Department (HRDD), Government of Sikkim","hi":"मानव संसाधन विकास विभाग (HRDD), सिक्किम सरकार"}'::jsonb, 'state', '{"en":"Sikkim","hi":"सिक्किम"}'::jsonb, '{"en":"Required for teaching posts in Sikkim government schools. Language I is Nepali; the state also offers Bhutia, Lepcha and Limboo.","hi":"सिक्किम के सरकारी विद्यालयों में शिक्षक पदों हेतु आवश्यक। भाषा I नेपाली; भूटिया, लेप्चा एवं लिम्बू भी उपलब्ध।"}'::jsonb, '{"en":"Announced by HRDD Sikkim — irregular","hi":"HRDD सिक्किम द्वारा घोषित — अनियमित"}'::jsonb, '#DB2777', '🏞️', null, '[{"en":"Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed","hi":"पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed"},{"en":"Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed","hi":"पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed"}]'::jsonb, '[{"en":"150 questions, 150 marks, 150 minutes","hi":"150 प्रश्न, 150 अंक, 150 मिनट"},{"en":"Language I is Nepali, Language II is English","hi":"भाषा I नेपाली, भाषा II अंग्रेज़ी"},{"en":"No negative marking","hi":"कोई नकारात्मक अंकन नहीं"}]'::jsonb, 'https://sikkimhrdd.org', null),
+  ('gtet', 'gtet', '{"en":"Gujarat TET — Gujarat Teacher Eligibility Test","hi":"गुजरात TET — गुजरात शिक्षक पात्रता परीक्षा"}'::jsonb, 'Gujarat TET', '{"en":"Gujarat State Examination Board (GSEB), Gandhinagar","hi":"गुजरात राज्य परीक्षा बोर्ड (GSEB), गांधीनगर"}'::jsonb, 'state', '{"en":"Gujarat","hi":"गुजरात"}'::jsonb, '{"en":"Required for teaching posts in Gujarat government and grant-in-aid schools. TET-1 covers classes 1 to 5 and TET-2 covers classes 6 to 8.","hi":"गुजरात के सरकारी एवं अनुदानित विद्यालयों में शिक्षक पदों हेतु आवश्यक। TET-1 कक्षा 1-5, TET-2 कक्षा 6-8।"}'::jsonb, '{"en":"Announced by GSEB — irregular","hi":"GSEB द्वारा घोषित — अनियमित"}'::jsonb, '#EA580C', '🦁', null, '[{"en":"Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed","hi":"पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed"},{"en":"Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed","hi":"पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed"}]'::jsonb, '[{"en":"150 questions, 150 marks, 150 minutes","hi":"150 प्रश्न, 150 अंक, 150 मिनट"},{"en":"Language I is Gujarati, Language II is English","hi":"भाषा I गुजराती, भाषा II अंग्रेज़ी"},{"en":"No negative marking","hi":"कोई नकारात्मक अंकन नहीं"}]'::jsonb, 'https://sebexam.org', null)
 on conflict (id) do nothing;
 
 delete from exam_updates;
@@ -335,7 +345,21 @@ insert into exam_papers (id, exam_id, name, level, post, marks_per_question, neg
   ('stet-p1', 'bihar-stet', '{"en":"Paper 1 — Classes 9 to 10","hi":"पेपर 1 — कक्षा 9 से 10"}'::jsonb, 'secondary', 'Paper 1', 1, 0, 150, 150, 50, 45, 0),
   ('wbtet-p1', 'wbtet', '{"en":"Primary — Classes 1 to 5","hi":"प्राथमिक — कक्षा 1 से 5"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
   ('awes-prt', 'awes', '{"en":"PRT — Screening Test","hi":"PRT — स्क्रीनिंग परीक्षा"}'::jsonb, 'primary', 'PRT', 1, 0.25, 90, 90, 50, 45, 0),
-  ('emrs-tgt', 'emrs', '{"en":"TGT — Trained Graduate Teacher","hi":"TGT — प्रशिक्षित स्नातक शिक्षक"}'::jsonb, 'secondary', 'TGT', 1, 0, 180, 150, 40, 35, 0)
+  ('emrs-tgt', 'emrs', '{"en":"TGT — Trained Graduate Teacher","hi":"TGT — प्रशिक्षित स्नातक शिक्षक"}'::jsonb, 'secondary', 'TGT', 1, 0, 180, 150, 40, 35, 0),
+  ('hptet-p1', 'hptet', '{"en":"Paper 1 — Classes 1 to 5","hi":"पेपर 1 — कक्षा 1 से 5"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
+  ('hptet-p2', 'hptet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
+  ('pstet-p1', 'pstet', '{"en":"Paper 1 — Classes 1 to 5","hi":"पेपर 1 — कक्षा 1 से 5"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
+  ('pstet-p2', 'pstet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
+  ('utet-p1', 'utet', '{"en":"Paper 1 — Classes 1 to 5","hi":"पेपर 1 — कक्षा 1 से 5"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
+  ('utet-p2', 'utet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
+  ('jtet-p1', 'jtet', '{"en":"Paper 1 — Classes 1 to 5","hi":"पेपर 1 — कक्षा 1 से 5"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
+  ('jtet-p2', 'jtet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
+  ('otet-p1', 'otet', '{"en":"Paper 1 — Classes 1 to 5","hi":"पेपर 1 — कक्षा 1 से 5"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
+  ('otet-p2', 'otet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
+  ('sktet-p1', 'sktet', '{"en":"Paper 1 — Classes 1 to 5","hi":"पेपर 1 — कक्षा 1 से 5"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
+  ('sktet-p2', 'sktet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
+  ('gtet-p1', 'gtet', '{"en":"Paper 1 — Classes 1 to 5","hi":"पेपर 1 — कक्षा 1 से 5"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
+  ('gtet-p2', 'gtet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1)
 on conflict (id) do nothing;
 
 delete from elective_choices;
@@ -343,7 +367,14 @@ delete from elective_groups;
 insert into elective_groups (id, paper_id, name) values
   ('ctet-p2-elective', 'ctet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
   ('htet-l2-elective', 'htet-l2', '{"en":"TGT subject","hi":"TGT विषय"}'::jsonb),
-  ('htet-l3-elective', 'htet-l3', '{"en":"PGT subject","hi":"PGT विषय"}'::jsonb);
+  ('htet-l3-elective', 'htet-l3', '{"en":"PGT subject","hi":"PGT विषय"}'::jsonb),
+  ('hptet-p2-elective', 'hptet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('pstet-p2-elective', 'pstet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('utet-p2-elective', 'utet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('jtet-p2-elective', 'jtet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('otet-p2-elective', 'otet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('sktet-p2-elective', 'sktet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('gtet-p2-elective', 'gtet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb);
 
 insert into elective_choices (group_id, subject_id, sort_order) values
   ('ctet-p2-elective', 'maths-science', 0),
@@ -380,7 +411,21 @@ insert into elective_choices (group_id, subject_id, sort_order) values
   ('htet-l3-elective', 'home-science', 17),
   ('htet-l3-elective', 'physical-education', 18),
   ('htet-l3-elective', 'music', 19),
-  ('htet-l3-elective', 'fine-arts', 20);
+  ('htet-l3-elective', 'fine-arts', 20),
+  ('hptet-p2-elective', 'maths-science', 0),
+  ('hptet-p2-elective', 'sst', 1),
+  ('pstet-p2-elective', 'maths-science', 0),
+  ('pstet-p2-elective', 'sst', 1),
+  ('utet-p2-elective', 'maths-science', 0),
+  ('utet-p2-elective', 'sst', 1),
+  ('jtet-p2-elective', 'maths-science', 0),
+  ('jtet-p2-elective', 'sst', 1),
+  ('otet-p2-elective', 'maths-science', 0),
+  ('otet-p2-elective', 'sst', 1),
+  ('sktet-p2-elective', 'maths-science', 0),
+  ('sktet-p2-elective', 'sst', 1),
+  ('gtet-p2-elective', 'maths-science', 0),
+  ('gtet-p2-elective', 'sst', 1);
 
 delete from paper_sections;
 insert into paper_sections (paper_id, subject_id, elective_group_id, questions, marks, sort_order) values
@@ -513,7 +558,70 @@ insert into paper_sections (paper_id, subject_id, elective_group_id, questions, 
   ('emrs-tgt', 'computer', null, 10, 10, 2),
   ('emrs-tgt', 'cdp', null, 20, 20, 3),
   ('emrs-tgt', 'science', null, 80, 80, 4),
-  ('emrs-tgt', 'english', null, 20, 20, 5);
+  ('emrs-tgt', 'english', null, 20, 20, 5),
+  ('hptet-p1', 'cdp', null, 30, 30, 0),
+  ('hptet-p1', 'hindi', null, 30, 30, 1),
+  ('hptet-p1', 'english', null, 30, 30, 2),
+  ('hptet-p1', 'math', null, 30, 30, 3),
+  ('hptet-p1', 'evs', null, 30, 30, 4),
+  ('hptet-p2', 'cdp', null, 30, 30, 0),
+  ('hptet-p2', 'hindi', null, 30, 30, 1),
+  ('hptet-p2', 'english', null, 30, 30, 2),
+  ('hptet-p2', null, 'hptet-p2-elective', 60, 60, 3),
+  ('pstet-p1', 'cdp', null, 30, 30, 0),
+  ('pstet-p1', 'punjabi', null, 30, 30, 1),
+  ('pstet-p1', 'english', null, 30, 30, 2),
+  ('pstet-p1', 'math', null, 30, 30, 3),
+  ('pstet-p1', 'evs', null, 30, 30, 4),
+  ('pstet-p2', 'cdp', null, 30, 30, 0),
+  ('pstet-p2', 'punjabi', null, 30, 30, 1),
+  ('pstet-p2', 'english', null, 30, 30, 2),
+  ('pstet-p2', null, 'pstet-p2-elective', 60, 60, 3),
+  ('utet-p1', 'cdp', null, 30, 30, 0),
+  ('utet-p1', 'hindi', null, 30, 30, 1),
+  ('utet-p1', 'english', null, 30, 30, 2),
+  ('utet-p1', 'math', null, 30, 30, 3),
+  ('utet-p1', 'evs', null, 30, 30, 4),
+  ('utet-p2', 'cdp', null, 30, 30, 0),
+  ('utet-p2', 'hindi', null, 30, 30, 1),
+  ('utet-p2', 'english', null, 30, 30, 2),
+  ('utet-p2', null, 'utet-p2-elective', 60, 60, 3),
+  ('jtet-p1', 'cdp', null, 30, 30, 0),
+  ('jtet-p1', 'hindi', null, 30, 30, 1),
+  ('jtet-p1', 'english', null, 30, 30, 2),
+  ('jtet-p1', 'math', null, 30, 30, 3),
+  ('jtet-p1', 'evs', null, 30, 30, 4),
+  ('jtet-p2', 'cdp', null, 30, 30, 0),
+  ('jtet-p2', 'hindi', null, 30, 30, 1),
+  ('jtet-p2', 'english', null, 30, 30, 2),
+  ('jtet-p2', null, 'jtet-p2-elective', 60, 60, 3),
+  ('otet-p1', 'cdp', null, 30, 30, 0),
+  ('otet-p1', 'odia', null, 30, 30, 1),
+  ('otet-p1', 'english', null, 30, 30, 2),
+  ('otet-p1', 'math', null, 30, 30, 3),
+  ('otet-p1', 'evs', null, 30, 30, 4),
+  ('otet-p2', 'cdp', null, 30, 30, 0),
+  ('otet-p2', 'odia', null, 30, 30, 1),
+  ('otet-p2', 'english', null, 30, 30, 2),
+  ('otet-p2', null, 'otet-p2-elective', 60, 60, 3),
+  ('sktet-p1', 'cdp', null, 30, 30, 0),
+  ('sktet-p1', 'nepali', null, 30, 30, 1),
+  ('sktet-p1', 'english', null, 30, 30, 2),
+  ('sktet-p1', 'math', null, 30, 30, 3),
+  ('sktet-p1', 'evs', null, 30, 30, 4),
+  ('sktet-p2', 'cdp', null, 30, 30, 0),
+  ('sktet-p2', 'nepali', null, 30, 30, 1),
+  ('sktet-p2', 'english', null, 30, 30, 2),
+  ('sktet-p2', null, 'sktet-p2-elective', 60, 60, 3),
+  ('gtet-p1', 'cdp', null, 30, 30, 0),
+  ('gtet-p1', 'gujarati', null, 30, 30, 1),
+  ('gtet-p1', 'english', null, 30, 30, 2),
+  ('gtet-p1', 'math', null, 30, 30, 3),
+  ('gtet-p1', 'evs', null, 30, 30, 4),
+  ('gtet-p2', 'cdp', null, 30, 30, 0),
+  ('gtet-p2', 'gujarati', null, 30, 30, 1),
+  ('gtet-p2', 'english', null, 30, 30, 2),
+  ('gtet-p2', null, 'gtet-p2-elective', 60, 60, 3);
 
 insert into educators (id, name, avatar, headline, bio, subjects, experience_years, languages) values
   ('edu-anjali', 'Anjali Verma', '👩‍🏫', '{"en":"CDP & Pedagogy — 9 years, 4L+ learners","hi":"CDP एवं शिक्षाशास्त्र — 9 वर्ष, 4 लाख+ शिक्षार्थी"}'::jsonb, '{"en":"M.Ed from Jamia Millia Islamia. Known for turning Piaget and Vygotsky into one-line memory hooks that survive exam pressure.","hi":"जामिया मिल्लिया इस्लामिया से M.Ed। पियाजे एवं वाइगोत्स्की को ऐसे एक-पंक्ति स्मृति सूत्रों में बदलने हेतु प्रसिद्ध जो परीक्षा के दबाव में भी याद रहते हैं।"}'::jsonb, array['cdp']::text[], 9, array['hi', 'en']::text[]),
