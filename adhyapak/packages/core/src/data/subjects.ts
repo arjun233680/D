@@ -635,6 +635,71 @@ export const SUBJECTS: Subject[] = [
     // that state is imported.
     topics: [],
   },
+  {
+    id: 'telugu',
+    name: { en: 'Telugu', hi: 'తెలుగు' },
+    icon: '📘',
+    color: '#1D4ED8',
+    description: {
+      en: 'Telugu as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.',
+      hi: 'తెలుగు — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।',
+    },
+    // No topics yet. A language paper differs enough between states that one
+    // shared topic tree would be a guess; they arrive with the first real paper.
+    topics: [],
+  },
+  {
+    id: 'tamil',
+    name: { en: 'Tamil', hi: 'தமிழ்' },
+    icon: '📓',
+    color: '#9333EA',
+    description: {
+      en: 'Tamil as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.',
+      hi: 'தமிழ் — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।',
+    },
+    // No topics yet. A language paper differs enough between states that one
+    // shared topic tree would be a guess; they arrive with the first real paper.
+    topics: [],
+  },
+  {
+    id: 'malayalam',
+    name: { en: 'Malayalam', hi: 'മലയാളം' },
+    icon: '📔',
+    color: '#047857',
+    description: {
+      en: 'Malayalam as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.',
+      hi: 'മലയാളം — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।',
+    },
+    // No topics yet. A language paper differs enough between states that one
+    // shared topic tree would be a guess; they arrive with the first real paper.
+    topics: [],
+  },
+  {
+    id: 'kannada',
+    name: { en: 'Kannada', hi: 'ಕನ್ನಡ' },
+    icon: '📒',
+    color: '#B45309',
+    description: {
+      en: 'Kannada as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.',
+      hi: 'ಕನ್ನಡ — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।',
+    },
+    // No topics yet. A language paper differs enough between states that one
+    // shared topic tree would be a guess; they arrive with the first real paper.
+    topics: [],
+  },
+  {
+    id: 'marathi',
+    name: { en: 'Marathi', hi: 'मराठी' },
+    icon: '📚',
+    color: '#BE185D',
+    description: {
+      en: 'Marathi as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.',
+      hi: 'मराठी — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।',
+    },
+    // No topics yet. A language paper differs enough between states that one
+    // shared topic tree would be a guess; they arrive with the first real paper.
+    topics: [],
+  },
 ];
 
 export const SUBJECT_BY_ID = new Map(SUBJECTS.map((s) => [s.id, s]));
