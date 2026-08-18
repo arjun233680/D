@@ -1,8 +1,13 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import {
+  OAUTH_CANCELLED,
+  completeOAuthSignIn,
   examTheme,
   getExam,
   getPaper,
+  signInWithGoogle as startGoogleSignIn,
   signInWithPassword,
   signOut as signOutRemote,
   signUpWithPassword,
@@ -15,6 +20,10 @@ import {
   type SignUpOutcome,
 } from '@adhyapak/core';
 import { useStore } from './store';
+
+// Closes the pop-up left behind when this same code runs on the Expo web build.
+// A no-op on a real device, and cheap enough not to be worth branching on.
+WebBrowser.maybeCompleteAuthSession();
 
 /**
  * Who the learner is, and what they are preparing for.
@@ -52,6 +61,8 @@ export interface Session {
   lang: Lang;
   signIn: (email: string, password: string) => Promise<AuthResult<AuthState>>;
   signUp: (email: string, password: string, name: string) => Promise<AuthResult<SignUpOutcome>>;
+  /** Opens Google in a system auth session and finishes the exchange. */
+  signInWithGoogle: () => Promise<AuthResult<AuthState>>;
   continueAsGuest: () => void;
   chooseGoal: (examId: string, paperId?: string) => void;
   signOut: () => Promise<void>;
@@ -82,6 +93,42 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (email: string, password: string, name: string) => signUpWithPassword(email, password, name),
     [],
   );
+
+  /**
+   * Google, on a phone.
+   *
+   * Three steps rather than the website's one, because a native app cannot just
+   * navigate itself away and come back:
+   *
+   *   1. ask Supabase for the provider URL instead of following it, which is
+   *      what `openExternally` means;
+   *   2. open it in the system's auth session — the tab that already holds the
+   *      person's Google cookies, and that closes itself the moment the redirect
+   *      fires. A plain `Linking.openURL` would leave them in a browser app with
+   *      no way back;
+   *   3. exchange the code the redirect carried for a real session.
+   *
+   * `Linking.createURL` builds the return address rather than a hard-coded
+   * `adhyapak://`, because Expo Go serves the app from an `exp://` URL during
+   * development and a literal scheme would break every device test before the
+   * app is ever built standalone.
+   *
+   * A dismissed browser is not an error worth styling as one — it is somebody
+   * changing their mind — but the caller still has to stop showing a spinner,
+   * so it comes back as a normal failed `AuthResult` with its own kind.
+   */
+  const signInWithGoogle = useCallback(async (): Promise<AuthResult<AuthState>> => {
+    const redirectTo = Linking.createURL('auth-callback');
+
+    const started = await startGoogleSignIn(redirectTo, { openExternally: true });
+    if (!started.ok) return started;
+    if (!started.value.url) return { ok: false, error: OAUTH_CANCELLED };
+
+    const opened = await WebBrowser.openAuthSessionAsync(started.value.url, redirectTo);
+    if (opened.type !== 'success') return { ok: false, error: OAUTH_CANCELLED };
+
+    return completeOAuthSignIn(opened.url);
+  }, []);
 
   /**
    * Uses the app with no account at all.
@@ -131,6 +178,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       lang,
       signIn,
       signUp,
+      signInWithGoogle,
       continueAsGuest,
       chooseGoal,
       signOut,
@@ -145,6 +193,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       lang,
       signIn,
       signUp,
+      signInWithGoogle,
       continueAsGuest,
       chooseGoal,
       signOut,

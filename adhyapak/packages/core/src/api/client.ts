@@ -20,8 +20,31 @@ export interface BackendConfig {
   anonKey: string;
 }
 
+/**
+ * Where the signed-in session is kept between launches.
+ *
+ * supabase-js picks its own store when none is handed in: `localStorage` where
+ * that exists, and an in-memory adapter where it does not. React Native has no
+ * `localStorage`, so the phone silently took the memory adapter — the session
+ * lived until the process died and not one moment longer. Signing in on the app
+ * worked, and then the next cold start met a signed-out stranger, which reads as
+ * "it forgot me" rather than as the configuration gap it is.
+ *
+ * The web never hit this, because its default is the right one. So the fix is
+ * not a default in here: it is the platform handing in the store only it knows
+ * about (`AsyncStorage` on the phone), which is why this is a setter rather than
+ * another field on `BackendConfig` — credentials arrive from the environment at
+ * build time, and the storage cannot.
+ */
+export interface SessionStorage {
+  getItem: (key: string) => Promise<string | null> | string | null;
+  setItem: (key: string, value: string) => Promise<void> | void;
+  removeItem: (key: string) => Promise<void> | void;
+}
+
 let client: SupabaseClient | null = null;
 let config: BackendConfig | null = null;
+let sessionStorage: SessionStorage | undefined;
 
 /**
  * Reads one build-time variable.
@@ -131,12 +154,48 @@ export const configureBackend = (next: BackendConfig | null): void => {
   announced = null;
 };
 
+/**
+ * Hands in the platform's own session store. Call before the first backend read.
+ *
+ * Only React Native needs this; the browser default is already correct. Passing
+ * `undefined` restores that default, which is what the tests do between cases.
+ */
+export const configureSessionStorage = (storage: SessionStorage | undefined): void => {
+  sessionStorage = storage;
+  // The client holds the old store, so it has to be built again.
+  client = null;
+};
+
 export const getBackend = (): SupabaseClient | null => {
   if (client) return client;
   const resolved = resolveConfig();
   if (!resolved) return null;
   client = createClient(resolved.url, resolved.anonKey, {
-    auth: { persistSession: true, autoRefreshToken: true },
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      /*
+       * PKCE rather than the library's `implicit` default.
+       *
+       * Implicit hands the access and refresh tokens back in the URL *fragment*,
+       * which means they pass through the address bar, the session history and
+       * anything that logs a URL. PKCE returns a single-use `code` instead and
+       * exchanges it for the session over a POST, holding the verifier in this
+       * client's own storage — so a leaked callback URL is worth nothing without
+       * the verifier that never left the device.
+       *
+       * This costs the password path nothing: PKCE governs OAuth and magic
+       * links, and `signInWithPassword` never touches a redirect. It matters
+       * here because Google sign-in is exactly the flow that redirects.
+       *
+       * A static export can do this unaided — the exchange is a client-side POST,
+       * so no server is needed on the GitHub Pages side.
+       */
+      flowType: 'pkce',
+      // Undefined leaves the library's own choice in place, which is the right
+      // one everywhere except React Native. See `SessionStorage`.
+      storage: sessionStorage,
+    },
     // The apps are read-heavy; realtime is opted into per screen instead.
     realtime: { params: { eventsPerSecond: 2 } },
   });

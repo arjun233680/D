@@ -32,10 +32,13 @@ export interface AuthError {
   kind:
     | 'no-backend'
     | 'invalid-credentials'
+    | 'email-unconfirmed'
     | 'email-taken'
     | 'weak-password'
     | 'rate-limited'
     | 'network'
+    | 'oauth-cancelled'
+    | 'oauth-unavailable'
     | 'unknown';
   en: string;
   hi: string;
@@ -64,8 +67,15 @@ const NO_BACKEND: AuthError = {
  * Deliberately does not distinguish "no such account" from "wrong password":
  * the API does not, and inventing the distinction would leak which email
  * addresses exist.
+ *
+ * Exported so the mapping can be tested against the strings GoTrue actually
+ * sends. Every entry point here funnels through it, so an unmapped message is
+ * the one way an English sentence reaches a Hindi screen — the `unknown` branch
+ * renders the raw text for *both* languages. That is not hypothetical: it is
+ * what "Email not confirmed" did until a live sign-in surfaced it, and a test
+ * that cannot reach this function cannot prove it will not happen again.
  */
-const toAuthError = (raw: unknown): AuthError => {
+export const toAuthError = (raw: unknown): AuthError => {
   const message = raw instanceof Error ? raw.message : String(raw ?? '');
   const lower = message.toLowerCase();
 
@@ -74,6 +84,22 @@ const toAuthError = (raw: unknown): AuthError => {
       kind: 'invalid-credentials',
       en: 'That email and password did not match an account.',
       hi: 'यह ईमेल और पासवर्ड किसी खाते से मेल नहीं खाते।',
+    };
+  }
+  /*
+   * "Email not confirmed" used to fall through to `unknown`, and `unknown`
+   * renders the raw message for *both* languages — so a learner reading the app
+   * in Hindi was shown an English sentence from GoTrue, which is the one thing
+   * `Bilingual` exists to make impossible. It also said nothing about the fix.
+   *
+   * This is not an edge case: with "Confirm email" on, it is what everybody who
+   * signs up and tries to sign in before opening their inbox sees first.
+   */
+  if (lower.includes('email not confirmed') || lower.includes('email_not_confirmed')) {
+    return {
+      kind: 'email-unconfirmed',
+      en: 'Your email is not confirmed yet. Open the link we sent you, then sign in.',
+      hi: 'आपका ईमेल अभी पुष्ट नहीं हुआ है। हमने जो लिंक भेजा है उसे खोलें, फिर साइन इन करें।',
     };
   }
   // Sign-up, unlike sign-in, *must* say that an address is taken: the person
@@ -99,6 +125,26 @@ const toAuthError = (raw: unknown): AuthError => {
       kind: 'rate-limited',
       en: 'Too many attempts. Wait a minute and try again.',
       hi: 'बहुत अधिक प्रयास। एक मिनट रुककर पुनः प्रयास करें।',
+    };
+  }
+  /*
+   * Both of these are misconfiguration rather than anything the person at the
+   * keyboard did: the provider is switched off in the dashboard, or the URL the
+   * app asked to come back to is missing from Authentication → URL
+   * Configuration. Neither is worth explaining to an aspirant, so the message
+   * points at the door that is definitely open — email — while the `kind` keeps
+   * the real cause for whoever is reading logs.
+   */
+  if (
+    lower.includes('provider is not enabled') ||
+    lower.includes('unsupported provider') ||
+    lower.includes('redirect_to') ||
+    lower.includes('redirect url')
+  ) {
+    return {
+      kind: 'oauth-unavailable',
+      en: 'Google sign-in is unavailable right now. Use your email and password instead.',
+      hi: 'Google साइन इन अभी उपलब्ध नहीं है। इसके बजाय अपना ईमेल और पासवर्ड इस्तेमाल करें।',
     };
   }
   if (lower.includes('fetch') || lower.includes('network') || lower.includes('timeout')) {
@@ -236,6 +282,116 @@ export const signUpWithPassword = async (
         session: Boolean(data.session),
       },
     };
+  } catch (thrown) {
+    return { ok: false, error: toAuthError(thrown) };
+  }
+};
+
+/* ----------------------------------------------------------------- Google */
+
+/** What a started OAuth sign-in handed back. */
+export interface OAuthStart {
+  /**
+   * The provider URL to open.
+   *
+   * Null on the web, where supabase-js has already navigated the page and there
+   * is nothing left for the caller to do. Set when `openExternally` was asked
+   * for, which is how the phone gets a URL it can hand to an in-app browser.
+   */
+  url: string | null;
+}
+
+const OAUTH_NO_CODE: AuthError = {
+  kind: 'oauth-unavailable',
+  en: 'Google sent us back without a sign-in code. Try again, or use your email and password.',
+  hi: 'Google ने साइन-इन कोड के बिना वापस भेजा। दोबारा कोशिश करें, या ईमेल और पासवर्ड इस्तेमाल करें।',
+};
+
+/** The learner closed the browser, which is a choice rather than a failure. */
+export const OAUTH_CANCELLED: AuthError = {
+  kind: 'oauth-cancelled',
+  en: 'Google sign-in was cancelled.',
+  hi: 'Google साइन इन रद्द कर दिया गया।',
+};
+
+/**
+ * Starts Google sign-in.
+ *
+ * `redirectTo` is a parameter and not something this module works out, because
+ * the right answer differs per platform and neither answer belongs in a package
+ * that must stay free of platform APIs: the website needs its own origin *plus*
+ * the `basePath` Pages serves it under, and the phone needs the `adhyapak://`
+ * deep link. Whatever is passed has to be listed in the project's
+ * Authentication → URL Configuration, or Supabase refuses the round trip.
+ *
+ * The two platforms also want opposite things from the browser, which is what
+ * `openExternally` selects:
+ *
+ *   web    — let supabase-js navigate this tab to Google. The session is picked
+ *            up on the way back by `detectSessionInUrl`, so no callback screen
+ *            has to exist.
+ *   mobile — hand the URL back instead, so the app can open it in a system auth
+ *            session that closes itself on the redirect, and then finish through
+ *            `completeOAuthSignIn`.
+ */
+export const signInWithGoogle = async (
+  redirectTo: string,
+  options: { openExternally?: boolean } = {},
+): Promise<AuthResult<OAuthStart>> => {
+  const db = getBackend();
+  if (!db) return { ok: false, error: NO_BACKEND };
+
+  try {
+    const { data, error } = await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        skipBrowserRedirect: options.openExternally === true,
+      },
+    });
+    if (error) return { ok: false, error: toAuthError(error) };
+    return { ok: true, value: { url: data?.url ?? null } };
+  } catch (thrown) {
+    return { ok: false, error: toAuthError(thrown) };
+  }
+};
+
+/**
+ * Pulls the PKCE code out of the URL a provider redirected back to.
+ *
+ * Parsed with a pattern rather than `new URL()` on purpose. The phone's callback
+ * is `adhyapak://…`, a custom scheme that the URL parser in some React Native
+ * engines will not accept, and `@adhyapak/core` ships no dependencies to paper
+ * over that. The code is opaque and single-use, so reading it out of the query
+ * string is all there is to it.
+ *
+ * Exported because a returned-from-Google URL is worth being able to inspect in
+ * a test without a network.
+ */
+export const codeFromCallback = (callbackUrl: string): string | null => {
+  const code = /[?&]code=([^&#]+)/.exec(callbackUrl)?.[1];
+  return code ? decodeURIComponent(code) : null;
+};
+
+/**
+ * Finishes a sign-in the app opened itself — the phone's half of the flow.
+ *
+ * The website never calls this: supabase-js does the same exchange for it when
+ * the page reloads on the callback URL.
+ */
+export const completeOAuthSignIn = async (
+  callbackUrl: string,
+): Promise<AuthResult<AuthState>> => {
+  const db = getBackend();
+  if (!db) return { ok: false, error: NO_BACKEND };
+
+  const code = codeFromCallback(callbackUrl);
+  if (!code) return { ok: false, error: OAUTH_NO_CODE };
+
+  try {
+    const { data, error } = await db.auth.exchangeCodeForSession(code);
+    if (error) return { ok: false, error: toAuthError(error) };
+    return { ok: true, value: stateFrom(data.session) };
   } catch (thrown) {
     return { ok: false, error: toAuthError(thrown) };
   }
