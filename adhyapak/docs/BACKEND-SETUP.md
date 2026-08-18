@@ -166,6 +166,88 @@ Re-run the **Deploy Adhyapak to GitHub Pages** workflow (Actions → the workflo
 3. **Analytics**: `…/D/web/analytics/pyq/` shows the demo years once the test
    dataset's questions are published.
 
+## Google sign-in
+
+Optional, and independent of everything above: the email provider is untouched
+by it, existing accounts keep working, and turning it off again is one toggle.
+Worth doing early for one practical reason — a learner arriving through Google
+needs **no confirmation email**, so that path does not depend on the mail
+service the built-in SMTP cannot really provide (see Troubleshooting).
+
+### Google Cloud Console
+
+1. **OAuth consent screen** — External. Only the three non-sensitive scopes:
+   `openid`, `userinfo.email`, `userinfo.profile`. Adding a sensitive scope
+   forces Google's verification review, which these three do not.
+   The app starts in **Testing**, where only listed test users can sign in.
+   **Publish app** when you want it open to everybody.
+2. **Credentials → OAuth client ID → Web application.** One authorized redirect
+   URI, and it is Supabase's callback rather than anything belonging to this
+   app:
+
+   ```
+   https://<ref>.supabase.co/auth/v1/callback
+   ```
+
+   No Android or iOS client is needed. The phone reaches Google *through*
+   Supabase, so the same web client serves both apps.
+
+### Supabase
+
+**Authentication → Providers → Google**: enable, paste the client ID and secret.
+
+Then **Authentication → URL Configuration**, which is the step that gets missed:
+
+| Site URL | `https://arjun233680.github.io/D/web/` |
+| --- | --- |
+
+Redirect URLs — all of them, or the environment that is missing lands on the
+Site URL instead of where it asked to return:
+
+```
+https://arjun233680.github.io/D/web/**    website
+https://arjun233680.github.io/D/**        Expo web build
+http://localhost:3000/**                  local web development
+adhyapak://**                             the installed app
+exp://**                                  Expo Go
+```
+
+### What the apps do with it
+
+`signInWithGoogle()` in `api/auth.ts` is the only entry point, and it takes the
+redirect URL as an argument because the right one differs per platform: the
+website builds it from `window.location.origin` **plus the `basePath`** Pages
+serves it under (`lib/authRedirect.ts`), and the phone uses
+`Linking.createURL()` so Expo Go's `exp://` address works in development.
+
+The website lets supabase-js navigate the tab and picks the session up on the
+way back. The phone opens a system auth session instead and finishes through
+`completeOAuthSignIn()`, because a native app cannot navigate itself away.
+
+The client uses **PKCE**, not the library's `implicit` default: the callback
+carries a single-use code exchanged over a POST rather than tokens sitting in
+the URL fragment. This costs the password path nothing — PKCE governs OAuth and
+magic links only.
+
+The Studio has no Google button on purpose. Staff accounts are made by hand and
+sign in with email at `/studio/sign-in`.
+
+### Not verified
+
+The round trip has been proved as far as the config: both builds contain the
+credentials and `pkce`, the button renders enabled and bilingual, and the error
+mapping is covered by tests. **No account has actually been signed in through
+Google**, so the two things only a real round trip can answer are still open:
+
+- whether Supabase **links a Google identity to an existing password account**
+  with the same address, rather than creating a second one. It should — the
+  emails match and Google's is verified — but a wrong answer here means a
+  learner loses their progress, so test it before launch with an address that
+  already has a password account.
+- what somebody sees who signed up through Google and then tries the password
+  form. No password was ever set, so GoTrue answers "Invalid login credentials",
+  which is true and unhelpful.
+
 ## Troubleshooting
 
 - **Still "no database" after setting secrets** — secrets are read at *build*
@@ -177,3 +259,17 @@ Re-run the **Deploy Adhyapak to GitHub Pages** workflow (Actions → the workflo
   signed-in user (`select role from profiles where id = auth.uid();`).
 - **Import button disabled** — the banner above it states the reason: either
   no database in this build, or the signed-in user is not staff.
+- **Google sign-in returns to the wrong page** — the redirect URL is missing
+  from Authentication → URL Configuration, so Supabase discarded it and used the
+  Site URL. It fails this way rather than with an error, which is what makes it
+  slow to spot.
+- **"Google sign-in is unavailable right now"** — the provider is off in the
+  dashboard, or the client ID and secret do not match the project. The `kind` on
+  the error is `oauth-unavailable`; the learner-facing text deliberately points
+  at email rather than explaining a configuration problem to them.
+- **Confirmation emails never arrive** — the built-in SMTP is rate-limited to a
+  handful per hour and Supabase does not intend it for production. Set a custom
+  SMTP provider under Project Settings → Authentication → SMTP Settings before
+  launch, and check your limits under Authentication → Rate Limits. Until then
+  most people who sign up with a password will never be able to sign in, with no
+  error to tell them why. Google sign-in bypasses this entirely.

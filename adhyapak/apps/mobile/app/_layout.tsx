@@ -11,6 +11,9 @@ import {
 } from '@expo-google-fonts/poppins';
 import { Hind_400Regular, Hind_500Medium, Hind_600SemiBold } from '@expo-google-fonts/hind';
 import { theme } from '@adhyapak/core';
+// Hands AsyncStorage to the backend client. Must be imported before anything
+// asks for a session, which is why it sits at the root rather than in a screen.
+import '@/lib/backend';
 import { StoreProvider, useStore } from '@/lib/store';
 import { SessionProvider, useSession } from '@/lib/session';
 

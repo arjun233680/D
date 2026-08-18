@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import {
   EXAMS,
   countQuestions,
@@ -44,7 +45,7 @@ export default function LoginScreen() {
   // an import instead of being a number baked into the bundle.
   const questionCount = useAsync(() => countQuestions(), []);
   const { lang, toggleLang } = useStore();
-  const { signIn, signUp, continueAsGuest } = useSession();
+  const { signIn, signUp, signInWithGoogle, continueAsGuest } = useSession();
 
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [name, setName] = useState('');
@@ -63,6 +64,42 @@ export default function LoginScreen() {
     email.trim().length > 3 &&
     password.length >= 6 &&
     (!signingUp || name.trim().length >= 2);
+
+  /**
+   * Where a signed-in account belongs.
+   *
+   * An educator signing in came to publish, not to practise, so the role decides
+   * it. The goal picker is skipped by the gate in _layout for a returning
+   * account whose profile is already onboarded.
+   */
+  const land = async () => {
+    if (await isStaff()) {
+      router.replace('/studio');
+      return;
+    }
+    router.replace('/(auth)/goal');
+  };
+
+  /**
+   * Google leaves and returns within this screen — the auth session is a sheet
+   * over the app, not a navigation — so unlike the website there is a success
+   * path to handle here, and a spinner that has to be turned off either way.
+   */
+  const withGoogle = async () => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+
+    const result = await signInWithGoogle();
+    setBusy(false);
+    if (!result.ok) {
+      // A dismissed browser is somebody changing their mind. Saying so in red
+      // beneath the button would read as a fault they have to fix.
+      if (result.error.kind !== 'oauth-cancelled') setError(result.error);
+      return;
+    }
+    await land();
+  };
 
   const submit = async () => {
     setBusy(true);
@@ -98,14 +135,7 @@ export default function LoginScreen() {
       }
     }
 
-    // An educator signing in came to publish, not to practise, so the role
-    // decides where they land. A learner goes on to the goal picker, which the
-    // gate in _layout skips for a returning account whose profile is onboarded.
-    if (await isStaff()) {
-      router.replace('/studio');
-      return;
-    }
-    router.replace('/(auth)/goal');
+    await land();
   };
 
   const asGuest = () => {
@@ -193,6 +223,75 @@ export default function LoginScreen() {
                 : '⚠️ This build has no database, so accounts are not possible. The full question bank is open without one.'}
             </Text>
           ) : null}
+
+          {/*
+            First, because it is the shorter path: no password to invent and no
+            confirmation email to wait for — Google has already verified the
+            address, so this route signs a learner in immediately.
+          */}
+          <Pressable
+            onPress={withGoogle}
+            disabled={busy || noBackend}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: theme.space.md,
+              backgroundColor: busy || noBackend ? 'rgba(255,255,255,0.45)' : '#fff',
+              borderRadius: theme.radius.md,
+              paddingVertical: 15,
+              marginTop: theme.space.xl,
+            }}
+          >
+            <Svg width={18} height={18} viewBox="0 0 18 18">
+              <Path
+                fill="#4285F4"
+                d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"
+              />
+              <Path
+                fill="#34A853"
+                d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"
+              />
+              <Path
+                fill="#FBBC05"
+                d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33Z"
+              />
+              <Path
+                fill="#EA4335"
+                d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"
+              />
+            </Svg>
+            <Text
+              style={{
+                color: '#1f1f1f',
+                fontSize: theme.font.base,
+                fontFamily: theme.family.display,
+              }}
+            >
+              {hi ? 'Google से जारी रखें' : 'Continue with Google'}
+            </Text>
+          </Pressable>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.space.md,
+              marginTop: theme.space.lg,
+            }}
+          >
+            <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: theme.font.xs,
+                fontFamily: theme.family.body,
+              }}
+            >
+              {hi ? 'या ईमेल से' : 'or with email'}
+            </Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+          </View>
 
           <View style={{ marginTop: theme.space.xl, gap: theme.space.lg }}>
             {signingUp ? (
