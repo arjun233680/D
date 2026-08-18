@@ -8,6 +8,7 @@ insert into subjects (id, name, icon, color, description, sort_order) values
   ('hindi', '{"en":"Hindi (Language I)","hi":"हिंदी (भाषा I)"}'::jsonb, '📖', '#F97316', '{"en":"Comprehension, grammar and language pedagogy — the highest-scoring language paper.","hi":"गद्यांश, व्याकरण एवं भाषा शिक्षाशास्त्र — सर्वाधिक स्कोरिंग भाषा पेपर।"}'::jsonb, 3),
   ('english', '{"en":"English (Language II)","hi":"अंग्रेज़ी (भाषा II)"}'::jsonb, '🔤', '#DB2777', '{"en":"Grammar, comprehension and the pedagogy of English language teaching.","hi":"व्याकरण, गद्यांश एवं अंग्रेज़ी भाषा शिक्षण का शिक्षाशास्त्र।"}'::jsonb, 4),
   ('science', '{"en":"Science","hi":"विज्ञान"}'::jsonb, '🔬', '#0D9488', '{"en":"Paper 2 (Maths & Science stream). Class 6-8 NCERT with science pedagogy.","hi":"पेपर 2 (गणित एवं विज्ञान)। कक्षा 6-8 NCERT तथा विज्ञान शिक्षाशास्त्र।"}'::jsonb, 5),
+  ('maths-science', '{"en":"Mathematics & Science","hi":"गणित एवं विज्ञान"}'::jsonb, '🔬', '#0891B2', '{"en":"CTET Paper 2''s 60-mark elective block for maths and science teachers. Classes 6-8 content with pedagogy.","hi":"CTET पेपर 2 का गणित एवं विज्ञान शिक्षकों हेतु 60 अंकों का वैकल्पिक खंड। कक्षा 6-8 विषयवस्तु एवं शिक्षाशास्त्र।"}'::jsonb, 6),
   ('sst', '{"en":"Social Studies","hi":"सामाजिक अध्ययन"}'::jsonb, '🗺️', '#B45309', '{"en":"Paper 2 (SST stream). History, Geography, Civics, Economics and SST pedagogy.","hi":"पेपर 2 (SST)। इतिहास, भूगोल, नागरिक शास्त्र, अर्थशास्त्र एवं SST शिक्षाशास्त्र।"}'::jsonb, 6),
   ('sanskrit', '{"en":"Sanskrit","hi":"संस्कृत"}'::jsonb, '🕉️', '#CA8A04', '{"en":"Language option in UPTET, HTET, Bihar TET and most state TETs.","hi":"UPTET, HTET, बिहार TET तथा अधिकांश राज्य TET में भाषा विकल्प।"}'::jsonb, 7),
   ('gk', '{"en":"General Awareness","hi":"सामान्य ज्ञान"}'::jsonb, '🌍', '#DC2626', '{"en":"DSSSB, KVS, NVS and HSSC recruitment papers. Static GK plus current affairs.","hi":"DSSSB, KVS, NVS एवं HSSC भर्ती पेपर। स्टैटिक GK एवं करेंट अफेयर्स।"}'::jsonb, 8),
@@ -36,6 +37,20 @@ insert into subjects (id, name, icon, color, description, sort_order) values
 on conflict (id) do nothing;
 
 insert into topics (id, subject_id, name, weightage) values
+  ('ms-number', 'maths-science', '{"en":"Number System","hi":"संख्या पद्धति"}'::jsonb, 8),
+  ('ms-algebra', 'maths-science', '{"en":"Algebra","hi":"बीजगणित"}'::jsonb, 8),
+  ('ms-geometry', 'maths-science', '{"en":"Geometry","hi":"ज्यामिति"}'::jsonb, 8),
+  ('ms-mensuration', 'maths-science', '{"en":"Mensuration","hi":"क्षेत्रमिति"}'::jsonb, 6),
+  ('ms-data', 'maths-science', '{"en":"Data Handling","hi":"आँकड़ा प्रबंधन"}'::jsonb, 5),
+  ('ms-math-pedagogy', 'maths-science', '{"en":"Pedagogy of Mathematics","hi":"गणित शिक्षाशास्त्र"}'::jsonb, 8),
+  ('ms-food', 'maths-science', '{"en":"Food","hi":"भोजन"}'::jsonb, 7),
+  ('ms-materials', 'maths-science', '{"en":"Materials","hi":"पदार्थ"}'::jsonb, 7),
+  ('ms-living', 'maths-science', '{"en":"The World of the Living","hi":"सजीव जगत"}'::jsonb, 8),
+  ('ms-moving', 'maths-science', '{"en":"Moving Things, People and Ideas","hi":"गतिमान वस्तुएँ, लोग एवं विचार"}'::jsonb, 7),
+  ('ms-how-things-work', 'maths-science', '{"en":"How Things Work","hi":"चीज़ें कैसे काम करती हैं"}'::jsonb, 7),
+  ('ms-natural-phenomena', 'maths-science', '{"en":"Natural Phenomena","hi":"प्राकृतिक परिघटनाएँ"}'::jsonb, 7),
+  ('ms-natural-resources', 'maths-science', '{"en":"Natural Resources","hi":"प्राकृतिक संसाधन"}'::jsonb, 6),
+  ('ms-sci-pedagogy', 'maths-science', '{"en":"Pedagogy of Science","hi":"विज्ञान शिक्षाशास्त्र"}'::jsonb, 8),
   ('cdp-growth', 'cdp', '{"en":"Growth & Development","hi":"वृद्धि एवं विकास"}'::jsonb, 14),
   ('cdp-piaget', 'cdp', '{"en":"Piaget, Kohlberg & Vygotsky","hi":"पियाजे, कोहलबर्ग एवं वाइगोत्स्की"}'::jsonb, 18),
   ('cdp-learning', 'cdp', '{"en":"Theories of Learning","hi":"अधिगम के सिद्धांत"}'::jsonb, 12),
@@ -298,8 +313,7 @@ insert into exam_sources (exam_id, label, url, checked_on) values
 
 insert into exam_papers (id, exam_id, name, level, post, marks_per_question, negative_marking, duration_minutes, total_questions, cutoff_general, cutoff_reserved, sort_order) values
   ('ctet-p1', 'ctet', '{"en":"Paper 1 — Classes 1 to 5 (PRT)","hi":"पेपर 1 — कक्षा 1 से 5 (PRT)"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
-  ('ctet-p2-ms', 'ctet', '{"en":"Paper 2 — Classes 6 to 8 (Maths & Science)","hi":"पेपर 2 — कक्षा 6 से 8 (गणित एवं विज्ञान)"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
-  ('ctet-p2-sst', 'ctet', '{"en":"Paper 2 — Classes 6 to 8 (Social Studies)","hi":"पेपर 2 — कक्षा 6 से 8 (सामाजिक अध्ययन)"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 2),
+  ('ctet-p2', 'ctet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
   ('htet-l1', 'htet', '{"en":"Level 1 — PRT (Classes 1 to 5)","hi":"स्तर 1 — PRT (कक्षा 1 से 5)"}'::jsonb, 'primary', 'PRT', 1, 0, 150, 150, 60, 55, 0),
   ('htet-l2', 'htet', '{"en":"Level 2 — TGT (Classes 6 to 8)","hi":"स्तर 2 — TGT (कक्षा 6 से 8)"}'::jsonb, 'upper-primary', 'TGT', 1, 0, 150, 150, 60, 55, 1),
   ('htet-l3', 'htet', '{"en":"Level 3 — PGT (Classes 9 to 12)","hi":"स्तर 3 — PGT (कक्षा 9 से 12)"}'::jsonb, 'senior-secondary', 'PGT', 1, 0, 150, 150, 60, 55, 2),
@@ -327,10 +341,13 @@ on conflict (id) do nothing;
 delete from elective_choices;
 delete from elective_groups;
 insert into elective_groups (id, paper_id, name) values
+  ('ctet-p2-elective', 'ctet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
   ('htet-l2-elective', 'htet-l2', '{"en":"TGT subject","hi":"TGT विषय"}'::jsonb),
   ('htet-l3-elective', 'htet-l3', '{"en":"PGT subject","hi":"PGT विषय"}'::jsonb);
 
 insert into elective_choices (group_id, subject_id, sort_order) values
+  ('ctet-p2-elective', 'maths-science', 0),
+  ('ctet-p2-elective', 'sst', 1),
   ('htet-l2-elective', 'science', 0),
   ('htet-l2-elective', 'math', 1),
   ('htet-l2-elective', 'music', 2),
@@ -372,15 +389,10 @@ insert into paper_sections (paper_id, subject_id, elective_group_id, questions, 
   ('ctet-p1', 'english', null, 30, 30, 2),
   ('ctet-p1', 'math', null, 30, 30, 3),
   ('ctet-p1', 'evs', null, 30, 30, 4),
-  ('ctet-p2-ms', 'cdp', null, 30, 30, 0),
-  ('ctet-p2-ms', 'hindi', null, 30, 30, 1),
-  ('ctet-p2-ms', 'english', null, 30, 30, 2),
-  ('ctet-p2-ms', 'math', null, 30, 30, 3),
-  ('ctet-p2-ms', 'science', null, 30, 30, 4),
-  ('ctet-p2-sst', 'cdp', null, 30, 30, 0),
-  ('ctet-p2-sst', 'hindi', null, 30, 30, 1),
-  ('ctet-p2-sst', 'english', null, 30, 30, 2),
-  ('ctet-p2-sst', 'sst', null, 60, 60, 3),
+  ('ctet-p2', 'cdp', null, 30, 30, 0),
+  ('ctet-p2', 'hindi', null, 30, 30, 1),
+  ('ctet-p2', 'english', null, 30, 30, 2),
+  ('ctet-p2', null, 'ctet-p2-elective', 60, 60, 3),
   ('htet-l1', 'cdp', null, 30, 30, 0),
   ('htet-l1', 'hindi', null, 15, 15, 1),
   ('htet-l1', 'english', null, 15, 15, 2),
@@ -625,7 +637,7 @@ on conflict (id) do nothing;
 
 insert into tests (id, title, exam_id, paper_id, type, duration_minutes, marks_per_question, negative_marking, access, attempts, year, instructions) values
   ('test-ctet-p1-mock-1', '{"en":"CTET Paper 1 — Full Mock Test 1","hi":"CTET पेपर 1 — पूर्ण मॉक टेस्ट 1"}'::jsonb, 'ctet', 'ctet-p1', 'mock', 45, 1, 0, 'free', 184620, null, '[{"en":"The timer starts the moment you begin and does not pause.","hi":"टाइमर आरंभ करते ही चालू हो जाता है तथा रुकता नहीं है।"},{"en":"You may move between sections freely and change any answer before submitting.","hi":"आप खंडों के बीच स्वतंत्र रूप से जा सकते हैं तथा सबमिट करने से पूर्व कोई भी उत्तर बदल सकते हैं।"},{"en":"Use \"Mark for Review\" to flag a question you want to return to.","hi":"जिस प्रश्न पर लौटना हो उसे \"समीक्षा हेतु चिह्नित करें\" से चिह्नित करें।"},{"en":"The paper is submitted automatically when the time ends.","hi":"समय समाप्त होते ही पेपर स्वतः सबमिट हो जाता है।"},{"en":"Switch between Hindi and English at any time — your answers are preserved.","hi":"कभी भी हिंदी एवं अंग्रेज़ी के बीच बदलें — आपके उत्तर सुरक्षित रहेंगे।"}]'::jsonb),
-  ('test-ctet-p2-mock-1', '{"en":"CTET Paper 2 — Maths & Science Mock 1","hi":"CTET पेपर 2 — गणित एवं विज्ञान मॉक 1"}'::jsonb, 'ctet', 'ctet-p2-ms', 'mock', 35, 1, 0, 'free', 96340, null, '[{"en":"The timer starts the moment you begin and does not pause.","hi":"टाइमर आरंभ करते ही चालू हो जाता है तथा रुकता नहीं है।"},{"en":"You may move between sections freely and change any answer before submitting.","hi":"आप खंडों के बीच स्वतंत्र रूप से जा सकते हैं तथा सबमिट करने से पूर्व कोई भी उत्तर बदल सकते हैं।"},{"en":"Use \"Mark for Review\" to flag a question you want to return to.","hi":"जिस प्रश्न पर लौटना हो उसे \"समीक्षा हेतु चिह्नित करें\" से चिह्नित करें।"},{"en":"The paper is submitted automatically when the time ends.","hi":"समय समाप्त होते ही पेपर स्वतः सबमिट हो जाता है।"},{"en":"Switch between Hindi and English at any time — your answers are preserved.","hi":"कभी भी हिंदी एवं अंग्रेज़ी के बीच बदलें — आपके उत्तर सुरक्षित रहेंगे।"}]'::jsonb),
+  ('test-ctet-p2-mock-1', '{"en":"CTET Paper 2 — Maths & Science Mock 1","hi":"CTET पेपर 2 — गणित एवं विज्ञान मॉक 1"}'::jsonb, 'ctet', 'ctet-p2', 'mock', 35, 1, 0, 'free', 96340, null, '[{"en":"The timer starts the moment you begin and does not pause.","hi":"टाइमर आरंभ करते ही चालू हो जाता है तथा रुकता नहीं है।"},{"en":"You may move between sections freely and change any answer before submitting.","hi":"आप खंडों के बीच स्वतंत्र रूप से जा सकते हैं तथा सबमिट करने से पूर्व कोई भी उत्तर बदल सकते हैं।"},{"en":"Use \"Mark for Review\" to flag a question you want to return to.","hi":"जिस प्रश्न पर लौटना हो उसे \"समीक्षा हेतु चिह्नित करें\" से चिह्नित करें।"},{"en":"The paper is submitted automatically when the time ends.","hi":"समय समाप्त होते ही पेपर स्वतः सबमिट हो जाता है।"},{"en":"Switch between Hindi and English at any time — your answers are preserved.","hi":"कभी भी हिंदी एवं अंग्रेज़ी के बीच बदलें — आपके उत्तर सुरक्षित रहेंगे।"}]'::jsonb),
   ('test-cdp-sectional-1', '{"en":"CDP Sectional Test — All Theorists","hi":"CDP सेक्शनल टेस्ट — सभी सिद्धांतकार"}'::jsonb, 'ctet', null, 'sectional', 15, 1, 0, 'free', 241800, null, '[{"en":"The timer starts the moment you begin and does not pause.","hi":"टाइमर आरंभ करते ही चालू हो जाता है तथा रुकता नहीं है।"},{"en":"You may move between sections freely and change any answer before submitting.","hi":"आप खंडों के बीच स्वतंत्र रूप से जा सकते हैं तथा सबमिट करने से पूर्व कोई भी उत्तर बदल सकते हैं।"},{"en":"Use \"Mark for Review\" to flag a question you want to return to.","hi":"जिस प्रश्न पर लौटना हो उसे \"समीक्षा हेतु चिह्नित करें\" से चिह्नित करें।"},{"en":"The paper is submitted automatically when the time ends.","hi":"समय समाप्त होते ही पेपर स्वतः सबमिट हो जाता है।"},{"en":"Switch between Hindi and English at any time — your answers are preserved.","hi":"कभी भी हिंदी एवं अंग्रेज़ी के बीच बदलें — आपके उत्तर सुरक्षित रहेंगे।"}]'::jsonb),
   ('test-reet-l1-mock-1', '{"en":"REET Level 1 — Mock Test 1","hi":"REET स्तर 1 — मॉक टेस्ट 1"}'::jsonb, 'reet', 'reet-l1', 'mock', 40, 1, 0, 'free', 128900, null, '[{"en":"The timer starts the moment you begin and does not pause.","hi":"टाइमर आरंभ करते ही चालू हो जाता है तथा रुकता नहीं है।"},{"en":"You may move between sections freely and change any answer before submitting.","hi":"आप खंडों के बीच स्वतंत्र रूप से जा सकते हैं तथा सबमिट करने से पूर्व कोई भी उत्तर बदल सकते हैं।"},{"en":"Use \"Mark for Review\" to flag a question you want to return to.","hi":"जिस प्रश्न पर लौटना हो उसे \"समीक्षा हेतु चिह्नित करें\" से चिह्नित करें।"},{"en":"The paper is submitted automatically when the time ends.","hi":"समय समाप्त होते ही पेपर स्वतः सबमिट हो जाता है।"},{"en":"Switch between Hindi and English at any time — your answers are preserved.","hi":"कभी भी हिंदी एवं अंग्रेज़ी के बीच बदलें — आपके उत्तर सुरक्षित रहेंगे।"}]'::jsonb),
   ('test-htet-l1-mock-1', '{"en":"HTET Level 1 — Mock Test 1","hi":"HTET स्तर 1 — मॉक टेस्ट 1"}'::jsonb, 'htet', 'htet-l1', 'mock', 40, 1, 0, 'free', 64200, null, '[{"en":"The timer starts the moment you begin and does not pause.","hi":"टाइमर आरंभ करते ही चालू हो जाता है तथा रुकता नहीं है।"},{"en":"You may move between sections freely and change any answer before submitting.","hi":"आप खंडों के बीच स्वतंत्र रूप से जा सकते हैं तथा सबमिट करने से पूर्व कोई भी उत्तर बदल सकते हैं।"},{"en":"Use \"Mark for Review\" to flag a question you want to return to.","hi":"जिस प्रश्न पर लौटना हो उसे \"समीक्षा हेतु चिह्नित करें\" से चिह्नित करें।"},{"en":"The paper is submitted automatically when the time ends.","hi":"समय समाप्त होते ही पेपर स्वतः सबमिट हो जाता है।"},{"en":"Switch between Hindi and English at any time — your answers are preserved.","hi":"कभी भी हिंदी एवं अंग्रेज़ी के बीच बदलें — आपके उत्तर सुरक्षित रहेंगे।"}]'::jsonb),

@@ -51,7 +51,7 @@ export const TESTS: Test[] = [
     id: 'test-ctet-p2-mock-1',
     title: { en: 'CTET Paper 2 — Maths & Science Mock 1', hi: 'CTET पेपर 2 — गणित एवं विज्ञान मॉक 1' },
     examId: 'ctet',
-    paperId: 'ctet-p2-ms',
+    paperId: 'ctet-p2',
     type: 'mock',
     durationMinutes: 35,
     marksPerQuestion: 1,

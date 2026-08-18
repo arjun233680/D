@@ -71,8 +71,8 @@ export const EXAMS: Exam[] = [
         ],
       },
       {
-        id: 'ctet-p2-ms',
-        name: { en: 'Paper 2 — Classes 6 to 8 (Maths & Science)', hi: 'पेपर 2 — कक्षा 6 से 8 (गणित एवं विज्ञान)' },
+        id: 'ctet-p2',
+        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
         level: 'upper-primary',
         post: 'Paper 2',
         marksPerQuestion: 1,
@@ -81,30 +81,22 @@ export const EXAMS: Exam[] = [
         totalQuestions: 150,
         cutoffGeneral: 60,
         cutoffReserved: 55,
-        sections: [
-          { subjectId: 'cdp', questions: 30, marks: 30 },
-          { subjectId: 'hindi', questions: 30, marks: 30 },
-          { subjectId: 'english', questions: 30, marks: 30 },
-          { subjectId: 'math', questions: 30, marks: 30 },
-          { subjectId: 'science', questions: 30, marks: 30 },
+        electives: [
+          {
+            id: 'ctet-p2-elective',
+            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            // Two choices, not three: a candidate takes mathematics and
+            // science together or social studies, never one half of the first.
+            choices: ['maths-science', 'sst'],
+          },
         ],
-      },
-      {
-        id: 'ctet-p2-sst',
-        name: { en: 'Paper 2 — Classes 6 to 8 (Social Studies)', hi: 'पेपर 2 — कक्षा 6 से 8 (सामाजिक अध्ययन)' },
-        level: 'upper-primary',
-        post: 'Paper 2',
-        marksPerQuestion: 1,
-        negativeMarking: 0,
-        durationMinutes: 150,
-        totalQuestions: 150,
-        cutoffGeneral: 60,
-        cutoffReserved: 55,
         sections: [
           { subjectId: 'cdp', questions: 30, marks: 30 },
           { subjectId: 'hindi', questions: 30, marks: 30 },
           { subjectId: 'english', questions: 30, marks: 30 },
-          { subjectId: 'sst', questions: 60, marks: 60 },
+          // The candidate's own block. Modelled the same way HTET models its
+          // twelve TGT subjects, so no screen needs a second code path.
+          { electiveGroupId: 'ctet-p2-elective', questions: 60, marks: 60 },
         ],
       },
     ],
