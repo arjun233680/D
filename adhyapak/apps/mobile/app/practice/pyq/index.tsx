@@ -5,7 +5,6 @@ import {
   PYQ_MODES,
   countQuestions,
   defaultPyqSelection,
-  getPaper,
   isBackendConfigured,
   listPyqYears,
   pyqModeEmptyReason,
@@ -62,7 +61,6 @@ export default function PyqScreen() {
   const update = (patch: Partial<PyqSelection>) =>
     setChosen({ ...selection, ...patch });
 
-  const paper = selection.paperId ? getPaper(selection.paperId)?.paper : undefined;
   const ready = !reason && total.data !== undefined && total.data > 0;
 
   // Switching tab keeps the paper and year but drops what the other tab was
@@ -115,40 +113,57 @@ export default function PyqScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: theme.space.lg, paddingBottom: theme.space.xl }}>
-        {/* Which paper, carried across all three tabs. */}
-        {paper ? (
-          <Pressable
-            onPress={() => router.push('/(auth)/goal')}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: theme.color.surface,
-              borderWidth: 1,
-              borderColor: theme.color.border,
-              borderRadius: theme.radius.md,
-              padding: theme.space.md,
-              marginBottom: theme.space.lg,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={s.faint}>{hi ? 'पेपर' : 'Paper'}</Text>
-              <Text style={[s.h2, { marginTop: 2 }]} numberOfLines={1}>
-                {t(paper.name, lang)}
-              </Text>
-            </View>
-            <Text style={{ color: theme.color.textMuted, fontSize: theme.font.md }}>›</Text>
-          </Pressable>
+        {/*
+          Which paper — the post as a candidate says it: PRT, TGT, PGT, Paper 2.
+          Inline rather than a link out to the goal screen, because looking at
+          last year's PRT paper is browsing, not changing what you prepare for.
+          The choice carries across all three tabs.
+        */}
+        {model.paperOptions.length > 1 ? (
+          <Row label={hi ? 'पद' : 'Post'}>
+            {model.paperOptions.map((o) => (
+              <Chip
+                key={o.value}
+                label={hi ? o.labelHi : o.labelEn}
+                active={selection.paperId === o.value}
+                // A new paper invalidates everything under it: PRT has no
+                // subject choice at all, and TGT's twelve and PGT's twenty-one
+                // share almost nothing.
+                onPress={() =>
+                  update({
+                    paperId: o.value,
+                    electiveSubjectId: undefined,
+                    subjectId: undefined,
+                    topicId: undefined,
+                  })
+                }
+              />
+            ))}
+          </Row>
         ) : null}
 
-        {model.needsElective ? (
-          <Text style={[s.muted, { marginBottom: theme.space.lg }]}>
-            {hi ? reason?.hi : reason?.en}
-          </Text>
+        {/*
+          The subject, and only for the papers that have one. PRT skips straight
+          to the year; TGT and PGT ask first, because until it is answered the
+          app does not know which sixty of a hundred and fifty are theirs.
+        */}
+        {model.electiveOptions.length > 0 ? (
+          <Row label={hi ? 'विषय' : 'Subject'}>
+            {model.electiveOptions.map((o) => (
+              <Chip
+                key={o.value}
+                label={hi ? o.labelHi : o.labelEn}
+                active={model.electiveSubjectId === o.value}
+                onPress={() =>
+                  update({ electiveSubjectId: o.value, subjectId: undefined, topicId: undefined })
+                }
+              />
+            ))}
+          </Row>
         ) : null}
 
         {/* Years — the first two tabs only. Topic practice mixes them. */}
-        {model.showYears && (years.data ?? []).length > 0 ? (
+        {!model.needsElective && model.showYears && (years.data ?? []).length > 0 ? (
           <Row label={hi ? 'वर्ष' : 'Year'}>
             {(years.data ?? []).map((y) => (
               <Chip
@@ -164,7 +179,7 @@ export default function PyqScreen() {
         {/* Section cards: the paper's own blocks, with the learner's elective
             already resolved, so a TGT Science candidate sees Science and not
             all twelve options. */}
-        {mode === 'section' && selection.year ? (
+        {mode === 'section' && !model.needsElective && selection.year ? (
           <View style={{ gap: theme.space.md }}>
             {model.sections.map((sec) => {
               const on = selection.subjectId === sec.subjectId;
@@ -198,7 +213,7 @@ export default function PyqScreen() {
         {/* Topic practice: subject tabs carry no counts — a number on a tab
             invites comparing subjects, which is not what the tab is for — and
             topic cards carry them, because that is the number being chosen. */}
-        {mode === 'topic' ? (
+        {mode === 'topic' && !model.needsElective ? (
           <>
             <Row label={hi ? 'विषय' : 'Subject'}>
               {model.subjectTabs.map((o) => (

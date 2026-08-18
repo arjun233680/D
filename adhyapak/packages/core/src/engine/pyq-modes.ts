@@ -1,7 +1,8 @@
 import type { Bilingual } from '../types';
-import { getPaper, resolvePaperSubjects, electivesForPaper } from '../data/exams';
+import { getExam, getPaper, resolvePaperSubjects, electivesForPaper } from '../data/exams';
 import { getSubject, getTopic, topicsForSubject } from '../data/subjects';
 import type { PracticeFilter } from './practice';
+import { paperLabel } from './pyq-filter';
 import type { PyqOption, PyqSelection } from './pyq-filter';
 
 /**
@@ -56,6 +57,21 @@ export interface PyqTopic {
 
 export interface PyqModeModel {
   mode: PyqMode;
+  /**
+   * The exam's papers, labelled the way a candidate says them — PRT, TGT, PGT,
+   * Paper 1, Level 2. Shown on every tab so somebody preparing for TGT can look
+   * at last year's PRT paper without leaving to change their goal and back.
+   */
+  paperOptions: PyqOption<string>[];
+  /**
+   * The subjects the chosen paper offers, when it offers a choice at all.
+   *
+   * Empty for PRT and for every paper with a fixed blueprint, which is what
+   * makes the second step disappear for them rather than showing one option.
+   */
+  electiveOptions: PyqOption<string>[];
+  /** The subject in force: the one being browsed, else the profile's. */
+  electiveSubjectId?: string;
   /** Year chips belong to the first two modes only. */
   showYears: boolean;
   /**
@@ -95,13 +111,32 @@ export const pyqModeModel = (
   const found = paperId ? getPaper(paperId) : undefined;
   const paper = found?.paper;
 
-  const resolved = resolvePaperSubjects(paperId, electiveSubjectId);
-  const needsElective = !resolved.ok && electivesForPaper(paperId).length > 0;
+  // Browsing beats the profile. A TGT candidate reading the PGT paper says
+  // which PGT subject here, and that answer must not become what they are
+  // preparing for.
+  const elective = selection.electiveSubjectId ?? electiveSubjectId;
+
+  const exam = selection.examId ? getExam(selection.examId) : undefined;
+  const paperOptions: PyqOption<string>[] = (exam?.papers ?? []).map((p) => {
+    const label = paperLabel(p);
+    return { value: p.id, labelEn: label.en, labelHi: label.hi };
+  });
+
+  const group = electivesForPaper(paperId)[0];
+  const electiveOptions: PyqOption<string>[] = (group?.choices ?? [])
+    .map((id) => {
+      const subject = getSubject(id);
+      return subject ? { value: id, labelEn: subject.name.en, labelHi: subject.name.hi } : undefined;
+    })
+    .filter((o): o is PyqOption<string> => Boolean(o));
+
+  const resolved = resolvePaperSubjects(paperId, elective);
+  const needsElective = !resolved.ok && electiveOptions.length > 0;
 
   const sections: PyqSection[] = [];
   if (paper && resolved.ok) {
     for (const section of paper.sections) {
-      const subjectId = section.subjectId ?? electiveSubjectId;
+      const subjectId = section.subjectId ?? elective;
       if (!subjectId) continue;
       const subject = getSubject(subjectId);
       if (!subject) continue;
@@ -140,6 +175,9 @@ export const pyqModeModel = (
 
   return {
     mode,
+    paperOptions,
+    electiveOptions,
+    electiveSubjectId: elective,
     showYears: mode !== 'topic',
     sections,
     subjectTabs,

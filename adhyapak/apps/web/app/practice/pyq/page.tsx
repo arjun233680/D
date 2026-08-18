@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   PYQ_MODES,
   countQuestions,
-  getPaper,
   isBackendConfigured,
   listPyqYears,
   pyqModeEmptyReason,
@@ -91,7 +90,6 @@ function PyqChooser() {
   const total = useAsync(() => countQuestions(model.filter), [JSON.stringify(model.filter)]);
 
   const reason = pyqModeEmptyReason(model, selection);
-  const paper = selection.paperId ? getPaper(selection.paperId)?.paper : undefined;
   const ready = !reason && total.data !== undefined && total.data > 0;
   const query = new URLSearchParams({ ...pyqSelectionToParams(selection), mode }).toString();
   const activeSubject = selection.subjectId ?? model.subjectTabs[0]?.value;
@@ -128,29 +126,80 @@ function PyqChooser() {
         ))}
       </nav>
 
-      {paper ? (
-        <Link
-          href="/"
-          className="card flex items-center justify-between gap-3 p-3 transition-colors hover:border-[var(--color-brand)]"
-        >
-          <span className="min-w-0">
-            <span className="block text-[11px] font-bold text-[var(--color-muted)]">
-              {hi ? 'पेपर' : 'Paper'}
-            </span>
-            <span className="block truncate text-[14px] font-bold">{t(paper.name, lang)}</span>
-          </span>
-          <span className="text-[var(--color-muted)]">›</span>
-        </Link>
+      {/*
+        Which paper — the post as a candidate says it: PRT, TGT, PGT, Paper 2.
+        Inline rather than a link out to the goal screen, because looking at
+        last year's PRT paper is browsing, not changing what you prepare for.
+      */}
+      {model.paperOptions.length > 1 ? (
+        <section>
+          <h2 className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
+            {hi ? 'पद' : 'Post'}
+          </h2>
+          <div className="rail flex gap-2">
+            {model.paperOptions.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                // A new paper invalidates everything under it: PRT has no
+                // subject choice at all, and TGT's twelve and PGT's twenty-one
+                // share almost nothing.
+                onClick={() =>
+                  update({
+                    paperId: o.value,
+                    electiveSubjectId: undefined,
+                    subjectId: undefined,
+                    topicId: undefined,
+                  })
+                }
+                aria-pressed={selection.paperId === o.value}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
+                  selection.paperId === o.value
+                    ? 'border-transparent bg-[var(--color-ink)] text-white'
+                    : 'border-[var(--color-line)] text-[var(--color-muted)]'
+                }`}
+              >
+                {hi ? o.labelHi : o.labelEn}
+              </button>
+            ))}
+          </div>
+        </section>
       ) : null}
 
-      {model.needsElective ? (
-        <p className="card p-3 text-[13px] text-[var(--color-muted)]">
-          {hi ? reason?.hi : reason?.en}
-        </p>
+      {/*
+        The subject, and only for the papers that have one. PRT goes straight to
+        the year; TGT and PGT ask first, because until it is answered the app
+        does not know which sixty of a hundred and fifty are theirs.
+      */}
+      {model.electiveOptions.length > 0 ? (
+        <section>
+          <h2 className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
+            {hi ? 'विषय' : 'Subject'}
+          </h2>
+          <div className="rail flex gap-2">
+            {model.electiveOptions.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() =>
+                  update({ electiveSubjectId: o.value, subjectId: undefined, topicId: undefined })
+                }
+                aria-pressed={model.electiveSubjectId === o.value}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
+                  model.electiveSubjectId === o.value
+                    ? 'border-transparent bg-[var(--color-ink)] text-white'
+                    : 'border-[var(--color-line)] text-[var(--color-muted)]'
+                }`}
+              >
+                {hi ? o.labelHi : o.labelEn}
+              </button>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {/* Years — the first two tabs only. Topic practice mixes them on purpose. */}
-      {model.showYears && (years.data ?? []).length > 0 ? (
+      {!model.needsElective && model.showYears && (years.data ?? []).length > 0 ? (
         <section>
           <h2 className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
             {hi ? 'वर्ष' : 'Year'}
@@ -177,7 +226,7 @@ function PyqChooser() {
 
       {/* Section cards, with the learner's elective already resolved — a TGT
           Science candidate sees Science, not all twelve options. */}
-      {mode === 'section' && selection.year ? (
+      {mode === 'section' && !model.needsElective && selection.year ? (
         <section className="grid gap-2 sm:grid-cols-2">
           {model.sections.map((sec) => (
             <button
@@ -210,7 +259,7 @@ function PyqChooser() {
       {/* Topic practice. The subject tabs carry no counts — a number on a tab
           invites comparing subjects, which is not what it is for — and the
           topic cards carry them, because that is the number being chosen. */}
-      {mode === 'topic' ? (
+      {mode === 'topic' && !model.needsElective ? (
         <>
           <section>
             <h2 className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">

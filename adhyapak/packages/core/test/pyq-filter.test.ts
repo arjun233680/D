@@ -221,6 +221,7 @@ describe('the filter round-trips through the URL', () => {
       subjectId: 'cdp',
       year: 2023,
       topicId: 'cdp-piaget',
+      electiveSubjectId: 'science',
     };
     const params = pyqSelectionToParams(selection);
     const back = pyqSelectionFromParams((k) => params[k] ?? null);
