@@ -452,10 +452,14 @@ create trigger questions_touch_updated_at
   before update on questions
   for each row execute function touch_updated_at();
 
+-- `log_question_status_change` is 0005's, and the name matters: it is what the
+-- function is actually called. An earlier draft of this file invented
+-- `audit_content_status`, which reads like the right name and does not exist,
+-- so the whole migration failed here at the last step.
 drop trigger if exists questions_audit_status on questions;
 create trigger questions_audit_status
   after update on questions
-  for each row execute function audit_content_status();
+  for each row execute function log_question_status_change();
 
 -- ------------------------------------------------------------------- views
 
