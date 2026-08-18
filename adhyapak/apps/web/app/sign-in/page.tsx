@@ -26,9 +26,11 @@ import { authRedirectUrl } from '@/lib/authRedirect';
  * staff accounts created by hand, it explains staff things, and mixing the two
  * would put "you are not an educator" in front of aspirants.
  *
- * Nothing here gates the app. Signing in is what makes progress follow you to
- * another device; the question bank has never needed an account and still does
- * not.
+ * This gates the app. It did not used to: the question bank was reachable
+ * without an account, on the reasoning that an aspirant should get to it in two
+ * taps. That decision has been withdrawn — everything behind this page is
+ * scoped to a learner, and a visitor who could see all of it and keep none of
+ * it was being shown a product that does not exist for them.
  */
 
 type Mode = 'sign-in' | 'sign-up';
@@ -370,11 +372,6 @@ export default function SignInPage() {
         </div>
       )}
 
-      <p className="text-center text-[12px] text-[var(--color-muted)]">
-        <Link href="/" className="underline">
-          {hi ? 'बिना खाता बनाए शुरू करें' : 'Start without an account'}
-        </Link>
-      </p>
     </div>
   );
 }

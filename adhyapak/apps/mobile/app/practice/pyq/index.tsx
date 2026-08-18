@@ -4,6 +4,7 @@ import { router, Stack } from 'expo-router';
 import {
   PYQ_MODES,
   countQuestions,
+  getPaper,
   defaultPyqSelection,
   isBackendConfigured,
   listPyqYears,
@@ -58,6 +59,30 @@ export default function PyqScreen() {
   const total = useAsync(() => countQuestions(model.filter), [JSON.stringify(model.filter)]);
 
   const reason = pyqModeEmptyReason(model, selection);
+
+  /*
+   * The screen is two screens.
+   *
+   * Which paper and which subject are one question — "whose paper am I
+   * looking at" — and the three modes are a different one, asked of that
+   * paper. Showing the modes first put the second question above the first,
+   * so the tabs changed what was counted before anything had said what was
+   * being counted.
+   *
+   * Settled means both halves are answered. After onboarding they always are,
+   * so the common case opens straight on the modes with a line saying which
+   * paper they belong to.
+   */
+  const settled =
+    Boolean(selection.paperId) &&
+    (model.electiveOptions.length === 0 || Boolean(model.electiveSubjectId));
+  const [editing, setEditing] = useState(false);
+  const choosing = editing || !settled;
+
+  const chosenPaper = selection.paperId ? getPaper(selection.paperId)?.paper : undefined;
+  const chosenSubject = model.electiveSubjectId
+    ? model.electiveOptions.find((o) => o.value === model.electiveSubjectId)
+    : undefined;
   const update = (patch: Partial<PyqSelection>) =>
     setChosen({ ...selection, ...patch });
 
@@ -75,86 +100,126 @@ export default function PyqScreen() {
     <View style={s.screen}>
       <Stack.Screen options={{ title: hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions' }} />
 
-      {/* The three questions, as three tabs. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          borderBottomWidth: 1,
-          borderBottomColor: theme.color.border,
-          backgroundColor: theme.color.surface,
-        }}
-      >
-        {PYQ_MODES.map((m) => {
-          const on = mode === m;
-          return (
-            <Pressable
-              key={m}
-              onPress={() => switchMode(m)}
-              style={{
-                flex: 1,
-                paddingVertical: 13,
-                alignItems: 'center',
-                borderBottomWidth: 2,
-                borderBottomColor: on ? theme.color.primary : 'transparent',
-              }}
-            >
-              <Text
+      {/* Which paper this is about, and a way back to change it. Shown only
+          once the question below it has an owner. */}
+      {!choosing ? (
+        <Pressable
+          onPress={() => setEditing(true)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.space.sm,
+            paddingHorizontal: theme.space.lg,
+            paddingVertical: 11,
+            backgroundColor: theme.color.surface,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.color.border,
+          }}
+        >
+          <Text style={[s.body, { flex: 1, fontFamily: theme.family.bodySemi }]} numberOfLines={1}>
+            {[chosenPaper ? t(chosenPaper.name, lang) : null, chosenSubject ? (hi ? chosenSubject.labelHi : chosenSubject.labelEn) : null]
+              .filter(Boolean)
+              .join('  ·  ')}
+          </Text>
+          <Text style={s.faint}>{hi ? 'बदलें' : 'Change'}</Text>
+          <Text style={{ color: theme.color.textMuted }}>✏️</Text>
+        </Pressable>
+      ) : null}
+
+      {/* The three questions, as three tabs — only once there is a paper for
+          them to be about. */}
+      {!choosing ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            borderBottomWidth: 1,
+            borderBottomColor: theme.color.border,
+            backgroundColor: theme.color.surface,
+          }}
+        >
+          {PYQ_MODES.map((m) => {
+            const on = mode === m;
+            return (
+              <Pressable
+                key={m}
+                onPress={() => switchMode(m)}
                 style={{
-                  fontSize: theme.font.sm,
-                  fontFamily: on ? theme.family.bodySemi : theme.family.body,
-                  color: on ? theme.color.primary : theme.color.textMuted,
+                  flex: 1,
+                  paddingVertical: 13,
+                  alignItems: 'center',
+                  borderBottomWidth: 2,
+                  borderBottomColor: on ? theme.color.primary : 'transparent',
                 }}
               >
-                {t(pyqModeLabel(m), lang)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+                <Text
+                  style={{
+                    fontSize: theme.font.sm,
+                    fontFamily: on ? theme.family.bodySemi : theme.family.body,
+                    color: on ? theme.color.primary : theme.color.textMuted,
+                  }}
+                >
+                  {t(pyqModeLabel(m), lang)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
 
       <ScrollView contentContainerStyle={{ padding: theme.space.lg, paddingBottom: theme.space.xl }}>
         {/*
-          Which paper — the post as a candidate says it: PRT, TGT, PGT, Paper 2.
-          Inline rather than a link out to the goal screen, because looking at
-          last year's PRT paper is browsing, not changing what you prepare for.
-          The choice carries across all three tabs.
+          Step A. Level cards, not a chip row: this is the first question the
+          screen asks and its answer decides everything under it, so it gets the
+          room. The level from onboarding arrives already chosen — the profile is
+          the default — and can be changed here without going back through it.
         */}
-        {model.paperOptions.length > 1 ? (
-          <Row label={hi ? 'पद' : 'Post'}>
-            {model.paperOptions.map((o) => (
-              <Chip
-                key={o.value}
-                label={hi ? o.labelHi : o.labelEn}
-                active={selection.paperId === o.value}
-                // A new paper invalidates everything under it: PRT has no
-                // subject choice at all, and TGT's twelve and PGT's twenty-one
-                // share almost nothing.
-                onPress={() =>
-                  update({
-                    paperId: o.value,
-                    electiveSubjectId: undefined,
-                    subjectId: undefined,
-                    topicId: undefined,
-                  })
-                }
-              />
-            ))}
-          </Row>
+        {choosing && model.paperOptions.length > 1 ? (
+          <View style={{ gap: theme.space.md, marginBottom: theme.space.lg }}>
+            <Text style={[s.faint, { fontFamily: theme.family.bodySemi }]}>
+              {hi ? 'कौन-सा स्तर?' : 'Which level?'}
+            </Text>
+            {model.paperOptions.map((o) => {
+              const paper = getPaper(o.value)?.paper;
+              const on = selection.paperId === o.value;
+              return (
+                <Pressable
+                  key={o.value}
+                  onPress={() =>
+                    update({
+                      paperId: o.value,
+                      electiveSubjectId: undefined,
+                      subjectId: undefined,
+                      topicId: undefined,
+                    })
+                  }
+                  style={{
+                    backgroundColor: theme.color.surface,
+                    borderRadius: theme.radius.md,
+                    borderWidth: 2,
+                    borderColor: on ? theme.color.primary : theme.color.border,
+                    padding: theme.space.lg,
+                  }}
+                >
+                  <Text style={s.h2}>{hi ? o.labelHi : o.labelEn}</Text>
+                  {paper ? (
+                    <Text style={[s.faint, { marginTop: 2 }]} numberOfLines={1}>
+                      {t(paper.name, lang)}  ·  {paper.totalQuestions} {hi ? 'प्रश्न' : 'questions'}
+                    </Text>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
         ) : null}
 
-        {/*
-          The subject, and only for the papers that have one. PRT skips straight
-          to the year; TGT and PGT ask first, because until it is answered the
-          app does not know which sixty of a hundred and fifty are theirs.
-        */}
-        {/*
-          A grid once there are more than five. Twelve TGT subjects and
-          twenty-one PGT ones in a sideways-scrolling row hide most of
-          themselves off the right edge, with no sign of how many are there.
-        */}
-        {model.electiveOptions.length > 0 ? (
+        {/* Step B. Only for levels that offer a subject choice. A grid rather
+            than a row: twelve TGT subjects and twenty-one PGT ones scrolling
+            sideways hide most of themselves off the right edge. */}
+        {choosing && model.electiveOptions.length > 0 ? (
           <View style={{ marginBottom: theme.space.md }}>
-            <Text style={[s.faint, { marginBottom: 6 }]}>{hi ? 'विषय' : 'Subject'}</Text>
+            <Text style={[s.faint, { marginBottom: 6, fontFamily: theme.family.bodySemi }]}>
+              {hi ? 'कौन-सा विषय?' : 'Which subject?'}
+            </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm }}>
               {model.electiveOptions.map((o) => {
                 const on = model.electiveSubjectId === o.value;
@@ -279,54 +344,70 @@ export default function PyqScreen() {
         ) : null}
       </ScrollView>
 
-      {/* What is about to start: the filter's real size, from the database. */}
-      <View
-        style={{
-          padding: theme.space.lg,
-          borderTopWidth: 1,
-          borderTopColor: theme.color.border,
-          backgroundColor: theme.color.surface,
-        }}
-      >
-        {total.loading ? (
-          <Text style={s.muted}>{hi ? 'गिन रहे हैं…' : 'Counting…'}</Text>
-        ) : (
-          <>
-            <Text style={[s.h2, { fontVariant: ['tabular-nums'] }]}>
-              {total.data ?? 0}{' '}
-              <Text style={s.muted}>
-                {hi ? 'प्रश्न' : total.data === 1 ? 'question' : 'questions'}
+      {/* Choosing: one button that closes the two steps. Counting anything
+          here would be counting a paper nobody has named yet. */}
+      {choosing ? (
+        <View
+          style={{
+            padding: theme.space.lg,
+            borderTopWidth: 1,
+            borderTopColor: theme.color.border,
+            backgroundColor: theme.color.surface,
+          }}
+        >
+          <Button
+            label={hi ? 'आगे बढ़ें' : 'Continue'}
+            disabled={!settled}
+            onPress={() => setEditing(false)}
+          />
+        </View>
+      ) : (
+        /* Step C: what is about to start, at its real size, from the database. */
+        <View
+          style={{
+            padding: theme.space.lg,
+            borderTopWidth: 1,
+            borderTopColor: theme.color.border,
+            backgroundColor: theme.color.surface,
+          }}
+        >
+          {total.loading ? (
+            <Text style={s.muted}>{hi ? 'गिन रहे हैं…' : 'Counting…'}</Text>
+          ) : (
+            <>
+              <Text style={[s.h2, { fontVariant: ['tabular-nums'] }]}>
+                {total.data ?? 0}{' '}
+                <Text style={s.muted}>
+                  {hi ? 'प्रश्न' : total.data === 1 ? 'question' : 'questions'}
+                </Text>
               </Text>
-            </Text>
-            <Text style={[s.faint, { marginTop: 4 }]}>
-              {reason ? (hi ? reason.hi : reason.en) : t(pyqModeLabel(mode), lang)}
-            </Text>
-          </>
-        )}
+              <Text style={[s.faint, { marginTop: 4 }]}>
+                {reason ? (hi ? reason.hi : reason.en) : t(pyqModeLabel(mode), lang)}
+              </Text>
+            </>
+          )}
 
-        <Button
-          label={
-            mode === 'full-paper'
-              ? hi
-                ? 'पूरा टेस्ट शुरू करें'
-                : 'Start full test'
-              : hi
-                ? 'अभ्यास शुरू करें'
-                : 'Start practice'
-          }
-          disabled={!ready}
-          onPress={() =>
-            router.push({
-              pathname: '/practice/pyq/attempt',
-              // `mode` rides along so the runner knows whether it is starting a
-              // rehearsal or a practice set — the same questions, but a full
-              // paper is timed against the real duration and a topic set is not.
-              params: { ...pyqSelectionToParams(selection), mode },
-            })
-          }
-          style={{ marginTop: theme.space.md }}
-        />
-      </View>
+          <Button
+            label={
+              mode === 'full-paper'
+                ? hi
+                  ? 'पूरा टेस्ट शुरू करें'
+                  : 'Start full test'
+                : hi
+                  ? 'अभ्यास शुरू करें'
+                  : 'Start practice'
+            }
+            disabled={!ready}
+            onPress={() =>
+              router.push({
+                pathname: '/practice/pyq/attempt',
+                params: { ...pyqSelectionToParams(selection), mode },
+              })
+            }
+            style={{ marginTop: theme.space.md }}
+          />
+        </View>
+      )}
     </View>
   );
 }

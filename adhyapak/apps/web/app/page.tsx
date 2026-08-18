@@ -475,7 +475,12 @@ function GoalPicker() {
 
   const examGroups = useMemo(() => examPickerGroups(query, lang), [query, lang]);
   const exam = examId ? getExam(examId) : undefined;
-  const chosenPaperId = paperId ?? exam?.papers[0]?.id;
+  // No fallback to `papers[0]`. That silently recorded a PGT candidate who
+  // tapped HTET and then Continue as sitting Level 1 — wrong syllabus, wrong
+  // cut-off, and nothing on screen having asked. A single-paper exam has one
+  // answer and it is chosen for them; anything else has to be picked.
+  const needsPaper = Boolean(exam && exam.papers.length > 1);
+  const chosenPaperId = needsPaper ? (paperId ?? undefined) : exam?.papers[0]?.id;
   const group = electivesForPaper(chosenPaperId)[0];
 
   // Each step invalidates the ones under it. HTET TGT's twelve subjects and
@@ -491,7 +496,7 @@ function GoalPicker() {
     setSubjectId(null);
   };
 
-  const ready = Boolean(exam) && (!group || Boolean(subjectId));
+  const ready = Boolean(exam) && Boolean(chosenPaperId) && (!group || Boolean(subjectId));
 
   const confirm = () => {
     if (!exam || !ready) return;
@@ -573,9 +578,9 @@ function GoalPicker() {
                 key={paper.id}
                 type="button"
                 onClick={() => pickPaper(paper.id)}
-                aria-pressed={chosenPaperId === paper.id}
+                aria-pressed={paperId === paper.id}
                 className={`card p-3 text-left transition-colors ${
-                  chosenPaperId === paper.id
+                  paperId === paper.id
                     ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
                     : 'hover:border-[var(--color-brand)]'
                 }`}

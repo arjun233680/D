@@ -245,3 +245,26 @@ describe('the chips can only ever come from the goal exam', () => {
     assert.equal(resolved.electiveSubjectId, undefined, 'CTET does not offer Science as an elective');
   });
 });
+
+describe('a selection is only settled once its owner is named', () => {
+  // The PYQ screen shows the three modes behind this: a paper, and a subject
+  // where the paper offers one. Both screens derive it the same way, so the
+  // condition is asserted here rather than twice in two UI trees.
+  const isSettled = (paperId?: string, elective?: string) => {
+    const model = pyqModeModel('full-paper', { examId: 'htet', paperId, electiveSubjectId: elective }, undefined);
+    return Boolean(paperId) && (model.electiveOptions.length === 0 || Boolean(model.electiveSubjectId));
+  };
+
+  it('is not settled with no paper', () => {
+    assert.equal(isSettled(undefined, undefined), false);
+  });
+
+  it('is settled by a paper that asks nothing more', () => {
+    assert.equal(isSettled('htet-l1', undefined), true, 'PRT has no subject choice');
+  });
+
+  it('waits for the subject on a paper that has one', () => {
+    assert.equal(isSettled('htet-l2', undefined), false, 'TGT must say which subject');
+    assert.equal(isSettled('htet-l2', 'science'), true);
+  });
+});

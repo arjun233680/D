@@ -28,11 +28,13 @@ import { useSession } from '@/lib/session';
 /**
  * Sign in, or make an account.
  *
- * Deliberately low-friction: an aspirant downloading a prep app at 11pm should
- * reach the question bank in two taps, so continuing without an account stays a
- * first-class option rather than fine print. Signing in only matters once
- * progress needs to follow them to another device — which is now something it
- * can actually do.
+ * The door, and there is no way past it. Continuing without an account used to
+ * be a first-class option here — the reasoning was that an aspirant downloading
+ * a prep app at 11pm should reach the question bank in two taps — and that
+ * decision has been withdrawn. Everything behind this screen is scoped to a
+ * learner: the goal reshapes every subject list, progress and bookmarks have to
+ * survive a reinstall, and an attempt is only worth submitting if there is
+ * somewhere to record it. A guest could see all of it and keep none of it.
  *
  * What this screen used to be: a name field and an optional "mobile or email"
  * that were written to local state and nothing else. There was no account
@@ -45,7 +47,7 @@ export default function LoginScreen() {
   // an import instead of being a number baked into the bundle.
   const questionCount = useAsync(() => countQuestions(), []);
   const { lang, toggleLang } = useStore();
-  const { signIn, signUp, signInWithGoogle, continueAsGuest } = useSession();
+  const { signIn, signUp, signInWithGoogle } = useSession();
 
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [name, setName] = useState('');
@@ -136,11 +138,6 @@ export default function LoginScreen() {
     }
 
     await land();
-  };
-
-  const asGuest = () => {
-    continueAsGuest();
-    router.replace('/(auth)/goal');
   };
 
   return (
@@ -412,17 +409,6 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
 
-          <Pressable onPress={asGuest} style={{ paddingVertical: 14, alignItems: 'center' }}>
-            <Text
-              style={{
-                color: 'rgba(255,255,255,0.75)',
-                fontSize: theme.font.sm,
-                fontFamily: theme.family.bodyMedium,
-              }}
-            >
-              {hi ? 'बिना खाता बनाए शुरू करें' : 'Start without an account'}
-            </Text>
-          </Pressable>
 
           <View
             style={{
