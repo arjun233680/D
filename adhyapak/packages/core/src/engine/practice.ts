@@ -37,6 +37,15 @@ export interface PracticeFilter {
   shift?: string;
   /** Restrict to these ids — used for bookmarks and module practice. */
   ids?: string[];
+  /**
+   * Return the questions in the order they were printed.
+   *
+   * A full-paper rehearsal is not a shuffle: question 42 follows question 41,
+   * and a learner comparing their attempt against the real paper needs the
+   * numbers to line up. Ignored offline, where the bundled bank has no
+   * question numbers.
+   */
+  orderByQuestionNo?: boolean;
   limit?: number;
   /** Rows to skip, for paging a large bank. */
   offset?: number;

@@ -220,10 +220,17 @@ describe('the filter round-trips through the URL', () => {
       paperId: 'htet-l1',
       subjectId: 'cdp',
       year: 2023,
+      topicId: 'cdp-piaget',
     };
     const params = pyqSelectionToParams(selection);
     const back = pyqSelectionFromParams((k) => params[k] ?? null);
     assert.deepEqual(back, selection);
+  });
+
+  it('carries a topic, so a topic-practice link opens on that topic', () => {
+    const params = pyqSelectionToParams({ examId: 'htet', topicId: 'cdp-piaget' });
+    assert.equal(params.topic, 'cdp-piaget');
+    assert.equal(pyqSelectionFromParams((k) => params[k] ?? null).topicId, 'cdp-piaget');
   });
 
   it('drops a year that is not a year', () => {

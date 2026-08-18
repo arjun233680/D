@@ -6,10 +6,12 @@ import {
   revealsDuringPaper,
   type SolutionMode,
   countQuestions,
+  getPaper,
   isBackendConfigured,
   listQuestions,
-  pyqEmptyReason,
-  pyqFilterModel,
+  pyqModeEmptyReason,
+  pyqModeModel,
+  type PyqMode,
   pyqSelectionFromParams,
   pyqSelectionToParams,
   pyqTestFromQuestions,
@@ -64,7 +66,16 @@ function PyqAttempt() {
     (): PyqSelection => resolvePyqSelection(pyqSelectionFromParams((k) => params.get(k)), user),
     [params, user],
   );
-  const model = useMemo(() => pyqFilterModel(selection), [selection]);
+  // The mode the chooser started, not a filter re-derived here. A full paper
+  // and a topic set are the same questions asked for differently — one is the
+  // whole paper in printed order, the other is one topic across every year —
+  // and rebuilding the filter without it would quietly run the wrong one.
+  const pyqMode = (params.get('mode') as PyqMode | null) ?? 'full-paper';
+  const model = useMemo(
+    () => pyqModeModel(pyqMode, selection, user.electiveSubjectId),
+    [pyqMode, selection, user.electiveSubjectId],
+  );
+  const paper = selection.paperId ? getPaper(selection.paperId)?.paper : undefined;
   const filterKey = JSON.stringify(model.filter);
 
   // "Back to questions" from the result comes back here with ?review=1.
@@ -80,14 +91,14 @@ function PyqAttempt() {
   );
 
   const truncated = pyqTruncation(total.data, questions.data?.length ?? 0, PYQ_SCREEN_LIMIT);
-  const reason = pyqEmptyReason(selection, model);
+  const reason = pyqModeEmptyReason(model, selection);
   const byPaper = isBackendConfigured();
 
   const query = new URLSearchParams(pyqSelectionToParams(selection)).toString();
 
   const title =
-    byPaper && model.paper
-      ? `${t(model.paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
+    byPaper && paper
+      ? `${t(paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
       : hi
         ? 'विगत वर्ष प्रश्न'
         : 'Previous year questions';
@@ -138,7 +149,11 @@ function PyqAttempt() {
         empty={{
           icon: '📜',
           title: hi ? 'कोई प्रश्न नहीं' : 'No questions',
-          body: hi ? reason.hi : reason.en,
+          body:
+            (hi ? reason?.hi : reason?.en) ??
+            (hi
+              ? 'इस चयन के लिए बैंक में अभी कोई प्रश्न नहीं है।'
+              : 'The bank has no questions for this selection yet.'),
         }}
       >
         {() =>

@@ -706,6 +706,10 @@ export const SUBJECT_BY_ID = new Map(SUBJECTS.map((s) => [s.id, s]));
 
 export const ALL_TOPICS = SUBJECTS.flatMap((s) => s.topics);
 
+/** The topics of one subject, in syllabus order. Empty for an unknown subject. */
+export const topicsForSubject = (subjectId: string | undefined) =>
+  subjectId ? (SUBJECTS.find((s) => s.id === subjectId)?.topics ?? []) : [];
+
 export const TOPIC_BY_ID = new Map(ALL_TOPICS.map((t) => [t.id, t]));
 
 export const getSubject = (id: string): Subject | undefined => SUBJECT_BY_ID.get(id);

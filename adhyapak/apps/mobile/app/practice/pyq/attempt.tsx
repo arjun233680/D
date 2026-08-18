@@ -3,10 +3,12 @@ import { Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import {
   countQuestions,
+  getPaper,
   isBackendConfigured,
   listQuestions,
-  pyqEmptyReason,
-  pyqFilterModel,
+  pyqModeEmptyReason,
+  pyqModeModel,
+  type PyqMode,
   pyqSelectionFromParams,
   pyqTruncation,
   PYQ_SCREEN_LIMIT,
@@ -27,7 +29,7 @@ import { AsyncSection, s } from '@/components/ui';
  */
 
 export default function PyqAttemptScreen() {
-  const { lang } = useStore();
+  const { lang, user } = useStore();
   const hi = lang === 'hi';
   const params = useLocalSearchParams<Record<string, string>>();
 
@@ -38,7 +40,16 @@ export default function PyqAttemptScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(params)],
   );
-  const model = useMemo(() => pyqFilterModel(selection), [selection]);
+  // The mode the chooser started, not a filter re-derived here. A full paper
+  // and a topic set are the same questions asked for differently — one is the
+  // whole paper in printed order, the other is one topic across every year —
+  // and rebuilding the filter without it would quietly run the wrong one.
+  const pyqMode = ((typeof params.mode === 'string' ? params.mode : undefined) as PyqMode) ?? 'full-paper';
+  const model = useMemo(
+    () => pyqModeModel(pyqMode, selection, user.electiveSubjectId),
+    [pyqMode, selection, user.electiveSubjectId],
+  );
+  const paper = selection.paperId ? getPaper(selection.paperId)?.paper : undefined;
   const filterKey = JSON.stringify(model.filter);
 
   const total = useAsync(() => countQuestions(model.filter), [filterKey]);
@@ -48,12 +59,12 @@ export default function PyqAttemptScreen() {
   );
 
   const truncated = pyqTruncation(total.data, questions.data?.length ?? 0, PYQ_SCREEN_LIMIT);
-  const reason = pyqEmptyReason(selection, model);
+  const reason = pyqModeEmptyReason(model, selection);
   const byPaper = isBackendConfigured();
 
   const subtitle =
-    byPaper && model.paper
-      ? `${t(model.paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
+    byPaper && paper
+      ? `${t(paper.name, lang)}${selection.year ? ` · ${selection.year}` : ''}`
       : hi
         ? 'वास्तविक पेपरों से'
         : 'Straight from real papers';
@@ -84,7 +95,14 @@ export default function PyqAttemptScreen() {
           empty={{
             icon: '📜',
             title: hi ? 'कोई प्रश्न नहीं' : 'No questions',
-            body: hi ? reason.hi : reason.en,
+            // A complete selection that still returns nothing means the bank
+            // has no questions for it yet, which is a different thing from an
+            // unfinished choice and worth saying rather than leaving blank.
+            body:
+              (hi ? reason?.hi : reason?.en) ??
+              (hi
+                ? 'इस चयन के लिए बैंक में अभी कोई प्रश्न नहीं है।'
+                : 'The bank has no questions for this selection yet.'),
           }}
         >
           {(list) => (
