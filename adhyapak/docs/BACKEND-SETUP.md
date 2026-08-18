@@ -170,9 +170,15 @@ Re-run the **Deploy Adhyapak to GitHub Pages** workflow (Actions → the workflo
 
 Optional, and independent of everything above: the email provider is untouched
 by it, existing accounts keep working, and turning it off again is one toggle.
-Worth doing early for one practical reason — a learner arriving through Google
-needs **no confirmation email**, so that path does not depend on the mail
-service the built-in SMTP cannot really provide (see Troubleshooting).
+
+Worth doing early, though, and for a stronger reason than a second door. A
+learner arriving through Google needs **no confirmation email**, so that path
+does not depend on the mail service the built-in SMTP cannot really provide.
+Better still, it repairs accounts already stranded by it: signing in with Google
+on the address of an existing password account links to that account and
+confirms its email in the process, rather than creating a second one. That is
+why custom SMTP is no longer a launch blocker — see Troubleshooting, and
+"Verified on a real device" below for how it was proved.
 
 ### Google Cloud Console
 
@@ -232,21 +238,51 @@ magic links only.
 The Studio has no Google button on purpose. Staff accounts are made by hand and
 sign in with email at `/studio/sign-in`.
 
-### Not verified
+### Verified on a real device
 
-The round trip has been proved as far as the config: both builds contain the
-credentials and `pkce`, the button renders enabled and bilingual, and the error
-mapping is covered by tests. **No account has actually been signed in through
-Google**, so the two things only a real round trip can answer are still open:
+Both linking questions have now been answered by signing in for real, against
+this project, on a device. Both came back better than expected.
 
-- whether Supabase **links a Google identity to an existing password account**
-  with the same address, rather than creating a second one. It should — the
-  emails match and Google's is verified — but a wrong answer here means a
-  learner loses their progress, so test it before launch with an address that
-  already has a password account.
-- what somebody sees who signed up through Google and then tries the password
+**An existing password account is linked, not duplicated.** Signing in with
+Google using the address of a confirmed password account produces one
+`auth.users` row carrying two identities — `email` and `google`. The profile,
+its name, and every row keyed to it survive, because no second user is created
+for them to be stranded behind.
+
+**An unconfirmed account is linked too, and gets confirmed in the process.**
+This was the case worth fearing: `profiles.id` cascades from `auth.users(id)`,
+and `bookmarks`, `attempts` and `activity_days` cascade from `profiles`, so a
+deleted user row would have taken a learner's whole history with it. It does not
+happen. Signing in with Google using the address of an account that had signed
+up with a password and never opened the confirmation link keeps the same
+`user_id`, keeps the profile and its name, and **fills in `email_confirmed_at`**
+— Google's verification of the address is accepted as confirmation of it.
+
+That second result is the one with consequences beyond this feature, and the
+SMTP note below now rests on it: anybody stuck behind a confirmation email that
+never arrived can let themselves in with Google, and arrives at the account they
+already had rather than a new one.
+
+### Still not verified
+
+- What somebody sees who signed up through Google and then tries the password
   form. No password was ever set, so GoTrue answers "Invalid login credentials",
-  which is true and unhelpful.
+  which is true and unhelpful. Nothing is at risk here — it is a wording
+  problem on a path that already fails safely — so it is not a launch blocker.
+- Whether `profiles.name` is correct for a Google sign-up. The
+  `on_auth_user_created` trigger reads `raw_user_meta_data->>'name'`; if Google
+  supplies only `full_name`, the name falls back to the local part of the email
+  address and every Google learner is greeted by something like `arjun233680`.
+  One query answers it:
+
+  ```sql
+  select p.name,
+         u.raw_user_meta_data->>'name'      as google_name,
+         u.raw_user_meta_data->>'full_name' as google_full_name
+  from   profiles p
+  join   auth.users u on u.id = p.id
+  where  u.email = '<a google sign-up>';
+  ```
 
 ## Troubleshooting
 
@@ -267,9 +303,30 @@ Google**, so the two things only a real round trip can answer are still open:
   dashboard, or the client ID and secret do not match the project. The `kind` on
   the error is `oauth-unavailable`; the learner-facing text deliberately points
   at email rather than explaining a configuration problem to them.
-- **Confirmation emails never arrive** — the built-in SMTP is rate-limited to a
-  handful per hour and Supabase does not intend it for production. Set a custom
-  SMTP provider under Project Settings → Authentication → SMTP Settings before
-  launch, and check your limits under Authentication → Rate Limits. Until then
-  most people who sign up with a password will never be able to sign in, with no
-  error to tell them why. Google sign-in bypasses this entirely.
+- **Confirmation emails never arrive** — expected, and no longer a launch
+  blocker. The built-in SMTP does not merely throttle: it **refuses to deliver
+  to any address that is not a member of the project's team**, and caps what is
+  left at two messages an hour. So on the live project, a learner signing up
+  with a password gets no confirmation email at all.
+
+  Google sign-in is the way out, and it is a real one rather than a detour.
+  Signing in with Google on the same address links to the account that already
+  exists and confirms its email on the way through — verified on a device, see
+  "Verified on a real device" above. Nothing is lost and nothing is duplicated,
+  so the learner reaches the account they already made.
+
+  What this leaves is a bounded gap rather than an open one: somebody whose
+  address is **not** a Google account has no route in, because neither the email
+  nor the Google door opens for them. Most of the audience is on Gmail, which is
+  why this is a gap and not a blocker — but it is still somebody, and custom SMTP
+  is what closes it.
+
+  Set one up when convenient — or sooner, if a password reset flow is being
+  built, since that has no Google equivalent and cannot work without email.
+  Enable it under **Authentication → Emails → SMTP Settings** (older dashboards
+  put this under Project Settings → Authentication), then raise the ceiling under
+  **Authentication → Rate Limits** — Supabase starts custom SMTP at 30 messages
+  an hour. While you are there, rewrite the templates under **Authentication →
+  Emails → Templates**: the app is bilingual and Supabase's default confirmation
+  email is English only, so a learner who signed up in Hindi is currently sent an
+  English email.
