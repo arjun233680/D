@@ -218,6 +218,12 @@ export const listQuestions = (filter: PracticeFilter = {}): Promise<Question[]> 
     if (filter.pyqOnly && !filter.year) q = q.not('year', 'is', null);
     if (filter.examId) q = q.eq('question_exams.exam_id', filter.examId);
     if (filter.ids) q = q.in('id', filter.ids);
+    // A full-paper rehearsal arrives in the order it was printed. Nulls last so
+    // a question with no number recorded sits after the numbered ones instead
+    // of opening the paper.
+    if (filter.orderByQuestionNo) {
+      q = q.order('question_no', { ascending: true, nullsFirst: false });
+    }
     // A bank of 20,000 questions must never arrive in one response.
     const limit = filter.limit ?? 200;
     const offset = filter.offset ?? 0;

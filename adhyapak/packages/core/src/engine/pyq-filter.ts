@@ -26,6 +26,15 @@ export interface PyqSelection {
   paperId?: string;
   subjectId?: string;
   year?: number;
+  /**
+   * Which topic, for topic practice.
+   *
+   * Lives here rather than beside it because it is part of the same selection a
+   * screen carries and a link shares — and because the modes differ mostly in
+   * which of these fields they ignore, which is easier to see when they are all
+   * in one shape.
+   */
+  topicId?: string;
 }
 
 /** One option in a picker, already resolved to something renderable. */
@@ -161,6 +170,7 @@ export const pyqSelectionToParams = (selection: PyqSelection): Record<string, st
   if (selection.paperId) params.paper = selection.paperId;
   if (selection.subjectId) params.subject = selection.subjectId;
   if (selection.year !== undefined) params.year = String(selection.year);
+  if (selection.topicId) params.topic = selection.topicId;
   return params;
 };
 
@@ -174,6 +184,7 @@ export const pyqSelectionFromParams = (
     paperId: get('paper') || undefined,
     subjectId: get('subject') || undefined,
     year: Number.isInteger(year) && year > 0 ? year : undefined,
+    topicId: get('topic') || undefined,
   };
 };
 
