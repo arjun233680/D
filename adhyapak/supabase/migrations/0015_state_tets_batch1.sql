@@ -70,6 +70,39 @@ insert into exam_papers (id, exam_id, name, level, post, marks_per_question, neg
   ('gtet-p2', 'gtet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1)
 on conflict (id) do nothing;
 
+-- --------------------------------------------------------------- electives
+--
+-- Before the sections, not after. `paper_sections.elective_group_id` is a
+-- foreign key, so a section naming a group that does not exist yet fails the
+-- whole transaction — which is exactly what the first version of this file did.
+
+insert into elective_groups (id, paper_id, name) values
+  ('hptet-p2-elective', 'hptet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('pstet-p2-elective', 'pstet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('utet-p2-elective', 'utet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('jtet-p2-elective', 'jtet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('otet-p2-elective', 'otet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('sktet-p2-elective', 'sktet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('gtet-p2-elective', 'gtet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb)
+on conflict (id) do nothing;
+
+insert into elective_choices (group_id, subject_id, sort_order) values
+  ('hptet-p2-elective', 'maths-science', 0),
+  ('hptet-p2-elective', 'sst', 1),
+  ('pstet-p2-elective', 'maths-science', 0),
+  ('pstet-p2-elective', 'sst', 1),
+  ('utet-p2-elective', 'maths-science', 0),
+  ('utet-p2-elective', 'sst', 1),
+  ('jtet-p2-elective', 'maths-science', 0),
+  ('jtet-p2-elective', 'sst', 1),
+  ('otet-p2-elective', 'maths-science', 0),
+  ('otet-p2-elective', 'sst', 1),
+  ('sktet-p2-elective', 'maths-science', 0),
+  ('sktet-p2-elective', 'sst', 1),
+  ('gtet-p2-elective', 'maths-science', 0),
+  ('gtet-p2-elective', 'sst', 1)
+on conflict do nothing;
+
 -- ---------------------------------------------------------------- sections
 
 insert into paper_sections (paper_id, subject_id, elective_group_id, questions, marks, sort_order) values
@@ -136,35 +169,6 @@ insert into paper_sections (paper_id, subject_id, elective_group_id, questions, 
   ('gtet-p2', 'gujarati', null, 30, 30, 1),
   ('gtet-p2', 'english', null, 30, 30, 2),
   ('gtet-p2', null, 'gtet-p2-elective', 60, 60, 3)
-on conflict do nothing;
-
--- --------------------------------------------------------------- electives
-
-insert into elective_groups (id, paper_id, name) values
-  ('hptet-p2-elective', 'hptet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
-  ('pstet-p2-elective', 'pstet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
-  ('utet-p2-elective', 'utet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
-  ('jtet-p2-elective', 'jtet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
-  ('otet-p2-elective', 'otet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
-  ('sktet-p2-elective', 'sktet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
-  ('gtet-p2-elective', 'gtet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb)
-on conflict (id) do nothing;
-
-insert into elective_choices (group_id, subject_id, sort_order) values
-  ('hptet-p2-elective', 'maths-science', 0),
-  ('hptet-p2-elective', 'sst', 1),
-  ('pstet-p2-elective', 'maths-science', 0),
-  ('pstet-p2-elective', 'sst', 1),
-  ('utet-p2-elective', 'maths-science', 0),
-  ('utet-p2-elective', 'sst', 1),
-  ('jtet-p2-elective', 'maths-science', 0),
-  ('jtet-p2-elective', 'sst', 1),
-  ('otet-p2-elective', 'maths-science', 0),
-  ('otet-p2-elective', 'sst', 1),
-  ('sktet-p2-elective', 'maths-science', 0),
-  ('sktet-p2-elective', 'sst', 1),
-  ('gtet-p2-elective', 'maths-science', 0),
-  ('gtet-p2-elective', 'sst', 1)
 on conflict do nothing;
 
 commit;
