@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+const HTET_TGT = [
+  'science', 'math', 'music', 'hindi', 'english', 'home-science',
+  'sanskrit', 'sst', 'art', 'punjabi', 'physical-education', 'urdu',
+];
+
 import {
   CHIP_LIMIT,
+  electivePickerItems,
+  examFixedSubjects,
   GRID_LIMIT,
   examPickerGroups,
   filterPickerItems,
@@ -131,5 +138,39 @@ describe('pinning the likely answers', () => {
       pinFirst(items, ['telugu']).map((i) => i.value),
       items.map((i) => i.value),
     );
+  });
+});
+
+describe('an elective list puts this exam’s own languages first', () => {
+  it('pins Punjabi for a Punjab exam', () => {
+    // PSTET's Language I is Punjabi, so a candidate choosing a TGT subject
+    // should not scroll past eleven others to reach it.
+    const order = electivePickerItems(HTET_TGT, 'pstet').map((i) => i.value);
+    assert.equal(order[0], 'punjabi');
+    assert.ok(order.indexOf('english') < order.indexOf('science'));
+  });
+
+  it('pins Hindi for a Hindi-belt exam', () => {
+    const order = electivePickerItems(HTET_TGT, 'utet').map((i) => i.value);
+    assert.ok(order.indexOf('hindi') < order.indexOf('science'));
+  });
+
+  it('drops nothing — an unusual choice still has to be reachable', () => {
+    const order = electivePickerItems(HTET_TGT, 'pstet');
+    assert.equal(order.length, HTET_TGT.length);
+  });
+
+  it('leaves the board’s order alone when the exam pins nothing', () => {
+    assert.deepEqual(
+      electivePickerItems(['science', 'math'], undefined).map((i) => i.value),
+      ['science', 'math'],
+    );
+  });
+
+  it('reads the blueprint rather than a state-to-language map', () => {
+    // Gujarat TET's Language I is Gujarati, and nothing in this module names
+    // Gujarat or Gujarati — it comes out of the paper's own fixed sections.
+    assert.ok(examFixedSubjects('gtet').includes('gujarati'));
+    assert.ok(!examFixedSubjects('gtet').includes('telugu'));
   });
 });

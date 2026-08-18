@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   electivesForPaper,
   examPickerGroups,
-  subjectPickerItems,
+  electivePickerItems,
   examTheme,
   getExam,
   getSubject,
@@ -348,7 +348,7 @@ export default function GoalScreen() {
                 gap: theme.space.sm,
               }}
             >
-              {subjectPickerItems(group.choices).map((item) => {
+              {electivePickerItems(group.choices, selected?.id).map((item) => {
                 const on = subjectId === item.value;
                 return (
                   <Pressable

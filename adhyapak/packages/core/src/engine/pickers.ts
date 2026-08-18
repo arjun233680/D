@@ -138,3 +138,45 @@ export const pinFirst = (items: PickerItem[], pinned: readonly string[]): Picker
   const rest = items.filter((i) => !pinned.includes(i.value));
   return [...first, ...rest];
 };
+
+/**
+ * The subjects an exam's own papers already examine, in blueprint order.
+ *
+ * Used to pin the likely answers to the front of a long elective list. Language
+ * I is the state's own language, so a Punjab candidate choosing a TGT subject
+ * should find Punjabi without scrolling past eleven others, and a Gujarat one
+ * should find Gujarati. It reads the blueprint rather than a hand-written map
+ * of state to language, because the blueprint is where that fact already lives
+ * and a second copy would be a second thing to keep correct.
+ *
+ * Only the fixed blocks count. An elective's own choices are the list being
+ * ordered, so pinning them by themselves would pin everything.
+ */
+export const examFixedSubjects = (examId: string | undefined): string[] => {
+  if (!examId) return [];
+  const exam = EXAMS.find((e) => e.id === examId);
+  if (!exam) return [];
+  const ids: string[] = [];
+  for (const paper of exam.papers) {
+    for (const section of paper.sections) {
+      if (section.subjectId && !ids.includes(section.subjectId)) ids.push(section.subjectId);
+    }
+  }
+  return ids;
+};
+
+/**
+ * An elective list with this exam's own languages first.
+ *
+ * The pinned ones are whichever of the exam's fixed subjects the group actually
+ * offers — for PSTET's TGT list that is Punjabi and English, for Gujarat's it is
+ * Gujarati and English. Everything else follows in the order the board gave it,
+ * and nothing is dropped.
+ */
+export const electivePickerItems = (
+  choices: readonly string[],
+  examId?: string,
+): PickerItem[] => {
+  const items = subjectPickerItems(choices);
+  return pinFirst(items, examFixedSubjects(examId));
+};

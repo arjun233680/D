@@ -8,7 +8,7 @@ import {
   TESTS,
   electivesForPaper,
   examPickerGroups,
-  subjectPickerItems,
+  electivePickerItems,
   currentStreak,
   formatDate,
   getExam,
@@ -619,7 +619,7 @@ function GoalPicker() {
             find out whether it was even offered.
           */}
           <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {subjectPickerItems(group.choices).map((item) => (
+            {electivePickerItems(group.choices, exam.id).map((item) => (
               <button
                 key={item.value}
                 type="button"
