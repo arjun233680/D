@@ -213,19 +213,24 @@ export default function ProfileScreen() {
             </View>
           ) : null}
 
-          <Text style={[s.faint, { marginTop: 12, marginBottom: 6, fontWeight: '700' }]}>
-            {t(UI.changeGoal, lang)}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {EXAMS.map((e) => (
-              <Chip
-                key={e.id}
-                label={`${e.emoji} ${e.shortName}`}
-                active={user.goalExamId === e.id}
-                onPress={() => setGoal(e.id, e.papers[0]?.id)}
-              />
-            ))}
-          </ScrollView>
+          {/*
+            One button into the real picker, not a second copy of it.
+            This used to be a row of exam chips calling
+            `setGoal(e.id, e.papers[0]?.id)` — which skipped the paper question
+            and the subject question and answered both by guessing. Switching to
+            HTET picked Level 1 for a PGT candidate and left their elective
+            pointing at a subject Level 1 does not teach.
+          */}
+          <Pressable
+            onPress={() => router.push('/(auth)/goal')}
+            style={{ marginTop: 12 }}
+          >
+            <Text style={[s.faint, { fontWeight: '700' }]}>{t(UI.changeGoal, lang)}</Text>
+            <Text style={[s.h2, { marginTop: 2 }]}>
+              {exam ? t(exam.name, lang) : lang === 'hi' ? 'कोई लक्ष्य नहीं' : 'No goal set'}{' '}
+              <Text style={{ color: theme.color.textMuted }}>›</Text>
+            </Text>
+          </Pressable>
         </View>
       </View>
 

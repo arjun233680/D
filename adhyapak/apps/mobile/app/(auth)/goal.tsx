@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  electivesForPaper,
   examTheme,
   getExam,
   getSubject,
@@ -37,10 +38,35 @@ export default function GoalScreen() {
   // Step 2 only makes sense for exams that run more than one paper.
   const needsPaper = Boolean(selected && selected.papers.length > 1);
   const [paperId, setPaperId] = useState<string | null>(null);
+  const [subjectId, setSubjectId] = useState<string | null>(null);
+
+  const chosenPaperId = paperId ?? selected?.papers[0]?.id;
+
+  /*
+   * Step 3: the subject, for the papers that make the candidate choose one.
+   *
+   * There is no single "TGT paper" — there are twelve, and they differ only in
+   * this block. Until it is answered the app does not know which sixty marks of
+   * a hundred and fifty belong to this learner, so the paper cannot be shown,
+   * a mock cannot be assembled, and topic practice would offer somebody else's
+   * subject. That is why this step exists and why Continue waits for it.
+   */
+  const group = electivesForPaper(chosenPaperId)[0];
+  const needsSubject = Boolean(group);
+
+  // A paper change invalidates the subject: HTET TGT's twelve and CTET Paper
+  // 2's two share no options, so carrying the old choice over would leave a
+  // subject the new paper does not offer.
+  const pickPaper = (id: string) => {
+    setPaperId(id);
+    setSubjectId(null);
+  };
+
+  const ready = Boolean(selected) && (!needsSubject || Boolean(subjectId));
 
   const confirm = () => {
-    if (!selected) return;
-    chooseGoal(selected.id, paperId ?? selected.papers[0]?.id);
+    if (!selected || !ready) return;
+    chooseGoal(selected.id, chosenPaperId, subjectId ?? undefined);
     router.replace('/(tabs)');
   };
 
@@ -174,7 +200,7 @@ export default function GoalScreen() {
                 return (
                   <Pressable
                     key={paper.id}
-                    onPress={() => setPaperId(paper.id)}
+                    onPress={() => pickPaper(paper.id)}
                     style={{
                       backgroundColor: theme.color.surface,
                       borderRadius: theme.radius.lg,
@@ -209,6 +235,83 @@ export default function GoalScreen() {
             </View>
           </View>
         ) : null}
+
+        {needsSubject && group ? (
+          <View
+            style={{
+              marginTop: theme.space.xxl,
+              paddingHorizontal: r.gutter,
+              width: '100%',
+              maxWidth: r.maxWidth,
+              alignSelf: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: theme.font.md,
+                fontFamily: theme.family.display,
+                color: theme.color.text,
+              }}
+            >
+              {t(group.name, lang)}?
+            </Text>
+            <Text
+              style={{
+                fontSize: theme.font.sm,
+                lineHeight: theme.line.sm,
+                fontFamily: theme.family.body,
+                color: theme.color.textMuted,
+                marginTop: 4,
+              }}
+            >
+              {hi
+                ? 'यही तय करता है कि पेपर का कौन-सा भाग आपका है। बाद में बदला जा सकता है।'
+                : 'This decides which part of the paper is yours. It can be changed later.'}
+            </Text>
+            <View
+              style={{
+                marginTop: theme.space.lg,
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: theme.space.md,
+              }}
+            >
+              {group.choices.map((id) => {
+                const subject = getSubject(id);
+                if (!subject) return null;
+                const on = subjectId === id;
+                return (
+                  <Pressable
+                    key={id}
+                    onPress={() => setSubjectId(id)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: theme.space.sm,
+                      backgroundColor: on ? palette.accentSoft : theme.color.surface,
+                      borderRadius: theme.radius.pill,
+                      borderWidth: 2,
+                      borderColor: on ? palette.accent : theme.color.border,
+                      paddingHorizontal: theme.space.lg,
+                      paddingVertical: 10,
+                    }}
+                  >
+                    <Text style={{ fontSize: theme.font.base }}>{subject.icon}</Text>
+                    <Text
+                      style={{
+                        fontSize: theme.font.sm,
+                        fontFamily: theme.family.bodySemi,
+                        color: theme.color.text,
+                      }}
+                    >
+                      {t(subject.name, lang)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
 
       {selected ? (
@@ -226,10 +329,16 @@ export default function GoalScreen() {
             alignItems: 'center',
           }}
         >
+          {/*
+            Disabled until the subject is picked, rather than defaulting to the
+            first one. A default here is a guess about what somebody teaches,
+            and it decides sixty of their hundred and fifty marks.
+          */}
           <Pressable
             onPress={confirm}
+            disabled={!ready}
             style={{
-              backgroundColor: palette.accent,
+              backgroundColor: ready ? palette.accent : theme.color.border,
               borderRadius: theme.radius.md,
               paddingVertical: 17,
               alignItems: 'center',

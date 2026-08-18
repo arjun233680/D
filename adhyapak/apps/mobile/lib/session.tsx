@@ -64,7 +64,7 @@ export interface Session {
   /** Opens Google in a system auth session and finishes the exchange. */
   signInWithGoogle: () => Promise<AuthResult<AuthState>>;
   continueAsGuest: () => void;
-  chooseGoal: (examId: string, paperId?: string) => void;
+  chooseGoal: (examId: string, paperId?: string, electiveSubjectId?: string) => void;
   signOut: () => Promise<void>;
 }
 
@@ -143,10 +143,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [patchUser]);
 
   const chooseGoal = useCallback(
-    (examId: string, paperId?: string) => {
+    (examId: string, paperId?: string, electiveSubjectId?: string) => {
       // `setGoal` writes `set_goal` through for a signed-in learner and stays
       // local for a guest, so this is one call either way.
-      setGoal(examId, paperId);
+      setGoal(examId, paperId, electiveSubjectId);
       patchUser({ onboarded: true });
     },
     [setGoal, patchUser],

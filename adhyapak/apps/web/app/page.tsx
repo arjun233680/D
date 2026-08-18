@@ -6,6 +6,7 @@ import {
   BATCHES,
   EXAMS,
   TESTS,
+  electivesForPaper,
   currentStreak,
   formatDate,
   getExam,
@@ -465,6 +466,34 @@ function GoalPicker() {
   const { lang, setGoal } = useStore();
   const hi = lang === 'hi';
 
+  const [examId, setExamId] = useState<string | null>(null);
+  const [paperId, setPaperId] = useState<string | null>(null);
+  const [subjectId, setSubjectId] = useState<string | null>(null);
+
+  const exam = examId ? getExam(examId) : undefined;
+  const chosenPaperId = paperId ?? exam?.papers[0]?.id;
+  const group = electivesForPaper(chosenPaperId)[0];
+
+  // Each step invalidates the ones under it. HTET TGT's twelve subjects and
+  // CTET Paper 2's two share no options, so a subject carried across a paper
+  // change would be one the new paper does not offer.
+  const pickExam = (id: string) => {
+    setExamId(id);
+    setPaperId(null);
+    setSubjectId(null);
+  };
+  const pickPaper = (id: string) => {
+    setPaperId(id);
+    setSubjectId(null);
+  };
+
+  const ready = Boolean(exam) && (!group || Boolean(subjectId));
+
+  const confirm = () => {
+    if (!exam || !ready) return;
+    setGoal(exam.id, chosenPaperId, subjectId ?? undefined);
+  };
+
   return (
     <div className="space-y-6 px-4 pt-8 pb-12 sm:px-0">
       <header>
@@ -483,8 +512,13 @@ function GoalPicker() {
           <button
             key={e.id}
             type="button"
-            onClick={() => setGoal(e.id, e.papers[0]?.id)}
-            className="card flex items-center gap-3 p-4 text-left transition-colors hover:border-[var(--color-brand)]"
+            onClick={() => pickExam(e.id)}
+            aria-pressed={examId === e.id}
+            className={`card flex items-center gap-3 p-4 text-left transition-colors ${
+              examId === e.id
+                ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
+                : 'hover:border-[var(--color-brand)]'
+            }`}
           >
             <span className="text-2xl">{e.emoji}</span>
             <span className="min-w-0 flex-1">
@@ -496,6 +530,84 @@ function GoalPicker() {
           </button>
         ))}
       </div>
+
+      {exam && exam.papers.length > 1 ? (
+        <section>
+          <h2 className="text-[15px] font-bold">{hi ? 'कौन-सा पेपर?' : 'Which paper?'}</h2>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {exam.papers.map((paper) => (
+              <button
+                key={paper.id}
+                type="button"
+                onClick={() => pickPaper(paper.id)}
+                aria-pressed={chosenPaperId === paper.id}
+                className={`card p-3 text-left transition-colors ${
+                  chosenPaperId === paper.id
+                    ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
+                    : 'hover:border-[var(--color-brand)]'
+                }`}
+              >
+                <span className="block text-[13px] font-bold">{t(paper.name, lang)}</span>
+                <span className="block text-[12px] text-[var(--color-muted)]">
+                  {paper.post ? `${paper.post} · ` : ''}
+                  {paper.totalQuestions} {hi ? 'प्रश्न' : 'questions'} · {paper.durationMinutes} min
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/*
+        The subject. There is no single "TGT paper" — there are twelve, and they
+        differ only in this block, so until it is answered the app does not know
+        which sixty of a hundred and fifty marks belong to this learner.
+      */}
+      {exam && group ? (
+        <section>
+          <h2 className="text-[15px] font-bold">{t(group.name, lang)}?</h2>
+          <p className="mt-1 text-[12px] text-[var(--color-muted)]">
+            {hi
+              ? 'यही तय करता है कि पेपर का कौन-सा भाग आपका है।'
+              : 'This decides which part of the paper is yours.'}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {group.choices.map((id) => {
+              const subject = getSubject(id);
+              if (!subject) return null;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSubjectId(id)}
+                  aria-pressed={subjectId === id}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                    subjectId === id
+                      ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
+                      : 'border-[var(--color-line)] hover:border-[var(--color-brand)]'
+                  }`}
+                >
+                  <span>{subject.icon}</span>
+                  {t(subject.name, lang)}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {exam ? (
+        <button
+          type="button"
+          onClick={confirm}
+          disabled={!ready}
+          className="w-full rounded-full bg-[var(--color-brand)] px-5 py-3 text-[14px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+        >
+          {hi
+            ? `${exam.shortName} की तैयारी शुरू करें`
+            : `Start preparing for ${exam.shortName}`}
+        </button>
+      ) : null}
 
       <p className="text-[12px] text-[var(--color-muted)]">
         {hi

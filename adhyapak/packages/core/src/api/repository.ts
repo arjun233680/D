@@ -642,17 +642,21 @@ export const setGoalRemote = async (
 ): Promise<boolean> => {
   const db = getBackend();
   if (!db) return false;
+  // One call, not two. The elective used to be written by a follow-up update
+  // straight to `profiles`, which skipped the check that the subject is one the
+  // paper actually offers, and could leave a learner with a goal saved and an
+  // elective lost if the second request failed. `set_goal` takes all three
+  // since 0013 and writes them together.
+  //
+  // `null` rather than omitted when there is no elective: switching from a
+  // paper with a subject choice to one without has to clear the old choice, or
+  // the profile keeps a subject the new paper does not offer.
   const { error } = await db.rpc('set_goal', {
     p_exam_id: examId,
     p_paper_id: paperId ?? null,
+    p_elective_subject_id: electiveSubjectId ?? null,
   });
-  if (error) return false;
-  if (electiveSubjectId === undefined) return true;
-  const { error: electiveError } = await db
-    .from('profiles')
-    .update({ elective_subject_id: electiveSubjectId })
-    .eq('id', (await db.auth.getUser()).data.user?.id ?? '');
-  return !electiveError;
+  return !error;
 };
 
 /** The profile fields a learner can edit about themselves. */
