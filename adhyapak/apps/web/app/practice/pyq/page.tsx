@@ -176,7 +176,9 @@ function PyqChooser() {
           <h2 className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
             {hi ? 'विषय' : 'Subject'}
           </h2>
-          <div className="rail flex gap-2">
+          {/* A grid once there are more than five: twelve TGT subjects and
+              twenty-one PGT ones do not fit a row. */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {model.electiveOptions.map((o) => (
               <button
                 key={o.value}
@@ -185,10 +187,10 @@ function PyqChooser() {
                   update({ electiveSubjectId: o.value, subjectId: undefined, topicId: undefined })
                 }
                 aria-pressed={model.electiveSubjectId === o.value}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
+                className={`truncate rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition-colors ${
                   model.electiveSubjectId === o.value
-                    ? 'border-transparent bg-[var(--color-ink)] text-white'
-                    : 'border-[var(--color-line)] text-[var(--color-muted)]'
+                    ? 'bg-[var(--color-brand-light)] text-[var(--color-brand-dark)]'
+                    : 'bg-[var(--color-surface-alt)] text-[var(--color-muted)] hover:bg-[var(--color-brand-light)]'
                 }`}
               >
                 {hi ? o.labelHi : o.labelEn}

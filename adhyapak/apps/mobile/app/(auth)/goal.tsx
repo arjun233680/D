@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   electivesForPaper,
+  examPickerGroups,
+  subjectPickerItems,
   examTheme,
   getExam,
   getSubject,
-  groupedExams,
   t,
   theme,
   type Exam,
@@ -28,7 +29,8 @@ export default function GoalScreen() {
   const { lang, user } = useStore();
   const { chooseGoal } = useSession();
   const [examId, setExamId] = useState<string | null>(user.onboarded ? user.goalExamId : null);
-  const groups = useMemo(() => groupedExams(), []);
+  const [query, setQuery] = useState('');
+  const examGroups = useMemo(() => examPickerGroups(query, lang), [query, lang]);
   const r = useResponsive();
   const hi = lang === 'hi';
 
@@ -39,6 +41,12 @@ export default function GoalScreen() {
   const needsPaper = Boolean(selected && selected.papers.length > 1);
   const [paperId, setPaperId] = useState<string | null>(null);
   const [subjectId, setSubjectId] = useState<string | null>(null);
+
+  const pickExam = (id: string) => {
+    setExamId(id);
+    setPaperId(null);
+    setSubjectId(null);
+  };
 
   const chosenPaperId = paperId ?? selected?.papers[0]?.id;
 
@@ -107,63 +115,120 @@ export default function GoalScreen() {
           </Text>
         </View>
 
-        {groups.map(({ group, exams }) => (
-          <View key={group.id} style={{ marginTop: theme.space.xxl }}>
-            <View
-              style={{
-                paddingHorizontal: r.gutter,
-                width: '100%',
-                maxWidth: r.maxWidth,
-                alignSelf: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: theme.font.md,
-                  fontFamily: theme.family.display,
-                  color: theme.color.text,
-                }}
-              >
-                {t(group.title, lang)}
-              </Text>
-              <Text
-                style={{
-                  fontSize: theme.font.sm,
-                  lineHeight: theme.line.sm,
-                  fontFamily: theme.family.body,
-                  color: theme.color.textFaint,
-                  marginTop: 2,
-                }}
-              >
-                {t(group.subtitle, lang)}
-              </Text>
-            </View>
+        {/*
+          Twenty-eight exams: a search box and two groups. A grid of cards this
+          long means scrolling past twenty-three state tests to reach the one
+          you came for, and most people came for one they can name.
+        */}
+        <View
+          style={{
+            paddingHorizontal: r.gutter,
+            width: '100%',
+            maxWidth: r.maxWidth,
+            alignSelf: 'center',
+            marginTop: theme.space.xl,
+          }}
+        >
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={hi ? 'परीक्षा खोजें…' : 'Search exams…'}
+            placeholderTextColor={theme.color.textFaint}
+            autoCorrect={false}
+            style={{
+              backgroundColor: theme.color.surfaceAlt,
+              borderRadius: theme.radius.md,
+              paddingHorizontal: theme.space.lg,
+              paddingVertical: 12,
+              fontSize: theme.font.base,
+              fontFamily: theme.family.body,
+              color: theme.color.text,
+            }}
+          />
+        </View>
 
-            <View
+        {examGroups.length === 0 ? (
+          <Text
+            style={{
+              paddingHorizontal: r.gutter,
+              marginTop: theme.space.lg,
+              color: theme.color.textMuted,
+              fontFamily: theme.family.body,
+              fontSize: theme.font.sm,
+            }}
+          >
+            {hi ? 'कोई परीक्षा नहीं मिली।' : 'No exam matches that.'}
+          </Text>
+        ) : null}
+
+        {examGroups.map((group) => (
+          <View key={group.title.en} style={{ marginTop: theme.space.xl }}>
+            <Text
               style={{
                 paddingHorizontal: r.gutter,
-                marginTop: theme.space.lg,
-                gap: theme.space.md,
-                flexDirection: r.isPhone ? 'column' : 'row',
-                flexWrap: 'wrap',
                 width: '100%',
                 maxWidth: r.maxWidth,
                 alignSelf: 'center',
+                fontSize: theme.font.sm,
+                fontFamily: theme.family.bodySemi,
+                letterSpacing: 0.6,
+                color: theme.color.textMuted,
+                marginBottom: theme.space.md,
               }}
             >
-              {exams.map((exam) => (
-                <ExamOption
-                  width={r.isPhone ? '100%' : r.isDesktop ? '32%' : '48%'}
-                  key={exam.id}
-                  exam={exam}
-                  lang={lang}
-                  selected={examId === exam.id}
-                  onPress={() => {
-                    setExamId(exam.id);
-                    setPaperId(null);
-                  }}
-                />
-              ))}
+              {t(group.title, lang).toUpperCase()}
+            </Text>
+            <View
+              style={{
+                paddingHorizontal: r.gutter,
+                width: '100%',
+                maxWidth: r.maxWidth,
+                alignSelf: 'center',
+                gap: theme.space.sm,
+              }}
+            >
+              {group.items.map((item) => {
+                const on = examId === item.value;
+                return (
+                  <Pressable
+                    key={item.value}
+                    onPress={() => pickExam(item.value)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: theme.space.md,
+                      borderRadius: theme.radius.md,
+                      paddingHorizontal: theme.space.md,
+                      paddingVertical: 12,
+                      backgroundColor: on ? theme.color.primaryLight : 'transparent',
+                    }}
+                  >
+                    <Text style={{ fontSize: 24 }}>{item.icon}</Text>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={{
+                          fontSize: theme.font.base,
+                          fontFamily: theme.family.bodySemi,
+                          color: theme.color.text,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {hi ? item.labelHi : item.labelEn}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: theme.font.xs,
+                          fontFamily: theme.family.body,
+                          color: theme.color.textMuted,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {hi ? item.hintHi : item.hintEn}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         ))}
@@ -268,43 +333,55 @@ export default function GoalScreen() {
                 ? 'यही तय करता है कि पेपर का कौन-सा भाग आपका है। बाद में बदला जा सकता है।'
                 : 'This decides which part of the paper is yours. It can be changed later.'}
             </Text>
+            {/*
+              A wrapping grid, not a row of chips. Twelve TGT subjects and
+              twenty-one PGT ones do not fit a row, and one that scrolls
+              sideways hides most of them off the right edge with no sign of how
+              many are there — somebody looking for Sanskrit had to drag the
+              list to find out whether it was even offered.
+            */}
             <View
               style={{
                 marginTop: theme.space.lg,
                 flexDirection: 'row',
                 flexWrap: 'wrap',
-                gap: theme.space.md,
+                gap: theme.space.sm,
               }}
             >
-              {group.choices.map((id) => {
-                const subject = getSubject(id);
-                if (!subject) return null;
-                const on = subjectId === id;
+              {subjectPickerItems(group.choices).map((item) => {
+                const on = subjectId === item.value;
                 return (
                   <Pressable
-                    key={id}
-                    onPress={() => setSubjectId(id)}
+                    key={item.value}
+                    onPress={() => setSubjectId(item.value)}
                     style={{
+                      // Two per row on a phone, three where there is room. A
+                      // fixed basis rather than a column count so a long name
+                      // wraps inside its own tile instead of stretching it.
+                      flexGrow: 1,
+                      flexBasis: '45%',
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: theme.space.sm,
-                      backgroundColor: on ? palette.accentSoft : theme.color.surface,
-                      borderRadius: theme.radius.pill,
+                      backgroundColor: on ? palette.accentSoft : theme.color.surfaceAlt,
+                      borderRadius: theme.radius.md,
                       borderWidth: 2,
-                      borderColor: on ? palette.accent : theme.color.border,
-                      paddingHorizontal: theme.space.lg,
-                      paddingVertical: 10,
+                      borderColor: on ? palette.accent : 'transparent',
+                      paddingHorizontal: theme.space.md,
+                      paddingVertical: 11,
                     }}
                   >
-                    <Text style={{ fontSize: theme.font.base }}>{subject.icon}</Text>
+                    <Text style={{ fontSize: theme.font.base }}>{item.icon}</Text>
                     <Text
                       style={{
+                        flex: 1,
                         fontSize: theme.font.sm,
                         fontFamily: theme.family.bodySemi,
                         color: theme.color.text,
                       }}
+                      numberOfLines={2}
                     >
-                      {t(subject.name, lang)}
+                      {hi ? item.labelHi : item.labelEn}
                     </Text>
                   </Pressable>
                 );

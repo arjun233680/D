@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   BATCHES,
   EXAMS,
   TESTS,
   electivesForPaper,
+  examPickerGroups,
+  subjectPickerItems,
   currentStreak,
   formatDate,
   getExam,
@@ -466,10 +468,12 @@ function GoalPicker() {
   const { lang, setGoal } = useStore();
   const hi = lang === 'hi';
 
+  const [query, setQuery] = useState('');
   const [examId, setExamId] = useState<string | null>(null);
   const [paperId, setPaperId] = useState<string | null>(null);
   const [subjectId, setSubjectId] = useState<string | null>(null);
 
+  const examGroups = useMemo(() => examPickerGroups(query, lang), [query, lang]);
   const exam = examId ? getExam(examId) : undefined;
   const chosenPaperId = paperId ?? exam?.papers[0]?.id;
   const group = electivesForPaper(chosenPaperId)[0];
@@ -507,29 +511,58 @@ function GoalPicker() {
         </p>
       </header>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        {EXAMS.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            onClick={() => pickExam(e.id)}
-            aria-pressed={examId === e.id}
-            className={`card flex items-center gap-3 p-4 text-left transition-colors ${
-              examId === e.id
-                ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
-                : 'hover:border-[var(--color-brand)]'
-            }`}
-          >
-            <span className="text-2xl">{e.emoji}</span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[14px] font-bold">{e.shortName}</span>
-              <span className="block truncate text-[12px] text-[var(--color-muted)]">
-                {t(e.name, lang)}
-              </span>
-            </span>
-          </button>
-        ))}
-      </div>
+      {/*
+        Twenty-eight exams: a search box and two groups, not a wall of cards.
+        National first because CTET is what most people came for and it is one
+        row rather than twenty-three.
+      */}
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={hi ? 'परीक्षा खोजें…' : 'Search exams…'}
+        aria-label={hi ? 'परीक्षा खोजें' : 'Search exams'}
+        className="w-full rounded-xl bg-[var(--color-surface-alt)] px-4 py-2.5 text-[14px] outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+      />
+
+      {examGroups.length === 0 ? (
+        <p className="text-[13px] text-[var(--color-muted)]">
+          {hi ? 'कोई परीक्षा नहीं मिली।' : 'No exam matches that.'}
+        </p>
+      ) : null}
+
+      {examGroups.map((group) => (
+        <section key={group.title.en}>
+          <h2 className="mb-2 text-[11px] font-bold tracking-wide text-[var(--color-muted)] uppercase">
+            {t(group.title, lang)}
+          </h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {group.items.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => pickExam(item.value)}
+                aria-pressed={examId === item.value}
+                className={`flex items-center gap-3 rounded-xl p-3 text-left transition-colors ${
+                  examId === item.value
+                    ? 'bg-[var(--color-brand-light)]'
+                    : 'hover:bg-[var(--color-surface-alt)]'
+                }`}
+              >
+                <span className="text-2xl">{item.icon}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[14px] font-bold">
+                    {hi ? item.labelHi : item.labelEn}
+                  </span>
+                  <span className="block truncate text-[12px] text-[var(--color-muted)]">
+                    {hi ? item.hintHi : item.hintEn}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
 
       {exam && exam.papers.length > 1 ? (
         <section>
@@ -571,27 +604,37 @@ function GoalPicker() {
               ? 'यही तय करता है कि पेपर का कौन-सा भाग आपका है।'
               : 'This decides which part of the paper is yours.'}
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {group.choices.map((id) => {
-              const subject = getSubject(id);
-              if (!subject) return null;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setSubjectId(id)}
-                  aria-pressed={subjectId === id}
-                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                    subjectId === id
-                      ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
-                      : 'border-[var(--color-line)] hover:border-[var(--color-brand)]'
-                  }`}
-                >
-                  <span>{subject.icon}</span>
-                  {t(subject.name, lang)}
-                </button>
-              );
-            })}
+          {/*
+            A wrapping grid, not a row of chips. Twelve TGT subjects and
+            twenty-one PGT ones do not fit a row, and a row that scrolls
+            sideways hides most of them off the right edge with no sign of how
+            many are there — a candidate looking for Sanskrit had to drag the
+            list to find out whether it was even offered.
+          */}
+          {/*
+            A wrapping grid, not a row of chips. Twelve TGT subjects and
+            twenty-one PGT ones do not fit a row, and one that scrolls sideways
+            hides most of them off the right edge with no sign of how many are
+            there — a candidate looking for Sanskrit had to drag the list to
+            find out whether it was even offered.
+          */}
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {subjectPickerItems(group.choices).map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setSubjectId(item.value)}
+                aria-pressed={subjectId === item.value}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition-colors ${
+                  subjectId === item.value
+                    ? 'bg-[var(--color-brand-light)] text-[var(--color-brand-dark)]'
+                    : 'bg-[var(--color-surface-alt)] hover:bg-[var(--color-brand-light)]'
+                }`}
+              >
+                <span>{item.icon}</span>
+                <span className="min-w-0 truncate">{hi ? item.labelHi : item.labelEn}</span>
+              </button>
+            ))}
           </div>
         </section>
       ) : null}
