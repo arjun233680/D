@@ -21,6 +21,7 @@ export * from './engine/practice';
 export * from './engine/pyq-filter';
 export * from './engine/pyq-modes';
 export * from './engine/pickers';
+export * from './engine/account-gate';
 export * from './engine/solutions';
 export * from './engine/format';
 export * from './engine/briefing';

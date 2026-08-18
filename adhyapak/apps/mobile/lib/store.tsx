@@ -14,11 +14,13 @@ import {
   getCurrentUser,
   markActiveTodayRemote,
   onAuthStateChange,
+  hasAccount,
   setGoalRemote,
   toggleBookmarkRemote,
   toggleEnrolmentRemote,
   toggleSavedNoteRemote,
   updateProfileRemote,
+  type GatedAction,
   type Lang,
   type Note,
   type TestAttempt,
@@ -68,6 +70,16 @@ interface Store extends PersistedState {
   setGoal: (examId: string, paperId?: string, electiveSubjectId?: string) => void;
   toggleBookmark: (questionId: string) => void;
   toggleSavedNote: (noteId: string) => void;
+  /**
+   * The save a guest just tried to make, or null.
+   *
+   * Held here rather than at each call site so one prompt serves every button
+   * that keeps something — bookmark icons sit on four screens and the note one
+   * on two, and a copy of the check beside each is a copy that can be forgotten
+   * on the fifth.
+   */
+  gate: GatedAction | null;
+  dismissGate: () => void;
   toggleEnrolment: (batchId: string) => void;
   /** Shallow-merges fields onto the learner, and saves the ones they own. */
   patchUser: (patch: Partial<User>) => void;
@@ -84,6 +96,7 @@ const toggle = (list: string[], id: string) =>
   list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const [gate, setGate] = useState<GatedAction | null>(null);
   const [state, setState] = useState<PersistedState>(initialState);
   const [ready, setReady] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -204,8 +217,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [push],
   );
 
+  const dismissGate = useCallback(() => setGate(null), []);
+
   const toggleBookmark = useCallback(
     (questionId: string) => {
+      // Asked at the moment something is kept, never at the moment a screen
+      // opens. A guest reads and practises freely; a bookmark is a promise that
+      // the question will be there tomorrow, and there is nowhere to keep it.
+      if (!hasAccount(state.user)) {
+        setGate('bookmark');
+        return;
+      }
       setState((s) => {
         const on = !s.user.bookmarkedQuestionIds.includes(questionId);
         push(() => toggleBookmarkRemote(questionId, on));
@@ -218,18 +240,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    [push],
+    [push, state.user],
   );
 
   const toggleSavedNote = useCallback(
     (noteId: string) => {
+      if (!hasAccount(state.user)) {
+        setGate('save-note');
+        return;
+      }
       setState((s) => {
         const on = !s.user.savedNoteIds.includes(noteId);
         push(() => toggleSavedNoteRemote(noteId, on));
         return { ...s, user: { ...s.user, savedNoteIds: toggle(s.user.savedNoteIds, noteId) } };
       });
     },
-    [push],
+    [push, state.user],
   );
 
   const toggleEnrolment = useCallback(
@@ -269,9 +295,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, attempts: { ...s.attempts, [attempt.testId]: attempt } }));
   }, []);
 
-  const saveResult = useCallback((result: TestResult) => {
-    setState((s) => ({ ...s, results: { ...s.results, [result.testId]: result } }));
-  }, []);
+  const saveResult = useCallback(
+    (result: TestResult) => {
+      // The answers are already in local state; only the record of them needs
+      // an account. A guest reaches the end of a paper and is asked then, which
+      // is the first moment there is something worth keeping — and the prompt
+      // says so, because "sign in to continue" beside a finished paper reads as
+      // the work having been thrown away.
+      if (!hasAccount(state.user)) {
+        setGate('submit-attempt');
+        return;
+      }
+      setState((s) => ({ ...s, results: { ...s.results, [result.testId]: result } }));
+    },
+    [state.user],
+  );
 
   const addVideo = useCallback((video: Video) => {
     setState((s) => ({ ...s, uploadedVideos: [video, ...s.uploadedVideos] }));
@@ -301,6 +339,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setGoal,
       toggleBookmark,
       toggleSavedNote,
+      gate,
+      dismissGate,
       toggleEnrolment,
       patchUser,
       saveAttempt,
@@ -318,6 +358,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setGoal,
       toggleBookmark,
       toggleSavedNote,
+      gate,
+      dismissGate,
       toggleEnrolment,
       patchUser,
       saveAttempt,

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { EXAMS, getExam, t, UI } from '@adhyapak/core';
+import { accountGateReason, EXAMS, getExam, t, UI } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 
 const NAV = [
@@ -24,6 +24,53 @@ const MOBILE_NAV = [
 
 function isActive(pathname: string, href: string) {
   return href === '/' ? pathname === '/' : pathname.startsWith(href);
+}
+
+
+/**
+ * The one place a guest is asked to sign in.
+ *
+ * Rendered from the shell rather than beside each button that saves something:
+ * bookmark icons sit on four screens and the note one on two, and a copy of the
+ * check beside each is a copy that gets forgotten on the fifth.
+ */
+function AccountGate() {
+  const { gate, dismissGate, lang } = useStore();
+  if (!gate) return null;
+  const reason = accountGateReason(gate);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      onClick={dismissGate}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl bg-[var(--color-surface)] p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-[17px] font-extrabold">{t(reason.title, lang)}</h2>
+        <p className="mt-1.5 text-[13px] text-[var(--color-muted)]">{t(reason.body, lang)}</p>
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={dismissGate}
+            className="flex-1 rounded-xl bg-[var(--color-surface-alt)] py-2.5 text-[13px] font-bold text-[var(--color-muted)]"
+          >
+            {lang === 'hi' ? 'अभी नहीं' : 'Not now'}
+          </button>
+          <Link
+            href="/sign-in"
+            onClick={dismissGate}
+            className="flex-1 rounded-xl bg-[var(--color-brand)] py-2.5 text-center text-[13px] font-bold text-white"
+          >
+            {lang === 'hi' ? 'साइन इन' : 'Sign in'}
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function GoalSwitcher() {
@@ -178,6 +225,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <div className="h-[env(safe-area-inset-bottom)]" />
       </nav>
+      <AccountGate />
     </div>
   );
 }
