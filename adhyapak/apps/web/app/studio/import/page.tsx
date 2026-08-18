@@ -681,10 +681,9 @@ function ReviewStep({
                         <td className="max-w-[320px] px-3 py-2">
                           <span className="line-clamp-2">{q.text.en || q.text.hi}</span>
                         </td>
-                        <td className="px-3 py-2">{q.subjectId}</td>
-                        <td className="px-3 py-2">{q.topicId}</td>
+                                                <td className="px-3 py-2">{q.topicId}</td>
                         <td className="px-3 py-2 font-bold">
-                          {String.fromCharCode(65 + (q.correctIndices[0] ?? 0))}
+                          {q.correctAnswers.join(' & ') || (q.answerStatus === 'dropped' ? 'dropped' : '—')}
                         </td>
                         <td className="px-3 py-2">{q.pyq?.year ?? '—'}</td>
                         <td className="px-3 py-2">

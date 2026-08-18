@@ -1,5 +1,6 @@
 import type { Test, TestSection } from '../types';
 import { QUESTIONS } from './questions';
+import { getTopic } from './subjects';
 
 /**
  * Tests are composed from the live question bank rather than hard-coded id
@@ -7,7 +8,7 @@ import { QUESTIONS } from './questions';
  * `take` returns the first n ids for a subject, keeping composition deterministic.
  */
 const take = (subjectId: string, n: number): string[] =>
-  QUESTIONS.filter((q) => q.subjectId === subjectId)
+  QUESTIONS.filter((q) => q.topicId !== undefined && getTopic(q.topicId)?.subjectId === subjectId)
     .slice(0, n)
     .map((q) => q.id);
 
@@ -196,7 +197,7 @@ export const TESTS: Test[] = [
         id: 'sec-pyq',
         name: { en: 'Previous Year Questions', hi: 'विगत वर्ष प्रश्न' },
         subjectId: 'cdp',
-        questionIds: QUESTIONS.filter((q) => Boolean(q.previousYear)).map((q) => q.id),
+        questionIds: QUESTIONS.filter((q) => q.year !== undefined).map((q) => q.id),
       },
     ],
   },

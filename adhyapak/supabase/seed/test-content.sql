@@ -11,7 +11,7 @@
 --   psql "$DATABASE_URL" -f seed/test-content.sql
 --
 -- Remove when done:
---   delete from questions where 'demo-data' = any(tags);
+--   delete from questions where source = 'demo-data';
 --
 -- The fingerprints below are the real values fingerprint() in @adhyapak/core
 -- produces for this text, written as `en || chr(31) || hi` so the separator is
@@ -21,57 +21,80 @@
 
 begin;
 
+-- Six clearly-marked [TEST] questions in the flat schema, for verifying
+-- visibility rules and the analytics views on a live database. Their fake "PYQ
+-- years" are 1998-99, before any covered exam existed, so they cannot be
+-- mistaken for real papers.
 insert into questions (
-  id, status, kind, subject_id, topic_id, exam_ids, levels,
-  text, options, correct_index, correct_indices, explanation, difficulty,
-  pyq_exam_id, pyq_year, pyq_paper_label, pyq_shift, pyq_question_number,
-  tags, fingerprint
+  id, status, question_en, question_hi,
+  option_a_en, option_b_en, option_c_en, option_d_en,
+  option_a_hi, option_b_hi, option_c_hi, option_d_hi,
+  correct_answers, answer_status, explanation_en, explanation_hi,
+  difficulty, topic_id, year, question_no, source, fingerprint
 ) values
 -- Two published: what a learner should see.
-('test-q-001', 'published', 'mcq-single', 'cdp', 'cdp-piaget',
- array['htet'], array['upper-primary'],
- '{"en":"[TEST] Which stage comes first in this demo question?","hi":"[TEST] इस डेमो प्रश्न में पहली अवस्था कौन-सी है?"}',
- '[{"en":"First","hi":"पहली"},{"en":"Second","hi":"दूसरी"},{"en":"Third","hi":"तीसरी"},{"en":"Fourth","hi":"चौथी"}]',
- 0, array[0],
- '{"en":"[TEST] Demo explanation.","hi":"[TEST] डेमो व्याख्या।"}',
- 'easy', 'htet', 1999, 'Paper 1', '1', 1,
- array['demo-data'], 'test which stage comes first in this demo question' || chr(31) || 'test इस डेमो प्रश्न में पहली अवस्था कौन सी है'),
-('test-q-002', 'published', 'mcq-single', 'cdp', 'cdp-learning',
- array['htet'], array['upper-primary'],
- '{"en":"[TEST] Which option is B in this demo question?","hi":"[TEST] इस डेमो प्रश्न में विकल्प B कौन-सा है?"}',
- '[{"en":"Not this","hi":"यह नहीं"},{"en":"This one","hi":"यही"},{"en":"Not this either","hi":"यह भी नहीं"},{"en":"No","hi":"नहीं"}]',
- 1, array[1],
- '{"en":"[TEST] Demo explanation.","hi":"[TEST] डेमो व्याख्या।"}',
- 'easy', 'htet', 1999, 'Paper 1', '2', 2,
- array['demo-data'], 'test which option is b in this demo question' || chr(31) || 'test इस डेमो प्रश्न में विकल्प b कौन सा है'),
--- One of each non-published state: what a learner must never see.
-('test-q-003', 'draft', 'mcq-single', 'cdp', 'cdp-piaget',
- array['htet'], array['upper-primary'],
- '{"en":"[TEST] DRAFT — must never reach a learner.","hi":"[TEST] ड्राफ़्ट — शिक्षार्थी तक कभी नहीं पहुँचे।"}',
- '[{"en":"A","hi":"अ"},{"en":"B","hi":"ब"}]', 0, array[0],
- '{"en":"","hi":""}', 'easy', null, null, null, null, null,
- array['demo-data'], 'test draft must never reach a learner' || chr(31) || 'test ड्राफ़्ट शिक्षार्थी तक कभी नहीं पहुँचे'),
-('test-q-004', 'review', 'mcq-single', 'cdp', 'cdp-piaget',
- array['htet'], array['upper-primary'],
- '{"en":"[TEST] IN REVIEW — must never reach a learner.","hi":"[TEST] समीक्षाधीन — शिक्षार्थी तक कभी नहीं पहुँचे।"}',
- '[{"en":"A","hi":"अ"},{"en":"B","hi":"ब"}]', 0, array[0],
- '{"en":"","hi":""}', 'easy', null, null, null, null, null,
- array['demo-data'], 'test in review must never reach a learner' || chr(31) || 'test समीक्षाधीन शिक्षार्थी तक कभी नहीं पहुँचे'),
-('test-q-005', 'archived', 'mcq-single', 'cdp', 'cdp-piaget',
- array['htet'], array['upper-primary'],
- '{"en":"[TEST] ARCHIVED — must never reach a learner.","hi":"[TEST] संग्रहीत — शिक्षार्थी तक कभी नहीं पहुँचे।"}',
- '[{"en":"A","hi":"अ"},{"en":"B","hi":"ब"}]', 0, array[0],
- '{"en":"","hi":""}', 'easy', null, null, null, null, null,
- array['demo-data'], 'test archived must never reach a learner' || chr(31) || 'test संग्रहीत शिक्षार्थी तक कभी नहीं पहुँचे'),
--- One more published PYQ in a second "year", so the trend chart has two points.
-('test-q-006', 'published', 'mcq-single', 'cdp', 'cdp-piaget',
- array['htet'], array['upper-primary'],
- '{"en":"[TEST] Second demo year for the trend chart.","hi":"[TEST] रुझान चार्ट हेतु दूसरा डेमो वर्ष।"}',
- '[{"en":"Yes","hi":"हाँ"},{"en":"No","hi":"नहीं"}]', 0, array[0],
- '{"en":"[TEST] Demo.","hi":"[TEST] डेमो।"}',
- 'easy', 'htet', 1998, 'Paper 1', '1', 3,
- array['demo-data'], 'test second demo year for the trend chart' || chr(31) || 'test रुझान चार्ट हेतु दूसरा डेमो वर्ष')
+('test-q-001', 'published',
+ '[TEST] Which stage did Piaget place at 7-11 years?',
+ '[TEST] पियाजे ने 7-11 वर्ष को किस अवस्था में रखा?',
+ 'Sensorimotor', 'Pre-operational', 'Concrete operational', 'Formal operational',
+ 'संवेदी-पेशीय', 'पूर्व-संक्रियात्मक', 'मूर्त संक्रियात्मक', 'औपचारिक संक्रियात्मक',
+ array['C'], 'ok',
+ 'Demo data. Concrete operational.', 'डेमो डेटा। मूर्त संक्रियात्मक।',
+ 'easy', 'cdp-piaget', 1998, 1, 'demo-data', 'test-q-001'),
+
+('test-q-002', 'published',
+ '[TEST] Who proposed the Zone of Proximal Development?',
+ '[TEST] निकटस्थ विकास क्षेत्र किसने दिया?',
+ 'Piaget', 'Vygotsky', 'Skinner', 'Bruner',
+ 'पियाजे', 'वाइगोत्स्की', 'स्किनर', 'ब्रूनर',
+ array['B'], 'ok',
+ 'Demo data. Vygotsky.', 'डेमो डेटा। वाइगोत्स्की।',
+ 'easy', 'cdp-piaget', 1999, 2, 'demo-data', 'test-q-002'),
+
+-- A double answer and a withdrawn question: the two states the old schema
+-- could not express, so nothing exercised them until now.
+('test-q-003', 'published',
+ '[TEST] Which of these are Piagetian stages?',
+ '[TEST] इनमें से कौन पियाजे की अवस्थाएँ हैं?',
+ 'Sensorimotor', 'Latency', 'Formal operational', 'Genital',
+ 'संवेदी-पेशीय', 'सुप्तावस्था', 'औपचारिक संक्रियात्मक', 'जननांगीय',
+ array['A','C'], 'ok',
+ 'Demo data. Both A and C.', 'डेमो डेटा। A और C दोनों।',
+ 'medium', 'cdp-piaget', 1998, 3, 'demo-data', 'test-q-003'),
+
+('test-q-004', 'published',
+ '[TEST] Withdrawn question, kept to exercise dropped-answer grading.',
+ '[TEST] हटाया गया प्रश्न, ड्रॉप्ड ग्रेडिंग जाँचने हेतु।',
+ 'One', 'Two', 'Three', 'Four',
+ 'एक', 'दो', 'तीन', 'चार',
+ array[]::text[], 'dropped',
+ null, null,
+ 'medium', 'cdp-piaget', 1999, 4, 'demo-data', 'test-q-004'),
+
+-- One draft and one archived: neither should reach a learner.
+('test-q-005', 'draft',
+ '[TEST] Draft question — must not be visible to a learner.',
+ '[TEST] ड्राफ्ट प्रश्न — किसी शिक्षार्थी को न दिखे।',
+ 'One', 'Two', 'Three', 'Four',
+ 'एक', 'दो', 'तीन', 'चार',
+ array['A'], 'ok',
+ 'Demo data.', 'डेमो डेटा।',
+ 'easy', 'cdp-piaget', 1998, 5, 'demo-data', 'test-q-005'),
+
+('test-q-006', 'archived',
+ '[TEST] Archived question — withdrawn from the bank.',
+ '[TEST] संग्रहीत प्रश्न — बैंक से हटाया गया।',
+ 'One', 'Two', 'Three', 'Four',
+ 'एक', 'दो', 'तीन', 'चार',
+ array['A'], 'ok',
+ 'Demo data.', 'डेमो डेटा।',
+ 'easy', 'cdp-piaget', 1999, 6, 'demo-data', 'test-q-006')
 on conflict (id) do nothing;
+
+-- Exam tags live in the junction now.
+insert into question_exams (question_id, exam_id)
+select q.id, 'htet' from questions q where q.source = 'demo-data'
+on conflict do nothing;
 
 commit;
 

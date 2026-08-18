@@ -16,6 +16,8 @@ import {
   type TestAttempt,
   type TestResult,
 } from '@adhyapak/core';
+import { isCorrectAnswer, OPTION_LABELS, inLang } from '@adhyapak/core';
+import type { OptionLabel } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { TestPlayer } from '@/components/TestPlayer';
 import { TestInstructions } from '@/components/TestInstructions';
@@ -127,13 +129,13 @@ export function PracticeSession({
   }
 
   const rows = questions.map((question, i) => {
-    const selectedIndex = done.attempt.answers[question.id]?.selectedIndex ?? null;
+    const selectedOption = done.attempt.answers[question.id]?.selectedOption ?? null;
     return {
       question,
       number: i + 1,
-      selectedIndex,
+      selectedOption,
       timeSpentMs: done.attempt.answers[question.id]?.timeSpentMs ?? 0,
-      outcome: solutionOutcome(selectedIndex, question.correctIndex),
+      outcome: solutionOutcome(selectedOption, question),
     };
   });
   const options = solutionFilterOptions(rows.map((r) => r.outcome));
@@ -174,7 +176,7 @@ export function PracticeSession({
               key={row.question.id}
               question={row.question}
               number={row.number}
-              selectedIndex={row.selectedIndex}
+              selectedOption={row.selectedOption}
               lang={lang}
               footer={
                 <p className="mt-2 text-[11px] text-[var(--color-faint)]">

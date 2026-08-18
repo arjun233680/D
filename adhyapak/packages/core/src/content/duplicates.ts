@@ -1,4 +1,4 @@
-import type { Bilingual } from '../types';
+import type { Bilingual, MaybeBilingual } from '../types';
 import type { ContentQuestion, PyqRef } from './types';
 
 /**
@@ -59,7 +59,7 @@ export const normaliseText = (text: string): string =>
  */
 const FIELD_SEPARATOR = '\u001F';
 
-export const fingerprint = (text: Bilingual): string => {
+export const fingerprint = (text: MaybeBilingual): string => {
   const en = normaliseText(text.en ?? '');
   const hi = normaliseText(text.hi ?? '');
   return `${en}${FIELD_SEPARATOR}${hi}`;

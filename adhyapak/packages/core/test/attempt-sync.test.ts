@@ -45,7 +45,7 @@ describe('an attempt with nowhere to sync to', () => {
       attemptWith({
         'q-cdp-001': {
           questionId: 'q-cdp-001',
-          selectedIndex: 2,
+          selectedOption: 'C',
           markedForReview: false,
           timeSpentMs: 4000,
         },
@@ -76,7 +76,7 @@ describe('an attempt with nowhere to sync to', () => {
 describe('only real changes are written', () => {
   const base: AttemptAnswer = {
     questionId: 'q-cdp-001',
-    selectedIndex: 2,
+    selectedOption: 'C',
     markedForReview: false,
     timeSpentMs: 4000,
   };
@@ -90,8 +90,8 @@ describe('only real changes are written', () => {
   });
 
   it('writes a changed option, including one cleared back to blank', () => {
-    assert.equal(answerChanged(base, { ...base, selectedIndex: 3 }), true);
-    assert.equal(answerChanged(base, { ...base, selectedIndex: null }), true);
+    assert.equal(answerChanged(base, { ...base, selectedOption: 'D' }), true);
+    assert.equal(answerChanged(base, { ...base, selectedOption: null }), true);
   });
 
   it('writes a change to the review flag', () => {

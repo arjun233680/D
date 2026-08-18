@@ -31,6 +31,7 @@ const REFS = refsFrom({
   subjects: SUBJECTS.map((s) => s.id),
   topics: SUBJECTS.flatMap((s) => s.topics.map((t) => t.id)),
   levels: ['primary', 'upper-primary', 'secondary', 'senior-secondary', 'eligibility'],
+  topicSubjects: SUBJECTS.flatMap((sub) => sub.topics.map((t) => [t.id, sub.id] as [string, string])),
 });
 
 const now = () => '2026-01-01T00:00:00.000Z';
@@ -68,22 +69,26 @@ describe('the realistic HTET dataset', () => {
     assert.equal(report.stats.total, 15);
   });
 
-  it('accepts the twelve importable rows and rejects the three broken ones', () => {
-    assert.equal(report.stats.rejected, 3);
-    assert.equal(report.stats.accepted, 12, 'ten valid plus the two duplicates');
+  it('accepts the importable rows and rejects the two broken ones', () => {
+    // Two, not three. The row filed under 'maths' with a CDP topic is no longer
+    // a rejection: the schema stores no subject, so the topic decides where the
+    // question lands and the sheet's column is cross-checked as a warning
+    // instead of a refusal.
+    assert.equal(report.stats.rejected, 2);
+    assert.equal(report.stats.accepted, 13, 'ten valid, the mis-filed subject, and the two duplicates');
   });
 
   it('names each rejection by spreadsheet line and field', () => {
     const lines = report.rejected.map((r) => r.row);
-    assert.deepEqual(lines, [12, 13, 14]);
-    assert.ok(report.rejected[0]!.issues.some((i) => i.field.startsWith('correctIndices')));
-    assert.ok(report.rejected[1]!.issues.some((i) => i.field === 'subjectId'));
-    assert.ok(report.rejected[2]!.issues.some((i) => i.field === 'text.en'));
+    assert.deepEqual(lines, [12, 14]);
+    assert.ok(report.rejected[0]!.issues.some((i) => i.field.startsWith('correctAnswers')));
+    assert.ok(report.rejected[1]!.issues.some((i) => i.field === 'text'));
   });
 
   it('suggests the intended spelling for a typo’d subject', () => {
-    const issue = report.rejected[1]!.issues.find((i) => i.field === 'subjectId');
-    assert.equal(issue?.suggestion, 'math', 'maths → math');
+    const issue = report.warnings.flatMap((w) => w.issues).find((i) => i.field === 'subjectId');
+    assert.ok(issue, 'the mis-filed subject is reported');
+    assert.match(issue!.message, /topic/, 'and it names the topic that disagrees');
   });
 
   it('offers no suggestion when the value resembles nothing in the taxonomy', () => {
@@ -93,17 +98,17 @@ describe('the realistic HTET dataset', () => {
       ['exam,subject,topic,question,option_a,option_b,ans', 'htet,zzzzzz,cdp-piaget,Q?,One,Two,A'].join('\n'),
     );
     const r = importQuestions(rows, { now, refs: REFS });
-    const issue = r.rejected[0]!.issues.find((i) => i.field === 'subjectId');
+    const issue = r.warnings.flatMap((w) => w.issues).find((i) => i.field === 'subjectId');
     assert.equal(issue?.suggestion, undefined);
   });
 
   it('keeps Hindi and English apart on every accepted row', () => {
     for (const q of report.accepted) {
-      assert.ok(q.text.en.trim(), `${q.id} lost its English`);
-      assert.ok(q.text.hi.trim(), `${q.id} lost its Hindi`);
-      assert.notEqual(q.text.en, q.text.hi, `${q.id} has the same text in both languages`);
+      assert.ok((q.text.en ?? '').trim(), `${q.id} lost its English`);
+      assert.ok((q.text.hi ?? '').trim(), `${q.id} lost its Hindi`);
+      assert.notEqual((q.text.en ?? ''), (q.text.hi ?? ''), `${q.id} has the same text in both languages`);
       q.options.forEach((o, i) => {
-        assert.ok(o.en.trim() && o.hi.trim(), `${q.id} option ${i + 1} lost a language`);
+        assert.ok((o.en ?? '').trim() && (o.hi ?? '').trim(), `${q.id} option ${i + 1} lost a language`);
       });
     }
   });
@@ -111,7 +116,7 @@ describe('the realistic HTET dataset', () => {
   it('reads structured PYQ metadata across several years', () => {
     const years = new Set(report.accepted.map((q) => q.pyq?.year));
     assert.deepEqual([...years].sort(), [2019, 2020, 2021, 2022, 2023, 2024]);
-    assert.equal(report.stats.withPyq, 12);
+    assert.equal(report.stats.withPyq, 13);
   });
 
   it('records both shifts of the same paper distinctly', () => {
@@ -143,7 +148,7 @@ describe('duplicate detection', () => {
   });
 
   it('never removes anything — it only reports', () => {
-    assert.equal(report.accepted.length, 12, 'the accepted set is untouched by detection');
+    assert.equal(report.accepted.length, 13, 'the accepted set is untouched by detection');
   });
 
   it('ignores punctuation, case, spacing and curly quotes', () => {
@@ -202,11 +207,10 @@ describe('duplicate detection', () => {
       kind: 'mcq-single',
       examIds: [],
       levels: [],
-      subjectId: 'cdp',
       topicId: 'cdp-piaget',
       text: { en: '', hi: '' },
       options: [],
-      correctIndices: [],
+      correctAnswers: [], answerStatus: 'ok' as const, graceMarksAwarded: false, excludedFromTotal: false,
       explanation: { en: '', hi: '' },
       difficulty: 'easy',
       tags: [],
@@ -245,7 +249,7 @@ describe('column mapping', () => {
 
   it('lets a manual mapping override the aliases entirely', () => {
     const rows = parseDelimited(
-      ['col1,col2,col3,col4,col5,col6', 'What?,One,Two,A,cdp,cdp-piaget'].join('\n'),
+      ['col1,col2,col3,col4,col5,col6,col7', 'What?,One,Two,A,cdp,cdp-piaget,Because.'].join('\n'),
     );
     // Headers that match no alias at all — the educator maps them by hand.
     const report = importQuestions(rows, {
@@ -258,19 +262,19 @@ describe('column mapping', () => {
         answer: ['col4'],
         subject: ['col5'],
         topic: ['col6'],
+        explanation: ['col7'],
       },
     });
     assert.equal(report.stats.accepted, 1, JSON.stringify(report.rejected));
     assert.equal(report.accepted[0]!.text.en, 'What?');
-    assert.deepEqual(report.accepted[0]!.correctIndices, [0]);
+    assert.deepEqual(report.accepted[0]!.correctAnswers, ['A']);
   });
 
   it('reports a missing required column as a rejection, not a crash', () => {
     const rows = parseDelimited(['question,option_a,option_b', 'What?,One,Two'].join('\n'));
     const report = importQuestions(rows, { now, refs: REFS });
     assert.equal(report.stats.accepted, 0);
-    assert.ok(report.rejected[0]!.issues.some((i) => i.field === 'correctIndices'));
-    assert.ok(report.rejected[0]!.issues.some((i) => i.field === 'subjectId'));
+    assert.ok(report.rejected[0]!.issues.some((i) => i.code === 'missing.column'));
   });
 });
 
@@ -286,33 +290,45 @@ describe('suggestions', () => {
 });
 
 describe('publish protection', () => {
-  it('a row missing Hindi imports as a draft but cannot be published', () => {
+  it('publishes an English-only row, and refuses one with no text at all', () => {
+    // Missing Hindi is no longer a bar to publishing: the bank holds questions
+    // written in one language, and refusing them would refuse the Haryana GK
+    // material outright. What is still refused is a row with no question text
+    // in either language.
     const rows = parseDelimited(
       [
-        'exam,subject,topic,question,option_a,option_b,ans',
-        'htet,cdp,cdp-piaget,English only?,One,Two,A',
+        'exam,subject,topic,question,option_a,option_b,ans,explanation',
+        'htet,cdp,cdp-piaget,English only?,One,Two,A,Because.',
       ].join('\n'),
     );
     const report = importQuestions(rows, { now, refs: REFS });
-    assert.equal(report.stats.accepted, 1, 'a draft may be missing Hindi');
+    assert.equal(report.stats.accepted, 1);
 
     const asPublished = validateQuestion(
       { ...report.accepted[0]!, status: 'published' },
       REFS,
     );
-    assert.equal(asPublished.ok, false, 'publishing it is refused');
-    assert.ok(asPublished.errors.some((e) => e.code === 'missing.hi'));
+    assert.equal(asPublished.ok, true, 'one complete language is enough');
+
+    const empty = validateQuestion(
+      { ...report.accepted[0]!, status: 'published', text: {} },
+      REFS,
+    );
+    assert.equal(empty.ok, false);
+    assert.ok(empty.errors.some((e) => e.field === 'text'));
   });
 });
 
 describe('large files', () => {
   it('validates ten thousand rows without collapsing', () => {
     const header =
-      'exam,subject,topic,question,question_hi,option_a,option_b,option_c,option_d,ans,year';
+      'exam,subject,topic,question,question_hi,option_a,option_a_hi,option_b,option_b_hi,' +
+      'option_c,option_c_hi,option_d,option_d_hi,ans,explanation,explanation_hi,year';
     const lines = [header];
     for (let i = 0; i < 10_000; i += 1) {
       lines.push(
-        `htet,cdp,cdp-piaget,Question number ${i}?,प्रश्न ${i}?,One,Two,Three,Four,A,${2015 + (i % 10)}`,
+        `htet,cdp,cdp-piaget,Question number ${i}?,प्रश्न ${i}?,One,एक,Two,दो,Three,तीन,Four,चार,A,` +
+          `Because.,क्योंकि।,${2015 + (i % 10)}`,
       );
     }
     const started = Date.now();
@@ -336,12 +352,11 @@ describe('large files', () => {
         kind: 'mcq-single',
         examIds: ['htet'],
         levels: [],
-        subjectId: 'cdp',
         topicId: 'cdp-piaget',
         // Every hundredth question repeats an earlier one.
         text: { en: `Question ${i % 100}?`, hi: `प्रश्न ${i % 100}?` },
         options: [{ en: 'A', hi: 'अ' }, { en: 'B', hi: 'ब' }],
-        correctIndices: [0],
+        correctAnswers: ['A'], answerStatus: 'ok' as const, graceMarksAwarded: false, excludedFromTotal: false,
         explanation: { en: '', hi: '' },
         difficulty: 'easy',
         tags: [],

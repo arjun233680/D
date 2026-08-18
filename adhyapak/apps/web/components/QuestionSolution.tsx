@@ -1,6 +1,8 @@
 'use client';
 
 import { t, UI, type Lang, type Question } from '@adhyapak/core';
+import { isCorrectAnswer, OPTION_LABELS, inLang } from '@adhyapak/core';
+import type { OptionLabel } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge } from '@/components/ui';
 import type { ReactNode } from 'react';
@@ -22,7 +24,7 @@ import type { ReactNode } from 'react';
 export function QuestionSolution({
   question,
   number,
-  selectedIndex,
+  selectedOption,
   lang,
   footer,
 }: {
@@ -33,26 +35,26 @@ export function QuestionSolution({
    * null when no option was marked — shown as Unattempted, which is a real
    * outcome and not the same as getting it wrong.
    */
-  selectedIndex: number | null;
+  selectedOption: OptionLabel | null;
   lang: Lang;
   footer?: ReactNode;
 }) {
   const { user, toggleBookmark } = useStore();
-  const correct = selectedIndex === question.correctIndex;
+  const correct = isCorrectAnswer(selectedOption, question);
   const bookmarked = user.bookmarkedQuestionIds.includes(question.id);
 
   return (
     <article className="card p-4">
       <div className="flex items-center gap-2">
         <span className="text-[12px] font-extrabold">Q{number}</span>
-        <Badge tone={correct ? 'success' : selectedIndex === null ? 'neutral' : 'danger'}>
+        <Badge tone={correct ? 'success' : selectedOption === null ? 'neutral' : 'danger'}>
           {correct
             ? t(UI.correct, lang)
-            : selectedIndex === null
+            : selectedOption === null
               ? t(UI.unattempted, lang)
               : t(UI.incorrect, lang)}
         </Badge>
-        {question.previousYear ? <Badge tone="info">{question.previousYear}</Badge> : null}
+        {question.year ? <Badge tone="info">{String(question.year)}</Badge> : null}
         <div className="flex-1" />
         <button
           type="button"
@@ -63,12 +65,13 @@ export function QuestionSolution({
         </button>
       </div>
 
-      <p className="mt-2 text-[14px] leading-relaxed font-semibold">{t(question.text, lang)}</p>
+      <p className="mt-2 text-[14px] leading-relaxed font-semibold">{inLang(question.text, lang)}</p>
 
       <ul className="mt-3 space-y-1.5">
         {question.options.map((opt, i) => {
-          const isCorrect = i === question.correctIndex;
-          const isChosen = i === selectedIndex;
+          const label = OPTION_LABELS[i];
+          const isCorrect = label !== undefined && question.correctAnswers.includes(label);
+          const isChosen = label === selectedOption;
           return (
             <li
               key={i}
@@ -81,7 +84,7 @@ export function QuestionSolution({
               }`}
             >
               <span className="font-bold">{String.fromCharCode(65 + i)}.</span>
-              <span className="flex-1">{t(opt, lang)}</span>
+              <span className="flex-1">{inLang(opt, lang)}</span>
               {isCorrect ? <span>✅</span> : isChosen ? <span>❌</span> : null}
             </li>
           );
@@ -92,7 +95,7 @@ export function QuestionSolution({
         <p className="text-[11px] font-bold tracking-wide text-[var(--color-muted)] uppercase">
           {t(UI.explanation, lang)}
         </p>
-        <p className="mt-1 text-[13px] leading-relaxed">{t(question.explanation, lang)}</p>
+        <p className="mt-1 text-[13px] leading-relaxed">{inLang(question.explanation, lang)}</p>
       </div>
 
       {footer}

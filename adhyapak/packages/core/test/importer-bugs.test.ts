@@ -37,7 +37,16 @@ const realRow = (over: Record<string, string> = {}): Record<string, string> => (
   'Opt-B': 'Pre-operational',
   'Opt-C': 'Concrete operational',
   'Opt-D': 'Formal operational',
+  // The row is bilingual, so its options have to be too: options in a language
+  // the question is not asked in are rejected now, which is what a
+  // half-translated sheet produces.
+  'Opt-A (Hindi)': 'संवेदी-पेशीय',
+  'Opt-B (Hindi)': 'पूर्व-संक्रियात्मक',
+  'Opt-C (Hindi)': 'मूर्त संक्रियात्मक',
+  'Opt-D (Hindi)': 'औपचारिक संक्रियात्मक',
   'Correct Answer': 'Opt-A',
+  Explanation: 'The sensorimotor stage is first.',
+  'Explanation (Hindi)': 'संवेदी-पेशीय अवस्था पहली है।',
   Subject: 'cdp',
   Topic: 'cdp-piaget',
   Exam: 'htet',
@@ -178,11 +187,10 @@ describe('the three bugs together', () => {
     assert.equal(report.accepted.length, 1);
 
     const q = report.accepted[0]!;
-    assert.deepEqual(q.correctIndices, [0], 'Opt-A is the first option');
+    assert.deepEqual(q.correctAnswers, ['A'], 'Opt-A is the first option');
     assert.equal(q.text.en, 'According to Piaget, which stage comes first?');
-    assert.match(q.text.hi, /पियाजे/);
+    assert.match(q.text.hi ?? '', /पियाजे/);
     assert.equal(q.options.length, 4);
-    assert.equal(q.subjectId, 'cdp');
     assert.equal(q.topicId, 'cdp-piaget');
     assert.deepEqual(q.levels, ['upper-primary']);
   });
@@ -191,7 +199,7 @@ describe('the three bugs together', () => {
     const report = importQuestions([realRow({ 'Correct Answer': 'Opt-Z' })], { refs: REFS, now });
     assert.equal(report.accepted.length, 0);
     assert.ok(
-      report.rejected[0]!.issues.some((i) => i.field === 'correctIndices'),
+      report.rejected[0]!.issues.some((i) => i.field === 'correctAnswers'),
       'the answer column should still be checked',
     );
   });

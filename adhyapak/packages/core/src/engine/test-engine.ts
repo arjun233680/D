@@ -1,6 +1,7 @@
 import type {
   AttemptAnswer,
   Lang,
+  OptionLabel,
   Question,
   QuestionStatus,
   SubjectScore,
@@ -9,7 +10,9 @@ import type {
   TestResult,
   TopicPerformance,
 } from '../types';
+import { isCorrectAnswer } from '../types';
 import { getQuestion } from '../data/questions';
+import { getTopic } from '../data/subjects';
 import { testMaxMarks, testQuestionIds } from '../data/tests';
 import { getPaper } from '../data/exams';
 
@@ -33,7 +36,7 @@ export const createAttempt = (
 
 const blankAnswer = (questionId: string): AttemptAnswer => ({
   questionId,
-  selectedIndex: null,
+  selectedOption: null,
   markedForReview: false,
   timeSpentMs: 0,
 });
@@ -54,16 +57,16 @@ const withAnswer = (
 export const selectOption = (
   attempt: TestAttempt,
   questionId: string,
-  optionIndex: number,
+  option: OptionLabel,
 ): TestAttempt => {
-  const current = attempt.answers[questionId]?.selectedIndex ?? null;
+  const current = attempt.answers[questionId]?.selectedOption ?? null;
   return withAnswer(attempt, questionId, {
-    selectedIndex: current === optionIndex ? null : optionIndex,
+    selectedOption: current === option ? null : option,
   });
 };
 
 export const clearResponse = (attempt: TestAttempt, questionId: string): TestAttempt =>
-  withAnswer(attempt, questionId, { selectedIndex: null });
+  withAnswer(attempt, questionId, { selectedOption: null });
 
 export const toggleMarkForReview = (attempt: TestAttempt, questionId: string): TestAttempt =>
   withAnswer(attempt, questionId, {
@@ -97,9 +100,9 @@ export const isTimeUp = (attempt: TestAttempt): boolean => attempt.remainingMs <
 export const statusOf = (attempt: TestAttempt, questionId: string): QuestionStatus => {
   const a = attempt.answers[questionId];
   if (!a) return 'not-visited';
-  if (a.selectedIndex !== null && a.markedForReview) return 'answered-marked';
+  if (a.selectedOption !== null && a.markedForReview) return 'answered-marked';
   if (a.markedForReview) return 'marked';
-  if (a.selectedIndex !== null) return 'answered';
+  if (a.selectedOption !== null) return 'answered';
   return 'not-answered';
 };
 
@@ -176,14 +179,21 @@ export const gradeAttempt = (
     if (!question) continue;
 
     const answer = attempt.answers[id];
-    const selected = answer?.selectedIndex ?? null;
+    const selected = answer?.selectedOption ?? null;
     const timeSpentMs = answer?.timeSpentMs ?? 0;
     totalTimeMs += timeSpentMs;
 
+    // Subject comes from the topic now: the flat schema does not store one on
+    // the question, because a denormalised copy could disagree with
+    // `topics.subject_id` — and did. A draft with no topic yet has no subject
+    // either, and cannot be in a paper, so it is grouped under ''.
+    const subjectId = (question.topicId ? getTopic(question.topicId)?.subjectId : undefined) ?? '';
+    const topicId = question.topicId ?? '';
+
     const subject =
-      bySubject.get(question.subjectId) ??
+      bySubject.get(subjectId) ??
       {
-        subjectId: question.subjectId,
+        subjectId,
         attempted: 0,
         correct: 0,
         incorrect: 0,
@@ -197,8 +207,8 @@ export const gradeAttempt = (
     subject.timeSpentMs += timeSpentMs;
 
     const topic =
-      byTopic.get(question.topicId) ??
-      { topicId: question.topicId, subjectId: question.subjectId, attempted: 0, correct: 0, accuracy: 0 };
+      byTopic.get(topicId) ??
+      { topicId, subjectId, attempted: 0, correct: 0, accuracy: 0 };
 
     if (selected === null) {
       skipped += 1;
@@ -206,7 +216,7 @@ export const gradeAttempt = (
     } else {
       subject.attempted += 1;
       topic.attempted += 1;
-      if (selected === question.correctIndex) {
+      if (isCorrectAnswer(selected, question)) {
         correct += 1;
         subject.correct += 1;
         subject.score += test.marksPerQuestion;
@@ -218,8 +228,8 @@ export const gradeAttempt = (
       }
     }
 
-    bySubject.set(question.subjectId, subject);
-    byTopic.set(question.topicId, topic);
+    bySubject.set(subjectId, subject);
+    byTopic.set(topicId, topic);
   }
 
   const attempted = correct + incorrect;
@@ -274,14 +284,14 @@ export const reviewList = (
   test: Test,
   attempt: TestAttempt,
   findQuestion: FindQuestion = getQuestion,
-): { question: Question; selectedIndex: number | null; correct: boolean }[] =>
+): { question: Question; selectedOption: OptionLabel | null; correct: boolean }[] =>
   testQuestionIds(test)
     .map((id) => {
       const question = findQuestion(id);
       if (!question) return null;
-      const selectedIndex = attempt.answers[id]?.selectedIndex ?? null;
-      return { question, selectedIndex, correct: selectedIndex === question.correctIndex };
+      const selectedOption = attempt.answers[id]?.selectedOption ?? null;
+      return { question, selectedOption, correct: isCorrectAnswer(selectedOption, question) };
     })
-    .filter((r): r is { question: Question; selectedIndex: number | null; correct: boolean } =>
+    .filter((r): r is { question: Question; selectedOption: OptionLabel | null; correct: boolean } =>
       Boolean(r),
     );

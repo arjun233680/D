@@ -26,21 +26,28 @@ From `adhyapak/supabase/`, with the database URL from
 for f in migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
 ```
 
-Eight files, in order. All are idempotent (`if not exists` throughout), so
-re-running is safe. Then the content seed:
+Twelve files, in order. All are idempotent (`if not exists` throughout) except
+0011, which drops and recreates the question table — re-running it empties the
+bank a second time rather than doing nothing. Then the content seed:
 
 ```bash
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f seed/seed.sql
 ```
 
+The seed carries the syllabus, exams, papers, notes and videos — but **no
+questions**. The bank starts empty and is filled through the Studio import;
+0011 removed the 67 demo questions along with the jsonb schema they were
+written in.
+
 ### Optional: the safe test dataset
 
-`seed/test-content.sql` adds six clearly-marked `[TEST]` questions — three
-published, one each of draft/review/archived — for verifying visibility rules
+`seed/test-content.sql` adds six clearly-marked `[TEST]` questions — four
+published (one with a double answer, one withdrawn), one draft, one archived —
+for verifying visibility rules
 and the analytics views on a live database. Their fake "PYQ years" are 1998–99,
 before any covered exam existed, so they cannot be mistaken for real papers.
 Remove them afterwards with
-`delete from questions where 'demo-data' = any(tags);`.
+`delete from questions where source = 'demo-data';`.
 
 ## 3. Verify the schema landed
 

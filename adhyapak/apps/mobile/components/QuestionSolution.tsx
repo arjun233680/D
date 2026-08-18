@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { t, theme, UI, type Lang, type Question } from '@adhyapak/core';
+import { isCorrectAnswer, OPTION_LABELS, inLang } from '@adhyapak/core';
+import type { OptionLabel } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, s } from '@/components/ui';
 
@@ -15,7 +17,7 @@ import { Badge, s } from '@/components/ui';
 export function QuestionSolution({
   question,
   number,
-  selectedIndex,
+  selectedOption,
   lang,
   footer,
 }: {
@@ -26,26 +28,26 @@ export function QuestionSolution({
    * null when no option was marked — shown as Unattempted, which is a real
    * outcome and not the same as getting it wrong.
    */
-  selectedIndex: number | null;
+  selectedOption: OptionLabel | null;
   lang: Lang;
   footer?: ReactNode;
 }) {
   const { user, toggleBookmark } = useStore();
-  const correct = selectedIndex === question.correctIndex;
+  const correct = isCorrectAnswer(selectedOption, question);
   const bookmarked = user.bookmarkedQuestionIds.includes(question.id);
 
   return (
     <View style={[s.card, { padding: theme.space.lg }]}>
       <View style={[s.row, { gap: 8 }]}>
         <Text style={{ fontWeight: '800', fontSize: theme.font.sm }}>Q{number}</Text>
-        <Badge tone={correct ? 'success' : selectedIndex === null ? 'neutral' : 'danger'}>
+        <Badge tone={correct ? 'success' : selectedOption === null ? 'neutral' : 'danger'}>
           {correct
             ? t(UI.correct, lang)
-            : selectedIndex === null
+            : selectedOption === null
               ? t(UI.unattempted, lang)
               : t(UI.incorrect, lang)}
         </Badge>
-        {question.previousYear ? <Badge tone="info">{question.previousYear}</Badge> : null}
+        {question.year ? <Badge tone="info">{String(question.year)}</Badge> : null}
         <View style={{ flex: 1 }} />
         <Pressable onPress={() => toggleBookmark(question.id)}>
           <Text style={{ fontSize: 16 }}>{bookmarked ? '🔖' : '📑'}</Text>
@@ -53,13 +55,14 @@ export function QuestionSolution({
       </View>
 
       <Text style={{ fontSize: theme.font.base, fontWeight: '600', lineHeight: 23, marginTop: 8 }}>
-        {t(question.text, lang)}
+        {inLang(question.text, lang)}
       </Text>
 
       <View style={{ marginTop: 10, gap: 6 }}>
         {question.options.map((opt, i) => {
-          const isCorrect = i === question.correctIndex;
-          const isChosen = i === selectedIndex;
+          const label = OPTION_LABELS[i];
+          const isCorrect = label !== undefined && question.correctAnswers.includes(label);
+          const isChosen = label === selectedOption;
           return (
             <View
               key={i}
@@ -86,7 +89,7 @@ export function QuestionSolution({
                 {String.fromCharCode(65 + i)}.
               </Text>
               <Text style={{ flex: 1, fontSize: theme.font.sm, lineHeight: 20 }}>
-                {t(opt, lang)}
+                {inLang(opt, lang)}
               </Text>
               {isCorrect ? <Text>✅</Text> : isChosen ? <Text>❌</Text> : null}
             </View>
@@ -106,7 +109,7 @@ export function QuestionSolution({
           {t(UI.explanation, lang).toUpperCase()}
         </Text>
         <Text style={{ fontSize: theme.font.sm, lineHeight: 21, marginTop: 4 }}>
-          {t(question.explanation, lang)}
+          {inLang(question.explanation, lang)}
         </Text>
       </View>
 

@@ -32,11 +32,10 @@ const goodQuestion = (over: Partial<ContentQuestion> = {}): ContentQuestion => (
   kind: 'mcq-single',
   examIds: ['ctet'],
   levels: [],
-  subjectId: 'cdp',
   topicId: 'cdp-piaget',
   text: bi('Who proposed the four stages?', 'चार अवस्थाएँ किसने दीं?'),
   options: [bi('Piaget', 'पियाजे'), bi('Vygotsky', 'वायगोत्स्की'), bi('Skinner', 'स्किनर'), bi('Bruner', 'ब्रूनर')],
-  correctIndices: [0],
+  correctAnswers: ['A'], answerStatus: 'ok' as const, graceMarksAwarded: false, excludedFromTotal: false,
   explanation: bi('Piaget.', 'पियाजे।'),
   difficulty: 'easy',
   tags: [],
@@ -53,40 +52,117 @@ describe('question validation', () => {
     assert.equal(validateQuestion(goodQuestion()).ok, true);
   });
 
-  it('rejects an answer that points past the options', () => {
-    const r = validateQuestion(goodQuestion({ correctIndices: [7] }));
+  it('rejects a key naming an option the question does not carry', () => {
+    // Not an out-of-range index any more — a letter whose option is empty. The
+    // defect it catches is the same one: a learner marked wrong for the answer
+    // the paper printed.
+    const r = validateQuestion(
+      goodQuestion({
+        options: [bi('Piaget', 'पियाजे'), bi('Vygotsky', 'वायगोत्स्की')],
+        correctAnswers: ['C'],
+        answerStatus: 'ok' as const, graceMarksAwarded: false, excludedFromTotal: false,
+      }),
+    );
     assert.equal(r.ok, false);
-    assert.ok(r.errors.some((e) => e.code === 'out.of.range'));
+    assert.ok(r.errors.some((e) => e.code === 'empty.option'));
   });
 
-  it('rejects a question with no correct answer', () => {
-    const r = validateQuestion(goodQuestion({ correctIndices: [] }));
+  it("rejects a question marked answerable with no answer", () => {
+    const r = validateQuestion(goodQuestion({ correctAnswers: [], answerStatus: 'ok' as const, graceMarksAwarded: false, excludedFromTotal: false }));
     assert.equal(r.ok, false);
-    assert.ok(r.errors.some((e) => e.field === 'correctIndices'));
+    assert.ok(r.errors.some((e) => e.field === 'correctAnswers'));
   });
 
-  it('rejects two answers on a single-correct question', () => {
-    const r = validateQuestion(goodQuestion({ correctIndices: [0, 1] }));
+  it('accepts a withdrawn question with no answer at all', () => {
+    // A dropped question is a fact about the paper, not a broken row. Requiring
+    // a key here is what made the old model record one for a question that had
+    // none, and mark it wrong for everybody.
+    const r = validateQuestion(
+      goodQuestion({
+        correctAnswers: [],
+        answerStatus: 'dropped' as const,
+        graceMarksAwarded: false,
+        excludedFromTotal: false,
+      }),
+    );
+    assert.equal(r.ok, true);
+  });
+
+  it('rejects a withdrawn question that still carries an answer', () => {
+    const r = validateQuestion(
+      goodQuestion({
+        correctAnswers: ['A'],
+        answerStatus: 'dropped' as const,
+        graceMarksAwarded: false,
+        excludedFromTotal: false,
+      }),
+    );
     assert.equal(r.ok, false);
-    assert.ok(r.errors.some((e) => e.code === 'too.many'));
+    assert.ok(r.errors.some((e) => e.code === 'conflict'));
   });
 
-  it('allows two answers when the question says multiple', () => {
-    assert.equal(validateQuestion(goodQuestion({ kind: 'mcq-multiple', correctIndices: [0, 1] })).ok, true);
+  it('accepts a double answer, because real answer keys have them', () => {
+    assert.equal(validateQuestion(goodQuestion({ correctAnswers: ['B', 'D'], answerStatus: 'ok' as const, graceMarksAwarded: false, excludedFromTotal: false })).ok, true);
   });
 
-  it('blocks publishing without Hindi, but allows a draft', () => {
-    const noHindi = goodQuestion({ text: { en: 'English only', hi: '' } });
-    assert.equal(validateQuestion(noHindi).ok, false, 'published needs Hindi');
-    const draft = validateQuestion({ ...noHindi, status: 'draft' });
-    assert.equal(draft.ok, true, 'a draft may still be missing Hindi');
-    assert.ok(draft.warnings.some((w) => w.code === 'missing.hi'));
+  it('publishes a question written in only one language', () => {
+    // Haryana GK is written in Hindi and nothing else. Requiring English would
+    // reject exactly the material the audience most needs.
+    const hindiOnly = goodQuestion({
+      text: { hi: 'केवल हिंदी' },
+      options: [{ hi: 'एक' }, { hi: 'दो' }, { hi: 'तीन' }, { hi: 'चार' }],
+      explanation: { hi: 'क्योंकि।' },
+    });
+    assert.equal(validateQuestion(hindiOnly).ok, true);
   });
 
-  it('always requires English, because every screen falls back to it', () => {
-    const r = validateQuestion(goodQuestion({ text: { en: '  ', hi: 'हिंदी' }, status: 'draft' }));
+  it('warns, but does not refuse, when the options are in the other language', () => {
+    // The real HTET CDP sheet is bilingual in its questions and English-only in
+    // its options, because the options are proper nouns nobody translates.
+    // Refusing that row would refuse 630 correct questions, so this is reported
+    // for an editor and the question still imports.
+    const r = validateQuestion(
+      goodQuestion({
+        text: { hi: 'केवल हिंदी' },
+        options: [bi('One', ''), bi('Two', ''), bi('Three', ''), bi('Four', '')],
+        explanation: { hi: 'क्योंकि।' },
+      }),
+    );
+    assert.equal(r.ok, true);
+    assert.ok(r.warnings.some((w) => w.code === 'untranslated'));
+  });
+
+  it('rejects an option with no text in either language', () => {
+    const r = validateQuestion(
+      goodQuestion({ options: [bi('One', 'एक'), {}, bi('Three', 'तीन'), bi('Four', 'चार')] }),
+    );
     assert.equal(r.ok, false);
-    assert.ok(r.errors.some((e) => e.code === 'missing.en'));
+    assert.ok(r.errors.some((e) => e.field === 'options.1'));
+  });
+
+  it('rejects a question with no text in either language', () => {
+    const r = validateQuestion(goodQuestion({ text: { en: '  ', hi: '' } }));
+    assert.equal(r.ok, false);
+    assert.ok(r.errors.some((e) => e.field === 'text'));
+  });
+
+  it('requires an explanation only when the answer is known', () => {
+    const noExplanation = goodQuestion({ explanation: {} });
+    assert.equal(validateQuestion(noExplanation).ok, false);
+    assert.equal(
+      validateQuestion({
+        ...noExplanation,
+        correctAnswers: [],
+        answerStatus: 'key_pending' as const,
+      }).ok,
+      true,
+    );
+  });
+
+  it('warns about a missing topic instead of rejecting the row', () => {
+    const r = validateQuestion(goodQuestion({ topicId: undefined }));
+    assert.equal(r.ok, true);
+    assert.ok(r.warnings.some((w) => w.field === 'topicId'));
   });
 
   it('rejects references to subjects and topics that do not exist', () => {
@@ -168,7 +244,6 @@ describe('note validation', () => {
       id: 'n-1',
       status: 'published',
       title: bi('Notes', 'नोट्स'),
-      subjectId: 'cdp',
       fileUrl: '/files/notes.pdf',
     });
     assert.equal(r.ok, false);
@@ -214,9 +289,9 @@ describe('answer parsing', () => {
 
 describe('bulk import', () => {
   const csv = [
-    'Exam,Subject,Topic,Question,Question Hi,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Explanation Hi,Year,Paper,Shift,Difficulty',
-    'ctet,cdp,cdp-piaget,"Who proposed four stages of development?",चार अवस्थाएँ किसने दीं?,Piaget,Vygotsky,Skinner,Bruner,A,Piaget did.,पियाजे ने।,2024,Paper 1,1,easy',
-    'ctet,cdp,cdp-piaget,Assimilation means?,आत्मसातीकरण का अर्थ?,Fit in,Change,Ignore,Forget,B,Schema changes.,स्कीमा बदलती है।,,,,medium',
+    'Exam,Subject,Topic,Question,Question Hi,Option A,Option A Hi,Option B,Option B Hi,Option C,Option C Hi,Option D,Option D Hi,Correct Answer,Explanation,Explanation Hi,Year,Paper,Shift,Difficulty',
+    'ctet,cdp,cdp-piaget,"Who proposed four stages of development?",चार अवस्थाएँ किसने दीं?,Piaget,पियाजे,Vygotsky,वायगोत्स्की,Skinner,स्किनर,Bruner,ब्रूनर,A,Piaget did.,पियाजे ने।,2024,Paper 1,1,easy',
+    'ctet,cdp,cdp-piaget,Assimilation means?,आत्मसातीकरण का अर्थ?,Fit in,समाना,Change,बदलना,Ignore,अनदेखा,Forget,भूलना,B,Schema changes.,स्कीमा बदलती है।,,,,medium',
   ].join('\n');
 
   const now = () => '2026-01-01T00:00:00.000Z';
@@ -244,36 +319,36 @@ describe('bulk import', () => {
 
   it('maps the answer letter to the right option', () => {
     const report = importQuestionsFromCsv(csv, { now });
-    assert.deepEqual(report.accepted[0]!.correctIndices, [0]);
-    assert.deepEqual(report.accepted[1]!.correctIndices, [1]);
+    assert.deepEqual(report.accepted[0]!.correctAnswers, ['A']);
+    assert.deepEqual(report.accepted[1]!.correctAnswers, ['B']);
   });
 
   it('accepts alternative column spellings', () => {
     const alt = [
-      'exam,subject,topic,question,option_a,option_b,option_c,option_d,ans',
-      'ctet,cdp,cdp-piaget,Q?,One,Two,Three,Four,C',
+      'exam,subject,topic,question,option_a,option_b,option_c,option_d,ans,explanation',
+      'ctet,cdp,cdp-piaget,Q?,One,Two,Three,Four,C,Because C.',
     ].join('\n');
     const report = importQuestionsFromCsv(alt, { now, status: 'draft' });
     assert.equal(report.stats.accepted, 1);
-    assert.deepEqual(report.accepted[0]!.correctIndices, [2]);
+    assert.deepEqual(report.accepted[0]!.correctAnswers, ['C']);
   });
 
   it('rejects a row whose answer is not one of its options, naming the row', () => {
     const bad = [
-      'exam,subject,topic,question,option_a,option_b,ans',
-      'ctet,cdp,cdp-piaget,Q?,One,Two,D',
+      'exam,subject,topic,question,option_a,option_b,ans,explanation',
+      'ctet,cdp,cdp-piaget,Q?,One,Two,D,Because.',
     ].join('\n');
     const report = importQuestionsFromCsv(bad, { now });
     assert.equal(report.stats.accepted, 0);
     assert.equal(report.rejected[0]!.row, 2, 'row numbers match the spreadsheet');
-    assert.ok(report.rejected[0]!.issues.some((i) => i.field === 'correctIndices'));
+    assert.ok(report.rejected[0]!.issues.some((i) => i.field === 'correctAnswers'));
   });
 
   it('rejects a duplicate id rather than overwriting the earlier question', () => {
     const dupe = [
-      'id,exam,subject,topic,question,option_a,option_b,ans',
-      'q-9,ctet,cdp,cdp-piaget,First?,One,Two,A',
-      'q-9,ctet,cdp,cdp-piaget,Second?,One,Two,B',
+      'id,exam,subject,topic,question,option_a,option_b,ans,explanation',
+      'q-9,ctet,cdp,cdp-piaget,First?,One,Two,A,Because.',
+      'q-9,ctet,cdp,cdp-piaget,Second?,One,Two,B,Because.',
     ].join('\n');
     const report = importQuestionsFromCsv(dupe, { now });
     assert.equal(report.stats.accepted, 1);
@@ -287,9 +362,13 @@ describe('bulk import', () => {
       subjects: SUBJECTS.map((s) => s.id),
       topics: SUBJECTS.flatMap((s) => s.topics.map((t) => t.id)),
     });
+    // The unknown reference that still rejects a row is the topic, because the
+    // topic is what the question is filed under. A misspelled subject column is
+    // reported against the topic it disagrees with, not as a rejection: the
+    // schema stores no subject for it to be wrong about.
     const typo = [
-      'exam,subject,topic,question,option_a,option_b,ans',
-      'ctet,chemsitry,cdp-piaget,Q?,One,Two,A',
+      'exam,subject,topic,question,option_a,option_b,ans,explanation',
+      'ctet,cdp,cdp-piagett,Q?,One,Two,A,Because.',
     ].join('\n');
     const report = importQuestionsFromCsv(typo, { now, refs });
     assert.equal(report.stats.rejected, 1);
@@ -308,7 +387,7 @@ describe('render adapter', () => {
   it('narrows a published question to the shape screens render', () => {
     const rendered = toQuestion(goodQuestion());
     assert.ok(rendered);
-    assert.equal(rendered!.correctIndex, 0);
+    assert.deepEqual(rendered!.correctAnswers, ['A']);
     assert.equal(rendered!.options.length, 4);
   });
 
@@ -323,6 +402,8 @@ describe('render adapter', () => {
   it('renders PYQ metadata as a citation', () => {
     const q = goodQuestion({ pyq: { examId: 'ctet', year: 2024, session: 'december', paperLabel: 'Paper 1' } });
     assert.equal(formatPyq(q.pyq!, 'CTET'), 'CTET December 2024 Paper 1');
-    assert.equal(toQuestion(q, 'CTET')!.previousYear, 'CTET December 2024 Paper 1');
+    // The render shape carries the year as a number now; the prose citation is
+    // built by whoever displays it, from the structured PyqRef.
+    assert.equal(toQuestion(q, 'CTET')!.year, 2024);
   });
 });

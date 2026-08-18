@@ -20,6 +20,8 @@ import {
   type PyqSelection,
   type SolutionFilter,
 } from '@adhyapak/core';
+import { isCorrectAnswer, OPTION_LABELS, inLang } from '@adhyapak/core';
+import type { OptionLabel } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { QuestionSolution } from '@/components/QuestionSolution';
@@ -145,13 +147,13 @@ function PyqResult() {
       >
         {(list) => {
           const rows = list.map((question, i) => {
-            const selectedIndex = attempt.answers[question.id]?.selectedIndex ?? null;
+            const selectedOption = attempt.answers[question.id]?.selectedOption ?? null;
             return {
               question,
               number: i + 1,
-              selectedIndex,
+              selectedOption,
               timeSpentMs: attempt.answers[question.id]?.timeSpentMs ?? 0,
-              outcome: solutionOutcome(selectedIndex, question.correctIndex),
+              outcome: solutionOutcome(selectedOption, question),
             };
           });
           const options = solutionFilterOptions(rows.map((r) => r.outcome));
@@ -173,7 +175,7 @@ function PyqResult() {
                     key={row.question.id}
                     question={row.question}
                     number={row.number}
-                    selectedIndex={row.selectedIndex}
+                    selectedOption={row.selectedOption}
                     lang={lang}
                     footer={
                       <p className="mt-2 text-[11px] text-[var(--color-faint)]">

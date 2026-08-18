@@ -61,7 +61,7 @@ export interface AttemptSync {
  */
 export const answerChanged = (a: AttemptAnswer | undefined, b: AttemptAnswer): boolean =>
   a === undefined ||
-  a.selectedIndex !== b.selectedIndex ||
+  a.selectedOption !== b.selectedOption ||
   a.markedForReview !== b.markedForReview ||
   // Time only counts as a change when it moves by a second or more. It ticks
   // continuously, so comparing exactly would make every answer dirty on every
@@ -114,7 +114,7 @@ export const createAttemptSync = (
       // on a paper that is about to be graded locally anyway.
       sent.set(questionId, { ...answer });
       void saveAnswer(id, questionId, {
-        selectedIndex: answer.selectedIndex,
+        selectedOption: answer.selectedOption,
         markedForReview: answer.markedForReview,
         timeSpentMs: answer.timeSpentMs,
       }).catch(() => undefined);
