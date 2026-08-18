@@ -107,16 +107,23 @@ export const pyqModeModel = (
   selection: PyqSelection,
   electiveSubjectId?: string,
 ): PyqModeModel => {
-  const paperId = selection.paperId;
-  const found = paperId ? getPaper(paperId) : undefined;
-  const paper = found?.paper;
+  const exam = selection.examId ? getExam(selection.examId) : undefined;
+
+  // A paper from another exam is treated as no paper at all, wherever it came
+  // from — a stale profile, a hand-edited URL, a link shared by somebody
+  // preparing for something else. Without this the screen reads that paper's
+  // posts and electives while claiming to be this exam, which is how an HTET
+  // candidate was shown CTET's Paper 2 subjects.
+  const found = selection.paperId ? getPaper(selection.paperId) : undefined;
+  const belongs = found && (!exam || found.exam.id === exam.id);
+  const paper = belongs ? found.paper : undefined;
+  const paperId = paper?.id;
 
   // Browsing beats the profile. A TGT candidate reading the PGT paper says
   // which PGT subject here, and that answer must not become what they are
   // preparing for.
   const elective = selection.electiveSubjectId ?? electiveSubjectId;
 
-  const exam = selection.examId ? getExam(selection.examId) : undefined;
   const paperOptions: PyqOption<string>[] = (exam?.papers ?? []).map((p) => {
     const label = paperLabel(p);
     return { value: p.id, labelEn: label.en, labelHi: label.hi };

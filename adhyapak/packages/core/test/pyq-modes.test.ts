@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { pyqSelectionToParams } from '../src/engine/pyq-filter';
+import {
+  defaultPyqSelection,
+  pyqSelectionToParams,
+  resolvePyqSelection,
+} from '../src/engine/pyq-filter';
 import {
   PYQ_MODES,
   pyqModeEmptyReason,
@@ -179,5 +183,65 @@ describe('the post switcher, and what it asks next', () => {
   it('carries the browsing subject through a link', () => {
     const params = pyqSelectionToParams({ examId: 'htet', electiveSubjectId: 'physics' });
     assert.equal(params.elective, 'physics');
+  });
+});
+
+describe('the chips can only ever come from the goal exam', () => {
+  it('ignores a saved paper that belongs to another exam', () => {
+    // The reported bug: a profile still holding CTET's Paper 2 from an earlier
+    // goal, alongside HTET. The paper existed, so it was accepted, and every
+    // chip below it came from CTET.
+    const selection = defaultPyqSelection({ goalExamId: 'htet', targetPaperId: 'ctet-p2' });
+    assert.equal(selection.examId, 'htet');
+    assert.equal(selection.paperId, 'htet-l1', 'falls back to this exam’s first paper');
+  });
+
+  it('keeps a saved paper that does belong to the exam', () => {
+    const selection = defaultPyqSelection({ goalExamId: 'htet', targetPaperId: 'htet-l3' });
+    assert.equal(selection.paperId, 'htet-l3');
+  });
+
+  it('shows this exam’s posts, never another exam’s', () => {
+    const model = pyqModeModel('full-paper', { examId: 'htet', paperId: 'ctet-p2' }, undefined);
+    assert.deepEqual(
+      model.paperOptions.map((o) => o.labelEn),
+      ['PRT', 'TGT', 'PGT'],
+      'HTET posts, not CTET’s Paper I / Paper II',
+    );
+    assert.deepEqual(
+      model.electiveOptions,
+      [],
+      'and not CTET Paper 2’s Mathematics & Science / Social Studies',
+    );
+  });
+
+  it('carries the elective through a URL round trip, on every field', () => {
+    // Both of these were written to the URL and then dropped on resolve, so a
+    // chip lit up and nothing under it changed.
+    const url = {
+      examId: 'htet',
+      paperId: 'htet-l2',
+      topicId: 'cdp-piaget',
+      electiveSubjectId: 'science',
+    };
+    const resolved = resolvePyqSelection(url, { goalExamId: 'htet', targetPaperId: 'htet-l1' });
+    assert.equal(resolved.topicId, 'cdp-piaget');
+    assert.equal(resolved.electiveSubjectId, 'science');
+  });
+
+  it('falls back to the profile’s elective for the profile’s own exam', () => {
+    const resolved = resolvePyqSelection(
+      {},
+      { goalExamId: 'htet', targetPaperId: 'htet-l2', electiveSubjectId: 'science' },
+    );
+    assert.equal(resolved.electiveSubjectId, 'science');
+  });
+
+  it('does not carry it to a different exam', () => {
+    const resolved = resolvePyqSelection(
+      { examId: 'ctet' },
+      { goalExamId: 'htet', targetPaperId: 'htet-l2', electiveSubjectId: 'science' },
+    );
+    assert.equal(resolved.electiveSubjectId, undefined, 'CTET does not offer Science as an elective');
   });
 });

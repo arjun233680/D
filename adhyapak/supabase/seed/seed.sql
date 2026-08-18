@@ -333,8 +333,8 @@ insert into exam_sources (exam_id, label, url, checked_on) values
   ('emrs', 'Official EMRS / NESTS portal', 'https://emrs.tribal.gov.in', '2026-08-13'::date);
 
 insert into exam_papers (id, exam_id, name, level, post, marks_per_question, negative_marking, duration_minutes, total_questions, cutoff_general, cutoff_reserved, sort_order) values
-  ('ctet-p1', 'ctet', '{"en":"Paper 1 — Classes 1 to 5 (PRT)","hi":"पेपर 1 — कक्षा 1 से 5 (PRT)"}'::jsonb, 'primary', 'Paper 1', 1, 0, 150, 150, 60, 55, 0),
-  ('ctet-p2', 'ctet', '{"en":"Paper 2 — Classes 6 to 8","hi":"पेपर 2 — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper 2', 1, 0, 150, 150, 60, 55, 1),
+  ('ctet-p1', 'ctet', '{"en":"Paper I — Classes 1 to 5 (PRT)","hi":"पेपर I — कक्षा 1 से 5 (PRT)"}'::jsonb, 'primary', 'Paper I', 1, 0, 150, 150, 60, 55, 0),
+  ('ctet-p2', 'ctet', '{"en":"Paper II — Classes 6 to 8","hi":"पेपर II — कक्षा 6 से 8"}'::jsonb, 'upper-primary', 'Paper II', 1, 0, 150, 150, 60, 55, 1),
   ('htet-l1', 'htet', '{"en":"Level 1 — PRT (Classes 1 to 5)","hi":"स्तर 1 — PRT (कक्षा 1 से 5)"}'::jsonb, 'primary', 'PRT', 1, 0, 150, 150, 60, 55, 0),
   ('htet-l2', 'htet', '{"en":"Level 2 — TGT (Classes 6 to 8)","hi":"स्तर 2 — TGT (कक्षा 6 से 8)"}'::jsonb, 'upper-primary', 'TGT', 1, 0, 150, 150, 60, 55, 1),
   ('htet-l3', 'htet', '{"en":"Level 3 — PGT (Classes 9 to 12)","hi":"स्तर 3 — PGT (कक्षा 9 से 12)"}'::jsonb, 'senior-secondary', 'PGT', 1, 0, 150, 150, 60, 55, 2),
@@ -395,7 +395,7 @@ on conflict (id) do nothing;
 delete from elective_choices;
 delete from elective_groups;
 insert into elective_groups (id, paper_id, name) values
-  ('ctet-p2-elective', 'ctet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),
+  ('ctet-p2-elective', 'ctet-p2', '{"en":"Paper II subject","hi":"पेपर II विषय"}'::jsonb),
   ('htet-l2-elective', 'htet-l2', '{"en":"TGT subject","hi":"TGT विषय"}'::jsonb),
   ('htet-l3-elective', 'htet-l3', '{"en":"PGT subject","hi":"PGT विषय"}'::jsonb),
   ('hptet-p2-elective', 'hptet-p2', '{"en":"Paper 2 subject","hi":"पेपर 2 विषय"}'::jsonb),

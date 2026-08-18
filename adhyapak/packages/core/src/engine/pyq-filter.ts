@@ -133,9 +133,15 @@ export const defaultPyqSelection = (user: {
   electiveSubjectId?: string;
 }): PyqSelection => {
   const exam = user.goalExamId ? getExam(user.goalExamId) : undefined;
-  const paperId =
-    user.targetPaperId && getPaper(user.targetPaperId) ? user.targetPaperId : exam?.papers[0]?.id;
-  return { examId: exam?.id, paperId };
+  // The saved paper has to belong to the saved exam. It only had to *exist*
+  // before, so a profile still holding `ctet-p2` from an earlier goal was
+  // accepted alongside `htet` — and every screen downstream then read that
+  // paper's posts and electives, which is how an HTET candidate came to be
+  // offered "Paper 2" and a choice between Mathematics & Science and Social
+  // Studies. A stale paper is not a paper of this exam; it is no paper.
+  const saved = user.targetPaperId ? getPaper(user.targetPaperId) : undefined;
+  const paperId = saved && saved.exam.id === exam?.id ? saved.paper.id : exam?.papers[0]?.id;
+  return { examId: exam?.id, paperId, electiveSubjectId: user.electiveSubjectId };
 };
 
 /**
@@ -152,7 +158,7 @@ export const defaultPyqSelection = (user: {
  */
 export const resolvePyqSelection = (
   fromUrl: PyqSelection,
-  user: { goalExamId?: string; targetPaperId?: string },
+  user: { goalExamId?: string; targetPaperId?: string; electiveSubjectId?: string },
 ): PyqSelection => {
   const base = defaultPyqSelection(user);
   const examId = fromUrl.examId ?? base.examId;
@@ -164,6 +170,13 @@ export const resolvePyqSelection = (
     paperId,
     subjectId: fromUrl.subjectId,
     year: fromUrl.year,
+    topicId: fromUrl.topicId,
+    // Every field the URL can carry has to be listed here. Two were missed when
+    // topic practice and the post switcher were added, so on the website both
+    // were written to the URL and thrown away on the next render — the chip lit
+    // up and nothing under it changed.
+    electiveSubjectId:
+      fromUrl.electiveSubjectId ?? (examId === base.examId ? base.electiveSubjectId : undefined),
   };
 };
 

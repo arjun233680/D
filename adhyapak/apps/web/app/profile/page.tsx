@@ -10,16 +10,19 @@ import {
   formatCount,
   getExam,
   getPaper,
+  getSubject,
   getTest,
   signOut,
   t,
   UI,
 } from '@adhyapak/core';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { Badge, EmptyState, ProgressBar, SectionHeader, Stat } from '@/components/ui';
 
 export default function ProfilePage() {
   const { lang, user, results, setGoal, setLang } = useStore();
+  const router = useRouter();
   const exam = getExam(user.goalExamId);
   const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
   const streak = currentStreak(user.activeDates);
@@ -39,7 +42,10 @@ export default function ProfilePage() {
   const leave = async () => {
     setLeaving(true);
     await signOut();
-    setLeaving(false);
+    // Back to the door, not to a page that now says nothing. Mobile already did
+    // this; the website left the learner on their own profile with every panel
+    // emptied, which reads as the sign-out having failed.
+    router.replace('/sign-in');
   };
 
   const bestPercentage = attempted.length
@@ -57,39 +63,184 @@ export default function ProfilePage() {
     return { key, active: user.activeDates.includes(key) };
   });
 
+  const subject = user.electiveSubjectId ? getSubject(user.electiveSubjectId) : undefined;
+
   return (
-    <div className="space-y-6 px-4 pt-4 pb-8 sm:px-0 sm:pt-6">
-      {/* Signed out there is no name, no email and no join date, and rendering
-          the card anyway produced an avatar beside an empty heading and an
-          empty line — which reads as a page that failed to load rather than as
-          a learner without an account. The settings below are still theirs to
-          change, so the page stays; only the identity block knows the
-          difference. */}
-      {signedIn ? (
-        <header className="card flex items-center gap-4 p-5">
-          <span className="grid h-16 w-16 place-items-center rounded-full bg-[var(--color-ink)] text-3xl">
-            {user.avatar}
+    /*
+     * Flat surfaces and hairline rules rather than a stack of bordered cards.
+     * The page is a settings screen with a little history on it, and eleven
+     * boxed panels made every line look equally important — the goal, which is
+     * the one thing here that changes what the whole app shows, read the same
+     * as the language toggle.
+     *
+     * Order is identity, goal, activity, library, settings: who you are, what
+     * you are working towards, how it is going, what you saved, and the
+     * controls last because they are used least.
+     */
+    <div className="mx-auto max-w-2xl px-4 pb-24 sm:px-0">
+      {/* ---------------------------------------------------------- identity */}
+      <header className="flex items-center gap-4 py-8">
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[var(--color-surface-alt)] text-2xl">
+          {user.avatar || '🧑‍🎓'}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[22px] leading-tight font-extrabold">
+            {signedIn
+              ? user.name || (lang === 'hi' ? 'शिक्षार्थी' : 'Learner')
+              : lang === 'hi'
+                ? 'आप साइन इन नहीं हैं'
+                : 'You are not signed in'}
+          </h1>
+          <p className="mt-0.5 truncate text-[13px] text-[var(--color-muted)]">
+            {signedIn
+              ? user.email || (lang === 'hi' ? 'खाता सक्रिय' : 'Account active')
+              : lang === 'hi'
+                ? 'सेटिंग्स इसी ब्राउज़र में सहेजी जाती हैं।'
+                : 'Settings are saved in this browser only.'}
+          </p>
+        </div>
+        {signedIn ? null : (
+          <Link
+            href="/sign-in"
+            className="shrink-0 rounded-full bg-[var(--color-brand)] px-4 py-2 text-[13px] font-bold text-white"
+          >
+            {lang === 'hi' ? 'साइन इन' : 'Sign in'}
+          </Link>
+        )}
+      </header>
+
+      {/* -------------------------------------------------------------- goal */}
+      {/*
+        One link into the picker, not a row of exam chips and a row of paper
+        chips. Those chips called `setGoal` with a paper and no subject, so
+        switching to TGT here cleared the elective and offered no way to set it
+        — the goal ended up half-answered from the one screen meant to show it.
+      */}
+      <Link
+        href="/"
+        className="-mx-3 flex items-center gap-4 rounded-2xl px-3 py-5 transition-colors hover:bg-[var(--color-surface-alt)]"
+      >
+        <span className="text-3xl">{exam?.emoji ?? '🎯'}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[11px] font-bold tracking-wide text-[var(--color-muted)] uppercase">
+            {lang === 'hi' ? 'आपका लक्ष्य' : 'Your goal'}
           </span>
-          <div className="min-w-0">
-            <h1 className="text-xl font-extrabold">{user.name || (lang === 'hi' ? 'शिक्षार्थी' : 'Learner')}</h1>
-            {user.email ? (
-              <p className="text-[12px] text-[var(--color-muted)]">{user.email}</p>
-            ) : null}
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <Badge tone="brand">
-                {user.subscription === 'free' ? t(UI.free, lang) : user.subscription}
-              </Badge>
-              {user.state ? <Badge tone="neutral">{user.state}</Badge> : null}
+          <span className="mt-0.5 block truncate text-[15px] font-bold">
+            {exam ? t(exam.name, lang) : lang === 'hi' ? 'कोई लक्ष्य नहीं चुना' : 'No goal chosen'}
+          </span>
+          <span className="block truncate text-[12px] text-[var(--color-muted)]">
+            {[paper ? t(paper.name, lang) : null, subject ? t(subject.name, lang) : null]
+              .filter(Boolean)
+              .join('  ·  ') ||
+              (lang === 'hi' ? 'चुनने के लिए टैप करें' : 'Tap to choose')}
+          </span>
+        </span>
+        <span className="text-[var(--color-muted)]">›</span>
+      </Link>
+
+      {/* ---------------------------------------------------------- activity */}
+      <section className="border-t border-[var(--color-line)] py-7">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: lang === 'hi' ? 'श्रृंखला' : 'Streak', value: `🔥 ${streak}` },
+            { label: lang === 'hi' ? 'टेस्ट' : 'Tests', value: String(attempted.length) },
+            { label: lang === 'hi' ? 'सर्वश्रेष्ठ' : 'Best', value: `${bestPercentage}%` },
+            { label: lang === 'hi' ? 'शुद्धता' : 'Accuracy', value: `${avgAccuracy}%` },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <p className="text-[18px] leading-tight font-extrabold tabular-nums">{stat.value}</p>
+              <p className="text-[11px] text-[var(--color-muted)]">{stat.label}</p>
             </div>
-          </div>
-          {/* Signing out lived only on the sign-in page, which meant somebody
-              already signed in had to open a page that invites them to sign in
-              before they could leave. It belongs where the identity is. */}
+          ))}
+        </div>
+
+        <div className="mt-6 grid grid-cols-[repeat(14,minmax(0,1fr))] gap-1">
+          {days.map((d) => (
+            <span
+              key={d.key}
+              title={d.key}
+              className="aspect-square rounded-[3px]"
+              style={{ background: d.active ? 'var(--color-brand)' : 'var(--color-line)' }}
+            />
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-[var(--color-muted)]">
+          {lang === 'hi'
+            ? 'पिछले 28 दिन — हर हरा वर्ग वह दिन है जब आपने अभ्यास किया।'
+            : 'Last 28 days — each green square is a day you practised.'}
+        </p>
+      </section>
+
+      {/* ----------------------------------------------------------- library */}
+      <nav className="border-t border-[var(--color-line)] py-2">
+        {[
+          {
+            href: '/practice/bookmarks',
+            icon: '🔖',
+            label: lang === 'hi' ? 'बुकमार्क' : 'Bookmarks',
+            count: user.bookmarkedQuestionIds.length,
+          },
+          {
+            href: '/notes',
+            icon: '📚',
+            label: lang === 'hi' ? 'सहेजे नोट्स' : 'Saved notes',
+            count: user.savedNoteIds.length,
+          },
+          {
+            href: '/batches',
+            icon: '🎥',
+            label: lang === 'hi' ? 'आपके बैच' : 'Your batches',
+            count: enrolled.length,
+          },
+          {
+            href: '/tests',
+            icon: '🎯',
+            label: lang === 'hi' ? 'टेस्ट इतिहास' : 'Test history',
+            count: attempted.length,
+          },
+        ].map((row) => (
+          <Link
+            key={row.href}
+            href={row.href}
+            className="-mx-3 flex items-center gap-3 rounded-2xl px-3 py-3.5 transition-colors hover:bg-[var(--color-surface-alt)]"
+          >
+            <span className="text-[17px]">{row.icon}</span>
+            <span className="flex-1 text-[14px] font-semibold">{row.label}</span>
+            <span className="text-[13px] tabular-nums text-[var(--color-muted)]">{row.count}</span>
+            <span className="text-[var(--color-muted)]">›</span>
+          </Link>
+        ))}
+      </nav>
+
+      {/* ---------------------------------------------------------- settings */}
+      <section className="border-t border-[var(--color-line)] py-7">
+        <p className="mb-2.5 text-[11px] font-bold tracking-wide text-[var(--color-muted)] uppercase">
+          {lang === 'hi' ? 'भाषा' : 'Language'}
+        </p>
+        <div className="flex gap-2">
+          {(['hi', 'en'] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLang(l)}
+              aria-pressed={lang === l}
+              className={`flex-1 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-colors ${
+                lang === l
+                  ? 'bg-[var(--color-ink)] text-white'
+                  : 'bg-[var(--color-surface-alt)] text-[var(--color-muted)]'
+              }`}
+            >
+              {l === 'hi' ? 'हिंदी' : 'English'}
+            </button>
+          ))}
+        </div>
+
+        {signedIn ? (
           <button
             type="button"
             onClick={leave}
             disabled={leaving}
-            className="ml-auto shrink-0 self-start rounded-full border border-[var(--color-line)] px-3.5 py-2 text-[12px] font-bold text-[var(--color-muted)] transition-colors hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] disabled:opacity-50"
+            className="mt-6 w-full rounded-xl py-3 text-[13px] font-bold text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger-light)] disabled:opacity-50"
           >
             {leaving
               ? lang === 'hi'
@@ -99,229 +250,8 @@ export default function ProfilePage() {
                 ? 'साइन आउट'
                 : 'Sign out'}
           </button>
-        </header>
-      ) : (
-        <header className="card flex flex-wrap items-center gap-4 p-5">
-          <span className="grid h-16 w-16 place-items-center rounded-full bg-[var(--color-surface-alt)] text-3xl">
-            🧑‍🎓
-          </span>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-extrabold">
-              {lang === 'hi' ? 'आप साइन इन नहीं हैं' : 'You are not signed in'}
-            </h1>
-            <p className="mt-0.5 text-[12px] text-[var(--color-muted)]">
-              {lang === 'hi'
-                ? 'नीचे की सेटिंग्स इसी ब्राउज़र में सहेजी जाती हैं। साइन इन करने पर लक्ष्य, बुकमार्क और प्रगति हर डिवाइस पर साथ चलते हैं।'
-                : 'The settings below are saved in this browser. Signing in carries your goal, bookmarks and progress to every device.'}
-            </p>
-          </div>
-          <Link
-            href="/sign-in"
-            className="rounded-full bg-[var(--color-brand)] px-4 py-2 text-[13px] font-bold text-white"
-          >
-            {lang === 'hi' ? 'साइन इन' : 'Sign in'}
-          </Link>
-        </header>
-      )}
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label={lang === 'hi' ? 'श्रृंखला' : 'Streak'} value={`🔥 ${streak}`} tone="brand" />
-        <Stat
-          label={lang === 'hi' ? 'टेस्ट दिए' : 'Tests taken'}
-          value={String(attempted.length)}
-          tone="accent"
-        />
-        <Stat
-          label={lang === 'hi' ? 'सर्वश्रेष्ठ स्कोर' : 'Best score'}
-          value={`${bestPercentage}%`}
-          tone="success"
-        />
-        <Stat label={lang === 'hi' ? 'औसत शुद्धता' : 'Avg accuracy'} value={`${avgAccuracy}%`} />
-      </div>
-
-      <section className="card p-4">
-        <h2 className="text-[15px] font-bold">
-          {lang === 'hi' ? 'पिछले 28 दिन' : 'Last 28 days'}
-        </h2>
-        <div className="mt-3 grid grid-cols-[repeat(14,minmax(0,1fr))] gap-1">
-          {days.map((d) => (
-            <span
-              key={d.key}
-              title={d.key}
-              className="aspect-square rounded"
-              style={{
-                background: d.active ? 'var(--color-brand)' : 'var(--color-line)',
-              }}
-            />
-          ))}
-        </div>
-        <p className="mt-2 text-[11px] text-[var(--color-muted)]">
-          {lang === 'hi'
-            ? 'हर हरा वर्ग वह दिन है जब आपने अभ्यास किया।'
-            : 'Each green square is a day you practised.'}
-        </p>
-      </section>
-
-      <section className="card p-4">
-        <h2 className="text-[15px] font-bold">{lang === 'hi' ? 'आपका लक्ष्य' : 'Your goal'}</h2>
-        <div className="mt-3 flex items-center gap-3">
-          <span className="text-3xl">{exam?.emoji}</span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-bold">{exam ? t(exam.name, lang) : '—'}</p>
-            {paper ? (
-              <p className="truncate text-[12px] text-[var(--color-muted)]">{t(paper.name, lang)}</p>
-            ) : null}
-          </div>
-        </div>
-
-        {exam && exam.papers.length > 1 ? (
-          <div className="mt-3">
-            <p className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
-              {lang === 'hi' ? 'पेपर बदलें' : 'Change paper'}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {exam.papers.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setGoal(exam.id, p.id)}
-                  className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
-                    user.targetPaperId === p.id
-                      ? 'border-transparent bg-[var(--color-brand)] text-white'
-                      : 'border-[var(--color-line)] text-[var(--color-muted)]'
-                  }`}
-                >
-                  {t(p.name, lang)}
-                </button>
-              ))}
-            </div>
-          </div>
         ) : null}
-
-        {/*
-          A link into the real picker, not a second copy of it. This was a row
-          of exam chips calling `setGoal(e.id, e.papers[0]?.id)`, which skipped
-          the paper question and the subject question and answered both by
-          guessing — switching to HTET picked Level 1 for a PGT candidate.
-        */}
-        <div className="mt-3">
-          <p className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
-            {t(UI.changeGoal, lang)}
-          </p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] px-4 py-2 text-[13px] font-semibold transition-colors hover:border-[var(--color-brand)]"
-          >
-            🎯 {lang === 'hi' ? 'लक्ष्य बदलें' : 'Change goal'}
-          </Link>
-        </div>
       </section>
-
-      <section className="card p-4">
-        <h2 className="text-[15px] font-bold">{lang === 'hi' ? 'भाषा' : 'Language'}</h2>
-        <div className="mt-2 flex gap-2">
-          {(['hi', 'en'] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => setLang(l)}
-              className={`flex-1 rounded-xl border px-4 py-2.5 text-[13px] font-bold ${
-                lang === l
-                  ? 'border-transparent bg-[var(--color-brand)] text-white'
-                  : 'border-[var(--color-line)] text-[var(--color-muted)]'
-              }`}
-            >
-              {l === 'hi' ? 'हिंदी' : 'English'}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <SectionHeader
-          title={lang === 'hi' ? 'टेस्ट इतिहास' : 'Test history'}
-          href="/tests"
-          action={lang === 'hi' ? 'और टेस्ट' : 'More tests'}
-        />
-        {attempted.length ? (
-          <div className="space-y-2">
-            {attempted.map((r) => {
-              const test = getTest(r.testId) ?? TESTS.find((x) => x.id === r.testId);
-              return (
-                <Link key={r.testId} href={`/tests/${r.testId}/result`} className="card block p-4">
-                  <div className="flex items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-bold">
-                      {test ? t(test.title, lang) : r.testId}
-                    </span>
-                    <Badge tone={r.qualified ? 'success' : 'danger'}>
-                      {r.score}/{r.maxScore}
-                    </Badge>
-                  </div>
-                  <div className="mt-2">
-                    <ProgressBar
-                      value={r.percentage}
-                      color={r.qualified ? 'var(--color-success)' : 'var(--color-danger)'}
-                    />
-                  </div>
-                  <p className="mt-1.5 text-[11px] text-[var(--color-muted)]">
-                    {r.rank !== undefined ? `${t(UI.rank, lang)} #${formatCount(r.rank)} · ` : ''}
-                    {t(UI.accuracy, lang)} {r.accuracy}%
-                    {r.percentile !== undefined ? ` · ${t(UI.percentile, lang)} ${r.percentile}` : ''}
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <EmptyState
-            icon="🎯"
-            title={lang === 'hi' ? 'अभी कोई टेस्ट नहीं दिया' : 'No tests taken yet'}
-            body={
-              lang === 'hi'
-                ? 'एक निःशुल्क मॉक से शुरुआत करें — रैंक और विश्लेषण तुरंत मिलेगा।'
-                : 'Start with a free mock — you get rank and analysis instantly.'
-            }
-          />
-        )}
-      </section>
-
-      <section>
-        <SectionHeader title={lang === 'hi' ? 'आपके बैच' : 'Your batches'} href="/batches" />
-        {enrolled.length ? (
-          <div className="space-y-2">
-            {enrolled.map((b) => (
-              <Link key={b.id} href={`/batches/${b.id}`} className="card block p-4">
-                <p className="text-[13px] font-bold">{t(b.title, lang)}</p>
-                <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">
-                  {t(b.schedule, lang)}
-                </p>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon="🎥"
-            title={lang === 'hi' ? 'किसी बैच में नामांकित नहीं' : 'Not enrolled in a batch'}
-            body={
-              lang === 'hi'
-                ? 'निःशुल्क बैच में शामिल हों और लाइव कक्षाएँ शुरू करें।'
-                : 'Join a free batch and start attending live classes.'
-            }
-          />
-        )}
-      </section>
-
-      <div className="grid grid-cols-2 gap-2">
-        <Link
-          href="/practice/bookmarks"
-          className="card flex items-center gap-2 p-4 text-[13px] font-bold"
-        >
-          🔖 {lang === 'hi' ? 'बुकमार्क' : 'Bookmarks'} ({user.bookmarkedQuestionIds.length})
-        </Link>
-        <Link href="/notes" className="card flex items-center gap-2 p-4 text-[13px] font-bold">
-          📚 {lang === 'hi' ? 'सहेजे नोट्स' : 'Saved notes'} ({user.savedNoteIds.length})
-        </Link>
-      </div>
     </div>
   );
 }
