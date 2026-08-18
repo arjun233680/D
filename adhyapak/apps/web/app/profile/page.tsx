@@ -198,26 +198,22 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
+        {/*
+          A link into the real picker, not a second copy of it. This was a row
+          of exam chips calling `setGoal(e.id, e.papers[0]?.id)`, which skipped
+          the paper question and the subject question and answered both by
+          guessing — switching to HTET picked Level 1 for a PGT candidate.
+        */}
         <div className="mt-3">
           <p className="mb-1.5 text-[12px] font-bold text-[var(--color-muted)]">
             {t(UI.changeGoal, lang)}
           </p>
-          <div className="rail flex gap-2">
-            {EXAMS.map((e) => (
-              <button
-                key={e.id}
-                type="button"
-                onClick={() => setGoal(e.id, e.papers[0]?.id)}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
-                  user.goalExamId === e.id
-                    ? 'border-transparent bg-[var(--color-ink)] text-white'
-                    : 'border-[var(--color-line)] text-[var(--color-muted)]'
-                }`}
-              >
-                {e.emoji} {e.shortName}
-              </button>
-            ))}
-          </div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] px-4 py-2 text-[13px] font-semibold transition-colors hover:border-[var(--color-brand)]"
+          >
+            🎯 {lang === 'hi' ? 'लक्ष्य बदलें' : 'Change goal'}
+          </Link>
         </div>
       </section>
 

@@ -79,7 +79,7 @@ interface Store extends PersistedState {
   syncing: boolean;
   setLang: (lang: Lang) => void;
   toggleLang: () => void;
-  setGoal: (examId: string, paperId?: string) => void;
+  setGoal: (examId: string, paperId?: string, electiveSubjectId?: string) => void;
   toggleBookmark: (questionId: string) => void;
   toggleSavedNote: (noteId: string) => void;
   toggleEnrolment: (batchId: string) => void;
@@ -219,14 +219,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [push]);
 
   const setGoal = useCallback(
-    (examId: string, paperId?: string) => {
+    (examId: string, paperId?: string, electiveSubjectId?: string) => {
       setState((s) => ({
         ...s,
-        user: { ...s.user, goalExamId: examId, targetPaperId: paperId, onboarded: true },
+        user: {
+          ...s.user,
+          goalExamId: examId,
+          targetPaperId: paperId,
+          // Cleared, not kept, when the new paper has no subject choice — a
+          // leftover elective is a subject the paper does not offer.
+          electiveSubjectId,
+          onboarded: true,
+        },
       }));
       // `set_goal` stamps onboarded_at as well, so a learner who has chosen a
       // goal is never sent back to the picker on their next device.
-      push(() => setGoalRemote(examId, paperId));
+      push(() => setGoalRemote(examId, paperId, electiveSubjectId));
     },
     [push],
   );
