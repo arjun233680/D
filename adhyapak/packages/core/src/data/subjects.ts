@@ -593,6 +593,48 @@ export const SUBJECTS: Subject[] = [
       { id: 'fa-pedagogy', subjectId: 'fine-arts', name: { en: 'Fine Arts Pedagogy', hi: 'ललित कला शिक्षाशास्त्र' } },
     ],
   },
+  {
+    id: 'odia',
+    name: { en: 'Odia', hi: 'ଓଡ଼ିଆ' },
+    icon: '📗',
+    color: '#0F766E',
+    description: {
+      en: 'Odia as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.',
+      hi: 'ଓଡ଼ିଆ — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।',
+    },
+    // No topics yet. The language papers differ enough between states that a
+    // shared topic tree would be a guess; they are added when a real paper for
+    // that state is imported.
+    topics: [],
+  },
+  {
+    id: 'nepali',
+    name: { en: 'Nepali', hi: 'नेपाली' },
+    icon: '📙',
+    color: '#B91C1C',
+    description: {
+      en: 'Nepali as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.',
+      hi: 'नेपाली — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।',
+    },
+    // No topics yet. The language papers differ enough between states that a
+    // shared topic tree would be a guess; they are added when a real paper for
+    // that state is imported.
+    topics: [],
+  },
+  {
+    id: 'gujarati',
+    name: { en: 'Gujarati', hi: 'ગુજરાતી' },
+    icon: '📕',
+    color: '#C2410C',
+    description: {
+      en: 'Gujarati as Language I in the state TETs that examine it. Grammar, comprehension and language pedagogy.',
+      hi: 'ગુજરાતી — उन राज्य TET में भाषा I जो इसे लेते हैं। व्याकरण, बोधगम्यता एवं भाषा शिक्षाशास्त्र।',
+    },
+    // No topics yet. The language papers differ enough between states that a
+    // shared topic tree would be a guess; they are added when a real paper for
+    // that state is imported.
+    topics: [],
+  },
 ];
 
 export const SUBJECT_BY_ID = new Map(SUBJECTS.map((s) => [s.id, s]));

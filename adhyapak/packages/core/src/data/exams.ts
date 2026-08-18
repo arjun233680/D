@@ -1082,6 +1082,552 @@ export const EXAMS: Exam[] = [
       },
     ],
   },
+  {
+    id: 'hptet',
+    slug: 'hptet',
+    name: { en: 'HP TET — Himachal Pradesh Teacher Eligibility Test', hi: 'HP TET — हिमाचल प्रदेश शिक्षक पात्रता परीक्षा' },
+    shortName: 'HP TET',
+    authority: { en: 'Himachal Pradesh Board of School Education (HPBOSE), Dharamshala', hi: 'हिमाचल प्रदेश स्कूल शिक्षा बोर्ड (HPBOSE), धर्मशाला' },
+    scope: 'state',
+    state: { en: 'Himachal Pradesh', hi: 'हिमाचल प्रदेश' },
+    about: {
+      en: 'Required for teaching posts in Himachal Pradesh government and aided schools. Conducted by HPBOSE, usually alongside the TET for non-medical and medical subjects.',
+      hi: 'हिमाचल प्रदेश के सरकारी एवं सहायता प्राप्त विद्यालयों में शिक्षक पदों हेतु आवश्यक। HPBOSE द्वारा आयोजित।',
+    },
+    frequency: { en: 'Usually twice a year', hi: 'प्रायः वर्ष में दो बार' },
+    color: '#0369A1',
+    emoji: '🏔️',
+    eligibility: [
+      { en: 'Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed', hi: 'पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed' },
+      { en: 'Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed', hi: 'पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed' },
+    ],
+    highlights: [
+      { en: '150 questions, 150 marks, 150 minutes', hi: '150 प्रश्न, 150 अंक, 150 मिनट' },
+      { en: 'Language I is Hindi, Language II is English', hi: 'भाषा I हिंदी, भाषा II अंग्रेज़ी' },
+      { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
+    ],
+    officialSite: 'https://hpbose.org',
+    // Deliberately empty. The paper pattern below is published and stable, but
+    // this exam's cycle dates have not been researched, and `sources` is shown
+    // to the learner as where each claim was checked — an invented citation
+    // would be worse than an honest gap.
+    updates: [],
+    sources: [],
+    papers: [
+      {
+        id: 'hptet-p1',
+        name: { en: 'Paper 1 — Classes 1 to 5', hi: 'पेपर 1 — कक्षा 1 से 5' },
+        level: 'primary',
+        post: 'Paper 1',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'hindi', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { subjectId: 'math', questions: 30, marks: 30 },
+          { subjectId: 'evs', questions: 30, marks: 30 },
+        ],
+      },
+      {
+        id: 'hptet-p2',
+        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
+        level: 'upper-primary',
+        post: 'Paper 2',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        electives: [
+          {
+            id: 'hptet-p2-elective',
+            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            choices: ['maths-science', 'sst'],
+          },
+        ],
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'hindi', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { electiveGroupId: 'hptet-p2-elective', questions: 60, marks: 60 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'pstet',
+    slug: 'pstet',
+    name: { en: 'PSTET — Punjab State Teacher Eligibility Test', hi: 'PSTET — पंजाब राज्य शिक्षक पात्रता परीक्षा' },
+    shortName: 'PSTET',
+    authority: { en: 'Punjab School Education Board (PSEB), Mohali', hi: 'पंजाब स्कूल शिक्षा बोर्ड (PSEB), मोहाली' },
+    scope: 'state',
+    state: { en: 'Punjab', hi: 'पंजाब' },
+    about: {
+      en: 'Mandatory for teaching posts in Punjab government schools. Language I is Punjabi, which is also the medium for a large share of the paper.',
+      hi: 'पंजाब के सरकारी विद्यालयों में शिक्षक पदों हेतु अनिवार्य। भाषा I पंजाबी है।',
+    },
+    frequency: { en: 'Announced by PSEB — typically annual', hi: 'PSEB द्वारा घोषित — प्रायः वार्षिक' },
+    color: '#CA8A04',
+    emoji: '🌾',
+    eligibility: [
+      { en: 'Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed', hi: 'पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed' },
+      { en: 'Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed', hi: 'पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed' },
+    ],
+    highlights: [
+      { en: '150 questions, 150 marks, 150 minutes', hi: '150 प्रश्न, 150 अंक, 150 मिनट' },
+      { en: 'Language I is Punjabi, Language II is English', hi: 'भाषा I पंजाबी, भाषा II अंग्रेज़ी' },
+      { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
+    ],
+    officialSite: 'https://pseb.ac.in',
+    // Deliberately empty. The paper pattern below is published and stable, but
+    // this exam's cycle dates have not been researched, and `sources` is shown
+    // to the learner as where each claim was checked — an invented citation
+    // would be worse than an honest gap.
+    updates: [],
+    sources: [],
+    papers: [
+      {
+        id: 'pstet-p1',
+        name: { en: 'Paper 1 — Classes 1 to 5', hi: 'पेपर 1 — कक्षा 1 से 5' },
+        level: 'primary',
+        post: 'Paper 1',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'punjabi', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { subjectId: 'math', questions: 30, marks: 30 },
+          { subjectId: 'evs', questions: 30, marks: 30 },
+        ],
+      },
+      {
+        id: 'pstet-p2',
+        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
+        level: 'upper-primary',
+        post: 'Paper 2',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        electives: [
+          {
+            id: 'pstet-p2-elective',
+            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            choices: ['maths-science', 'sst'],
+          },
+        ],
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'punjabi', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { electiveGroupId: 'pstet-p2-elective', questions: 60, marks: 60 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'utet',
+    slug: 'utet',
+    name: { en: 'UTET — Uttarakhand Teacher Eligibility Test', hi: 'UTET — उत्तराखंड शिक्षक पात्रता परीक्षा' },
+    shortName: 'UTET',
+    authority: { en: 'Uttarakhand Board of School Education (UBSE), Ramnagar', hi: 'उत्तराखंड विद्यालयी शिक्षा परिषद (UBSE), रामनगर' },
+    scope: 'state',
+    state: { en: 'Uttarakhand', hi: 'उत्तराखंड' },
+    about: {
+      en: 'Required for primary and upper-primary teaching posts in Uttarakhand. Certificate validity follows the NCTE norm.',
+      hi: 'उत्तराखंड में प्राथमिक एवं उच्च प्राथमिक शिक्षक पदों हेतु आवश्यक।',
+    },
+    frequency: { en: 'Announced by UBSE — typically annual', hi: 'UBSE द्वारा घोषित — प्रायः वार्षिक' },
+    color: '#15803D',
+    emoji: '⛰️',
+    eligibility: [
+      { en: 'Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed', hi: 'पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed' },
+      { en: 'Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed', hi: 'पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed' },
+    ],
+    highlights: [
+      { en: '150 questions, 150 marks, 150 minutes', hi: '150 प्रश्न, 150 अंक, 150 मिनट' },
+      { en: 'Language I is Hindi, Language II is English', hi: 'भाषा I हिंदी, भाषा II अंग्रेज़ी' },
+      { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
+    ],
+    officialSite: 'https://ukutet.com',
+    // Deliberately empty. The paper pattern below is published and stable, but
+    // this exam's cycle dates have not been researched, and `sources` is shown
+    // to the learner as where each claim was checked — an invented citation
+    // would be worse than an honest gap.
+    updates: [],
+    sources: [],
+    papers: [
+      {
+        id: 'utet-p1',
+        name: { en: 'Paper 1 — Classes 1 to 5', hi: 'पेपर 1 — कक्षा 1 से 5' },
+        level: 'primary',
+        post: 'Paper 1',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'hindi', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { subjectId: 'math', questions: 30, marks: 30 },
+          { subjectId: 'evs', questions: 30, marks: 30 },
+        ],
+      },
+      {
+        id: 'utet-p2',
+        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
+        level: 'upper-primary',
+        post: 'Paper 2',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        electives: [
+          {
+            id: 'utet-p2-elective',
+            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            choices: ['maths-science', 'sst'],
+          },
+        ],
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'hindi', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { electiveGroupId: 'utet-p2-elective', questions: 60, marks: 60 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'jtet',
+    slug: 'jtet',
+    name: { en: 'JTET — Jharkhand Teacher Eligibility Test', hi: 'JTET — झारखंड शिक्षक पात्रता परीक्षा' },
+    shortName: 'JTET',
+    authority: { en: 'Jharkhand Academic Council (JAC), Ranchi', hi: 'झारखंड अधिविद्य परिषद (JAC), राँची' },
+    scope: 'state',
+    state: { en: 'Jharkhand', hi: 'झारखंड' },
+    about: {
+      en: 'Required for teaching posts in Jharkhand government schools. The state offers several regional and tribal languages as Language II.',
+      hi: 'झारखंड के सरकारी विद्यालयों में शिक्षक पदों हेतु आवश्यक। भाषा II में कई क्षेत्रीय एवं जनजातीय भाषाएँ उपलब्ध हैं।',
+    },
+    frequency: { en: 'Announced by JAC — irregular', hi: 'JAC द्वारा घोषित — अनियमित' },
+    color: '#7C2D12',
+    emoji: '🌳',
+    eligibility: [
+      { en: 'Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed', hi: 'पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed' },
+      { en: 'Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed', hi: 'पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed' },
+    ],
+    highlights: [
+      { en: '150 questions, 150 marks, 150 minutes', hi: '150 प्रश्न, 150 अंक, 150 मिनट' },
+      { en: 'Language I is Hindi, Language II is English', hi: 'भाषा I हिंदी, भाषा II अंग्रेज़ी' },
+      { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
+    ],
+    officialSite: 'https://jac.jharkhand.gov.in',
+    // Deliberately empty. The paper pattern below is published and stable, but
+    // this exam's cycle dates have not been researched, and `sources` is shown
+    // to the learner as where each claim was checked — an invented citation
+    // would be worse than an honest gap.
+    updates: [],
+    sources: [],
+    papers: [
+      {
+        id: 'jtet-p1',
+        name: { en: 'Paper 1 — Classes 1 to 5', hi: 'पेपर 1 — कक्षा 1 से 5' },
+        level: 'primary',
+        post: 'Paper 1',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'hindi', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { subjectId: 'math', questions: 30, marks: 30 },
+          { subjectId: 'evs', questions: 30, marks: 30 },
+        ],
+      },
+      {
+        id: 'jtet-p2',
+        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
+        level: 'upper-primary',
+        post: 'Paper 2',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        electives: [
+          {
+            id: 'jtet-p2-elective',
+            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            choices: ['maths-science', 'sst'],
+          },
+        ],
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'hindi', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { electiveGroupId: 'jtet-p2-elective', questions: 60, marks: 60 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'otet',
+    slug: 'otet',
+    name: { en: 'OTET — Odisha Teacher Eligibility Test', hi: 'OTET — ओडिशा शिक्षक पात्रता परीक्षा' },
+    shortName: 'OTET',
+    authority: { en: 'Board of Secondary Education, Odisha (BSE Odisha), Cuttack', hi: 'माध्यमिक शिक्षा बोर्ड, ओडिशा (BSE Odisha), कटक' },
+    scope: 'state',
+    state: { en: 'Odisha', hi: 'ओडिशा' },
+    about: {
+      en: 'Required for teaching posts in Odisha government and aided schools. Language I is Odia.',
+      hi: 'ओडिशा के सरकारी एवं सहायता प्राप्त विद्यालयों में शिक्षक पदों हेतु आवश्यक। भाषा I ओड़िया है।',
+    },
+    frequency: { en: 'Announced by BSE Odisha — typically annual', hi: 'BSE ओडिशा द्वारा घोषित — प्रायः वार्षिक' },
+    color: '#0891B2',
+    emoji: '🛕',
+    eligibility: [
+      { en: 'Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed', hi: 'पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed' },
+      { en: 'Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed', hi: 'पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed' },
+    ],
+    highlights: [
+      { en: '150 questions, 150 marks, 150 minutes', hi: '150 प्रश्न, 150 अंक, 150 मिनट' },
+      { en: 'Language I is Odia, Language II is English', hi: 'भाषा I ओड़िया, भाषा II अंग्रेज़ी' },
+      { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
+    ],
+    officialSite: 'https://bseodisha.ac.in',
+    // Deliberately empty. The paper pattern below is published and stable, but
+    // this exam's cycle dates have not been researched, and `sources` is shown
+    // to the learner as where each claim was checked — an invented citation
+    // would be worse than an honest gap.
+    updates: [],
+    sources: [],
+    papers: [
+      {
+        id: 'otet-p1',
+        name: { en: 'Paper 1 — Classes 1 to 5', hi: 'पेपर 1 — कक्षा 1 से 5' },
+        level: 'primary',
+        post: 'Paper 1',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'odia', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { subjectId: 'math', questions: 30, marks: 30 },
+          { subjectId: 'evs', questions: 30, marks: 30 },
+        ],
+      },
+      {
+        id: 'otet-p2',
+        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
+        level: 'upper-primary',
+        post: 'Paper 2',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        electives: [
+          {
+            id: 'otet-p2-elective',
+            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            choices: ['maths-science', 'sst'],
+          },
+        ],
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'odia', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { electiveGroupId: 'otet-p2-elective', questions: 60, marks: 60 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'sktet',
+    slug: 'sktet',
+    name: { en: 'Sikkim TET — Sikkim Teacher Eligibility Test', hi: 'सिक्किम TET — सिक्किम शिक्षक पात्रता परीक्षा' },
+    shortName: 'Sikkim TET',
+    authority: { en: 'Human Resource Development Department (HRDD), Government of Sikkim', hi: 'मानव संसाधन विकास विभाग (HRDD), सिक्किम सरकार' },
+    scope: 'state',
+    state: { en: 'Sikkim', hi: 'सिक्किम' },
+    about: {
+      en: 'Required for teaching posts in Sikkim government schools. Language I is Nepali; the state also offers Bhutia, Lepcha and Limboo.',
+      hi: 'सिक्किम के सरकारी विद्यालयों में शिक्षक पदों हेतु आवश्यक। भाषा I नेपाली; भूटिया, लेप्चा एवं लिम्बू भी उपलब्ध।',
+    },
+    frequency: { en: 'Announced by HRDD Sikkim — irregular', hi: 'HRDD सिक्किम द्वारा घोषित — अनियमित' },
+    color: '#DB2777',
+    emoji: '🏞️',
+    eligibility: [
+      { en: 'Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed', hi: 'पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed' },
+      { en: 'Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed', hi: 'पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed' },
+    ],
+    highlights: [
+      { en: '150 questions, 150 marks, 150 minutes', hi: '150 प्रश्न, 150 अंक, 150 मिनट' },
+      { en: 'Language I is Nepali, Language II is English', hi: 'भाषा I नेपाली, भाषा II अंग्रेज़ी' },
+      { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
+    ],
+    officialSite: 'https://sikkimhrdd.org',
+    // Deliberately empty. The paper pattern below is published and stable, but
+    // this exam's cycle dates have not been researched, and `sources` is shown
+    // to the learner as where each claim was checked — an invented citation
+    // would be worse than an honest gap.
+    updates: [],
+    sources: [],
+    papers: [
+      {
+        id: 'sktet-p1',
+        name: { en: 'Paper 1 — Classes 1 to 5', hi: 'पेपर 1 — कक्षा 1 से 5' },
+        level: 'primary',
+        post: 'Paper 1',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'nepali', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { subjectId: 'math', questions: 30, marks: 30 },
+          { subjectId: 'evs', questions: 30, marks: 30 },
+        ],
+      },
+      {
+        id: 'sktet-p2',
+        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
+        level: 'upper-primary',
+        post: 'Paper 2',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        electives: [
+          {
+            id: 'sktet-p2-elective',
+            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            choices: ['maths-science', 'sst'],
+          },
+        ],
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'nepali', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { electiveGroupId: 'sktet-p2-elective', questions: 60, marks: 60 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'gtet',
+    slug: 'gtet',
+    name: { en: 'Gujarat TET — Gujarat Teacher Eligibility Test', hi: 'गुजरात TET — गुजरात शिक्षक पात्रता परीक्षा' },
+    shortName: 'Gujarat TET',
+    authority: { en: 'Gujarat State Examination Board (GSEB), Gandhinagar', hi: 'गुजरात राज्य परीक्षा बोर्ड (GSEB), गांधीनगर' },
+    scope: 'state',
+    state: { en: 'Gujarat', hi: 'गुजरात' },
+    about: {
+      en: 'Required for teaching posts in Gujarat government and grant-in-aid schools. TET-1 covers classes 1 to 5 and TET-2 covers classes 6 to 8.',
+      hi: 'गुजरात के सरकारी एवं अनुदानित विद्यालयों में शिक्षक पदों हेतु आवश्यक। TET-1 कक्षा 1-5, TET-2 कक्षा 6-8।',
+    },
+    frequency: { en: 'Announced by GSEB — irregular', hi: 'GSEB द्वारा घोषित — अनियमित' },
+    color: '#EA580C',
+    emoji: '🦁',
+    eligibility: [
+      { en: 'Paper 1 (Classes 1-5): 12th with 50% + D.El.Ed', hi: 'पेपर 1 (कक्षा 1-5): 12वीं 50% + D.El.Ed' },
+      { en: 'Paper 2 (Classes 6-8): Graduation with 50% + B.Ed / D.El.Ed', hi: 'पेपर 2 (कक्षा 6-8): स्नातक 50% + B.Ed / D.El.Ed' },
+    ],
+    highlights: [
+      { en: '150 questions, 150 marks, 150 minutes', hi: '150 प्रश्न, 150 अंक, 150 मिनट' },
+      { en: 'Language I is Gujarati, Language II is English', hi: 'भाषा I गुजराती, भाषा II अंग्रेज़ी' },
+      { en: 'No negative marking', hi: 'कोई नकारात्मक अंकन नहीं' },
+    ],
+    officialSite: 'https://sebexam.org',
+    // Deliberately empty. The paper pattern below is published and stable, but
+    // this exam's cycle dates have not been researched, and `sources` is shown
+    // to the learner as where each claim was checked — an invented citation
+    // would be worse than an honest gap.
+    updates: [],
+    sources: [],
+    papers: [
+      {
+        id: 'gtet-p1',
+        name: { en: 'Paper 1 — Classes 1 to 5', hi: 'पेपर 1 — कक्षा 1 से 5' },
+        level: 'primary',
+        post: 'Paper 1',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'gujarati', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { subjectId: 'math', questions: 30, marks: 30 },
+          { subjectId: 'evs', questions: 30, marks: 30 },
+        ],
+      },
+      {
+        id: 'gtet-p2',
+        name: { en: 'Paper 2 — Classes 6 to 8', hi: 'पेपर 2 — कक्षा 6 से 8' },
+        level: 'upper-primary',
+        post: 'Paper 2',
+        marksPerQuestion: 1,
+        negativeMarking: 0,
+        durationMinutes: 150,
+        totalQuestions: 150,
+        cutoffGeneral: 60,
+        cutoffReserved: 55,
+        electives: [
+          {
+            id: 'gtet-p2-elective',
+            name: { en: 'Paper 2 subject', hi: 'पेपर 2 विषय' },
+            choices: ['maths-science', 'sst'],
+          },
+        ],
+        sections: [
+          { subjectId: 'cdp', questions: 30, marks: 30 },
+          { subjectId: 'gujarati', questions: 30, marks: 30 },
+          { subjectId: 'english', questions: 30, marks: 30 },
+          { electiveGroupId: 'gtet-p2-elective', questions: 60, marks: 60 },
+        ],
+      },
+    ],
+  },
 ];
 
 export const EXAM_BY_ID = new Map(EXAMS.map((e) => [e.id, e]));
@@ -1139,7 +1685,10 @@ export const EXAM_GROUPS: ExamGroup[] = [
       en: 'Required for teaching posts in that state',
       hi: 'उस राज्य के शिक्षक पदों हेतु आवश्यक',
     },
-    examIds: ['uptet', 'htet', 'reet', 'bihartet', 'mptet', 'bihar-stet', 'wbtet'],
+    examIds: [
+      'uptet', 'htet', 'reet', 'bihartet', 'mptet', 'bihar-stet', 'wbtet',
+      'hptet', 'pstet', 'utet', 'jtet', 'otet', 'sktet', 'gtet',
+    ],
   },
 ];
 
