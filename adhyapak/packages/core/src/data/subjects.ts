@@ -118,6 +118,35 @@ export const SUBJECTS: Subject[] = [
     ],
   },
   {
+    id: 'maths-science',
+    name: { en: 'Mathematics & Science', hi: 'गणित एवं विज्ञान' },
+    icon: '🔬',
+    color: '#0891B2',
+    description: {
+      en: "CTET Paper 2's 60-mark elective block for maths and science teachers. Classes 6-8 content with pedagogy.",
+      hi: 'CTET पेपर 2 का गणित एवं विज्ञान शिक्षकों हेतु 60 अंकों का वैकल्पिक खंड। कक्षा 6-8 विषयवस्तु एवं शिक्षाशास्त्र।',
+    },
+    // Not a duplicate of `math`. Paper 1 Mathematics is the classes 1-5
+    // syllabus; this is classes 6-8 mathematics *and* science, which CTET
+    // publishes as one 60-mark subject and a candidate chooses whole.
+    topics: [
+      { id: 'ms-number', subjectId: 'maths-science', name: { en: 'Number System', hi: 'संख्या पद्धति' }, weightage: 8 },
+      { id: 'ms-algebra', subjectId: 'maths-science', name: { en: 'Algebra', hi: 'बीजगणित' }, weightage: 8 },
+      { id: 'ms-geometry', subjectId: 'maths-science', name: { en: 'Geometry', hi: 'ज्यामिति' }, weightage: 8 },
+      { id: 'ms-mensuration', subjectId: 'maths-science', name: { en: 'Mensuration', hi: 'क्षेत्रमिति' }, weightage: 6 },
+      { id: 'ms-data', subjectId: 'maths-science', name: { en: 'Data Handling', hi: 'आँकड़ा प्रबंधन' }, weightage: 5 },
+      { id: 'ms-math-pedagogy', subjectId: 'maths-science', name: { en: 'Pedagogy of Mathematics', hi: 'गणित शिक्षाशास्त्र' }, weightage: 8 },
+      { id: 'ms-food', subjectId: 'maths-science', name: { en: 'Food', hi: 'भोजन' }, weightage: 7 },
+      { id: 'ms-materials', subjectId: 'maths-science', name: { en: 'Materials', hi: 'पदार्थ' }, weightage: 7 },
+      { id: 'ms-living', subjectId: 'maths-science', name: { en: 'The World of the Living', hi: 'सजीव जगत' }, weightage: 8 },
+      { id: 'ms-moving', subjectId: 'maths-science', name: { en: 'Moving Things, People and Ideas', hi: 'गतिमान वस्तुएँ, लोग एवं विचार' }, weightage: 7 },
+      { id: 'ms-how-things-work', subjectId: 'maths-science', name: { en: 'How Things Work', hi: 'चीज़ें कैसे काम करती हैं' }, weightage: 7 },
+      { id: 'ms-natural-phenomena', subjectId: 'maths-science', name: { en: 'Natural Phenomena', hi: 'प्राकृतिक परिघटनाएँ' }, weightage: 7 },
+      { id: 'ms-natural-resources', subjectId: 'maths-science', name: { en: 'Natural Resources', hi: 'प्राकृतिक संसाधन' }, weightage: 6 },
+      { id: 'ms-sci-pedagogy', subjectId: 'maths-science', name: { en: 'Pedagogy of Science', hi: 'विज्ञान शिक्षाशास्त्र' }, weightage: 8 },
+    ],
+  },
+  {
     id: 'sst',
     name: { en: 'Social Studies', hi: 'सामाजिक अध्ययन' },
     icon: '🗺️',
