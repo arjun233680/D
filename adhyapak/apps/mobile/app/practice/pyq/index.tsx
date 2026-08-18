@@ -147,19 +147,49 @@ export default function PyqScreen() {
           to the year; TGT and PGT ask first, because until it is answered the
           app does not know which sixty of a hundred and fifty are theirs.
         */}
+        {/*
+          A grid once there are more than five. Twelve TGT subjects and
+          twenty-one PGT ones in a sideways-scrolling row hide most of
+          themselves off the right edge, with no sign of how many are there.
+        */}
         {model.electiveOptions.length > 0 ? (
-          <Row label={hi ? 'विषय' : 'Subject'}>
-            {model.electiveOptions.map((o) => (
-              <Chip
-                key={o.value}
-                label={hi ? o.labelHi : o.labelEn}
-                active={model.electiveSubjectId === o.value}
-                onPress={() =>
-                  update({ electiveSubjectId: o.value, subjectId: undefined, topicId: undefined })
-                }
-              />
-            ))}
-          </Row>
+          <View style={{ marginBottom: theme.space.md }}>
+            <Text style={[s.faint, { marginBottom: 6 }]}>{hi ? 'विषय' : 'Subject'}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm }}>
+              {model.electiveOptions.map((o) => {
+                const on = model.electiveSubjectId === o.value;
+                return (
+                  <Pressable
+                    key={o.value}
+                    onPress={() =>
+                      update({ electiveSubjectId: o.value, subjectId: undefined, topicId: undefined })
+                    }
+                    style={{
+                      flexGrow: 1,
+                      flexBasis: '45%',
+                      borderRadius: theme.radius.md,
+                      paddingHorizontal: theme.space.md,
+                      paddingVertical: 10,
+                      backgroundColor: on ? theme.color.primaryLight : theme.color.surfaceAlt,
+                      borderWidth: 2,
+                      borderColor: on ? theme.color.primary : 'transparent',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: theme.font.sm,
+                        fontFamily: theme.family.bodySemi,
+                        color: theme.color.text,
+                      }}
+                      numberOfLines={2}
+                    >
+                      {hi ? o.labelHi : o.labelEn}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
         ) : null}
 
         {/* Years — the first two tabs only. Topic practice mixes them. */}
