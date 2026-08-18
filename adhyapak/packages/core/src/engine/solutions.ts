@@ -1,3 +1,5 @@
+import { isCorrectAnswer, type OptionLabel, type Question } from '../types';
+
 /**
  * Reviewing a sitting, question by question.
  *
@@ -23,12 +25,12 @@ export type SolutionFilter = 'all' | SolutionOutcome;
  * showing, a screen can say so underneath — it is not a difference in outcome.
  */
 export const solutionOutcome = (
-  selectedIndex: number | null | undefined,
-  correctIndex: number,
+  selected: OptionLabel | null | undefined,
+  question: Pick<Question, 'correctAnswers' | 'answerStatus'>,
 ): SolutionOutcome =>
-  selectedIndex === null || selectedIndex === undefined
+  selected === null || selected === undefined
     ? 'unattempted'
-    : selectedIndex === correctIndex
+    : isCorrectAnswer(selected, question)
       ? 'correct'
       : 'incorrect';
 

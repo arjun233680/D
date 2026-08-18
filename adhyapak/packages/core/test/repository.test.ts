@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { getTopic } from '../src/data/subjects';
 import {
   QUESTIONS,
   buildPracticeSet,
@@ -37,10 +38,13 @@ describe('offline fallback', () => {
     assert.equal(isBackendConfigured(), false, 'test env must have no credentials');
   });
 
-  it('still returns questions, so a dead connection is not an error screen', async () => {
+  it('returns an empty bank rather than throwing, now that there is no bundle', async () => {
+    // The 67 bundled questions went with 0011. Offline is therefore an empty
+    // bank, and the contract that matters is that every screen gets a list back
+    // rather than an exception — the empty states already exist for the
+    // "no database configured" case this is indistinguishable from.
     const questions = await listQuestions({ limit: 5 });
-    assert.ok(questions.length > 0);
-    assert.ok(questions[0]!.text.en);
+    assert.deepEqual(questions, []);
   });
 
   it('returns tests and notes rather than throwing', async () => {
@@ -57,51 +61,46 @@ describe('offline fallback', () => {
 });
 
 describe('filters compose', () => {
-  it('narrows by subject', async () => {
-    const list = await listQuestions({ subjectId: 'cdp' });
-    assert.ok(list.length > 0);
-    assert.ok(list.every((q) => q.subjectId === 'cdp'));
-  });
+  // These used to answer each filter against the bundled bank. With the bundle
+  // gone the offline branch has nothing to narrow, so what is still worth
+  // asserting here is that every filter combination is accepted and comes back
+  // as a list — the shape screens destructure — rather than throwing. The
+  // filters themselves are now proved against the database, in SQL: they are
+  // `where` clauses and RLS, not TypeScript.
+  const FILTERS = [
+    { subjectId: 'cdp' },
+    { topicId: 'cdp-piaget' },
+    { examId: 'ctet' },
+    { difficulty: 'easy' as const },
+    { paperId: 'ctet-paper-1' },
+    { subjectId: 'cdp', difficulty: 'medium' as const },
+    { pyqOnly: true },
+    { year: 2024 },
+  ];
 
-  it('narrows by topic', async () => {
-    const topicId = QUESTIONS[0]!.topicId;
-    const list = await listQuestions({ topicId });
-    assert.ok(list.length > 0);
-    assert.ok(list.every((q) => q.topicId === topicId));
-  });
-
-  it('narrows by exam', async () => {
-    const list = await listQuestions({ examId: 'ctet' });
-    assert.ok(list.length > 0);
-    assert.ok(list.every((q) => q.examIds.includes('ctet')));
-  });
-
-  it('narrows by difficulty', async () => {
-    const list = await listQuestions({ difficulty: 'easy' });
-    assert.ok(list.every((q) => q.difficulty === 'easy'));
-  });
-
-  it('combines subject and difficulty', async () => {
-    const list = await listQuestions({ subjectId: 'cdp', difficulty: 'medium' });
-    assert.ok(list.every((q) => q.subjectId === 'cdp' && q.difficulty === 'medium'));
-  });
-
-  it('returns only previous-year questions when asked', async () => {
-    const list = await listQuestions({ pyqOnly: true });
-    assert.ok(list.every((q) => Boolean(q.previousYear)));
-  });
+  for (const filter of FILTERS) {
+    it(`accepts ${JSON.stringify(filter)} and returns a list`, async () => {
+      const list = await listQuestions(filter);
+      assert.ok(Array.isArray(list));
+    });
+  }
 
   it('returns an empty list for a filter nothing matches', async () => {
     const list = await listQuestions({ topicId: 'no-such-topic' });
     assert.deepEqual(list, [], 'an empty result is a value, not an error');
   });
 
-  it('honours limit and offset so a large bank can be paged', async () => {
-    const first = await listQuestions({ limit: 3 });
-    const second = await listQuestions({ limit: 3, offset: 3 });
-    assert.equal(first.length, 3);
-    assert.equal(second.length, 3);
-    assert.notEqual(first[0]!.id, second[0]!.id, 'offset actually moves the window');
+  it('honours limit and offset without throwing on an empty bank', () => {
+    // Paging is a `range()` on the query now, so what it does to a large bank
+    // is a database fact. Offline there is nothing to page, and the contract
+    // that survives is that asking for a page is still safe.
+    return Promise.all([
+      listQuestions({ limit: 5 }),
+      listQuestions({ limit: 5, offset: 5 }),
+    ]).then(([first, second]) => {
+      assert.deepEqual(first, []);
+      assert.deepEqual(second, []);
+    });
   });
 
   it('counts without fetching the questions', async () => {

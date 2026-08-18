@@ -17,6 +17,8 @@ import {
   UI,
   type SolutionFilter,
 } from '@adhyapak/core';
+import { isCorrectAnswer, OPTION_LABELS, inLang } from '@adhyapak/core';
+import type { OptionLabel } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, Button, Chip, EmptyState, ProgressBar, s, Stat } from '@/components/ui';
 import { QuestionSolution } from '@/components/QuestionSolution';
@@ -57,8 +59,8 @@ export default function ResultScreen() {
     .map((qid) => {
       const question = getQuestion(qid);
       if (!question) return null;
-      const selectedIndex = attempt?.answers[qid]?.selectedIndex ?? null;
-      return { question, selectedIndex, correct: selectedIndex === question.correctIndex };
+      const selectedOption = attempt?.answers[qid]?.selectedOption ?? null;
+      return { question, selectedOption, correct: isCorrectAnswer(selectedOption, question) };
     })
     .filter((r): r is NonNullable<typeof r> => Boolean(r));
 
@@ -68,7 +70,7 @@ export default function ResultScreen() {
   const numbered = rows.map((row, i) => ({
     ...row,
     number: i + 1,
-    outcome: solutionOutcome(row.selectedIndex, row.question.correctIndex),
+    outcome: solutionOutcome(row.selectedOption, row.question),
   }));
   const filterOptions = solutionFilterOptions(numbered.map((r) => r.outcome));
   const visible = numbered.filter((r) => matchesSolutionFilter(r.outcome, filter));
@@ -286,7 +288,7 @@ export default function ResultScreen() {
                 key={row.question.id}
                 question={row.question}
                 number={row.number}
-                selectedIndex={row.selectedIndex}
+                selectedOption={row.selectedOption}
                 lang={lang}
               />
             ))

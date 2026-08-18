@@ -1,4 +1,11 @@
-import type { Bilingual } from '../types';
+import type { Bilingual, MaybeBilingual, QuestionDifficulty } from '../types';
+import { OPTION_LABELS } from '../types';
+import type { AnswerStatus } from '../types';
+
+/** Option labels in order, so an error can name B rather than "option 1". */
+const LABELS = OPTION_LABELS;
+
+const DIFFICULTIES: QuestionDifficulty[] = ['easy', 'medium', 'hard'];
 import type { ContentNote, ContentQuestion, ContentStatus } from './types';
 import { nearest } from './duplicates';
 
@@ -41,6 +48,8 @@ export interface ValidationResult {
 
 /** Ids that already exist, so a reference can be checked rather than assumed. */
 export interface ContentRefs {
+  /** Which subject each topic belongs to, for cross-checking the sheet's own column. */
+  subjectOfTopic?: Map<string, string>;
   examIds: ReadonlySet<string>;
   subjectIds: ReadonlySet<string>;
   topicIds: ReadonlySet<string>;
@@ -56,6 +65,8 @@ export const refsFrom = (ids: {
   units?: string[];
   subtopics?: string[];
   levels?: string[];
+  /** [topicId, subjectId] pairs, so a sheet's subject column can be cross-checked. */
+  topicSubjects?: [string, string][];
 }): ContentRefs => ({
   examIds: new Set(ids.exams ?? []),
   subjectIds: new Set(ids.subjects ?? []),
@@ -63,6 +74,7 @@ export const refsFrom = (ids: {
   unitIds: new Set(ids.units ?? []),
   subtopicIds: new Set(ids.subtopics ?? []),
   levels: new Set(ids.levels ?? []),
+  subjectOfTopic: new Map(ids.topicSubjects ?? []),
 });
 
 const err = (code: string, field: string, message: string, suggestion?: string): Issue => ({
@@ -91,29 +103,23 @@ const warn = (code: string, field: string, message: string): Issue => ({
 const blank = (s: string | undefined | null): boolean => !s || !s.trim();
 
 /**
- * Checks a bilingual field.
+ * Checks a field that carries text in one or both languages.
  *
- * English missing is always an error: it is the fallback every screen falls back
- * *to*, so without it the app renders an empty string. Hindi missing is an error
- * only for content being published — the audience reads Hindi, and a silent
- * English substitution (section 20) is the failure being guarded against.
+ * One language is enough. The bank genuinely holds Haryana GK written only in
+ * Hindi, and requiring English would reject exactly the material the audience
+ * most needs. What is rejected is a field with nothing in it at all — and,
+ * separately in `validateQuestion`, options written in a language the question
+ * is not asked in, which is what a half-finished translation produces.
  */
 const checkBilingual = (
-  value: Bilingual | undefined,
+  value: MaybeBilingual | undefined,
   field: string,
-  status: ContentStatus,
+  _status: ContentStatus,
 ): Issue[] => {
-  if (!value) return [err('missing', field, `${field} is required`)];
-  const issues: Issue[] = [];
-  if (blank(value.en)) issues.push(err('missing.en', `${field}.en`, `${field} has no English text`));
-  if (blank(value.hi)) {
-    issues.push(
-      status === 'published'
-        ? err('missing.hi', `${field}.hi`, `${field} has no Hindi text and cannot be published`)
-        : warn('missing.hi', `${field}.hi`, `${field} has no Hindi text yet`),
-    );
+  if (!value || (blank(value.en) && blank(value.hi))) {
+    return [err('missing', field, `${field} is missing in both languages`)];
   }
-  return issues;
+  return [];
 };
 
 /* -------------------------------------------------------------- question */
@@ -129,81 +135,163 @@ export function validateQuestion(
 
   issues.push(...checkBilingual(q.text, 'text', status));
 
-  // An explanation is wanted, never required. Real previous-year banks arrive as
-  // question-and-answer with no commentary; rejecting those rows would reject
-  // exactly the material the platform most needs, and a question without an
-  // explanation still works for practice. Flag it so it can be filled in later.
-  if (!q.explanation || (blank(q.explanation.en) && blank(q.explanation.hi))) {
-    issues.push(warn('missing', 'explanation', 'No explanation — learners will only see the answer'));
-  } else {
-    if (blank(q.explanation.en)) {
-      issues.push(warn('missing.en', 'explanation.en', 'Explanation has no English text'));
-    }
-    if (blank(q.explanation.hi)) {
-      issues.push(warn('missing.hi', 'explanation.hi', 'Explanation has no Hindi text'));
+  const options = q.options ?? [];
+  const answerStatus: AnswerStatus = q.answerStatus ?? 'ok';
+
+  // A question needs two answerable options. "Answerable" means there is text
+  // to render, in either language — screens fall back through `inLang`, so an
+  // option carried only in English still appears for a Hindi reader.
+  //
+  // This is deliberately weaker than "options in the same language as the
+  // question", which is what the schema was first specified to require. The
+  // real HTET CDP sheet is bilingual in its questions and explanations and
+  // English-only in its options, because the options are proper nouns —
+  // "Piaget – Cognitive Development Theory" is not translated by anybody. That
+  // rule rejected 630 correct rows. The half-finished translation it was meant
+  // to catch is still reported, as a warning, below.
+  for (const [i, name] of [[0, 'A'], [1, 'B']] as const) {
+    if (blank(options[i]?.en) && blank(options[i]?.hi)) {
+      issues.push(err('missing', `options.${i}`, `Option ${name} is empty in both languages`));
     }
   }
 
-  // ---- options and answer
-  const options = q.options ?? [];
-  if (options.length < 2) {
-    issues.push(err('too.few', 'options', 'A question needs at least two options'));
+  // The translation gap, reported rather than refused: a question asked in one
+  // language whose options exist only in the other. Worth an editor's attention
+  // and never worth throwing the question away over.
+  for (const lang of ['en', 'hi'] as const) {
+    if (blank(q.text?.[lang])) continue;
+    const label = lang === 'en' ? 'English' : 'Hindi';
+    const untranslated = [0, 1].filter(
+      (i) => !blank(options[i]?.en) || !blank(options[i]?.hi),
+    ).filter((i) => blank(options[i]?.[lang]));
+    if (untranslated.length) {
+      issues.push(
+        warn(
+          'untranslated',
+          'options',
+          `Question is in ${label} but its options are not — learners reading ${label} will see the other language`,
+        ),
+      );
+      break;
+    }
   }
-  options.forEach((opt, i) => {
-    issues.push(...checkBilingual(opt, `options.${i}`, status));
-  });
 
   const seen = new Map<string, number>();
   options.forEach((opt, i) => {
-    const key = (opt?.en ?? '').trim().toLowerCase();
+    const key = ((opt?.en ?? opt?.hi) ?? '').trim().toLowerCase();
     if (!key) return;
     const first = seen.get(key);
     if (first !== undefined) {
       issues.push(
-        warn('duplicate', `options.${i}`, `Option ${i + 1} repeats option ${first + 1}`),
+        warn('duplicate', `options.${i}`, `Option ${LABELS[i]} repeats option ${LABELS[first]}`),
       );
     } else {
       seen.set(key, i);
     }
   });
 
-  const correct = q.correctIndices ?? [];
-  if (correct.length === 0) {
-    issues.push(err('missing', 'correctIndices', 'No correct answer marked'));
+  // ---- the answer key
+  const correct = q.correctAnswers ?? [];
+
+  if (answerStatus === 'ok' && correct.length === 0) {
+    issues.push(
+      err(
+        'missing',
+        'correctAnswers',
+        "answer_status is 'ok' but no valid correct answer given",
+      ),
+    );
   }
-  correct.forEach((idx, i) => {
-    if (!Number.isInteger(idx) || idx < 0 || idx >= options.length) {
+  if (answerStatus !== 'ok' && correct.length > 0) {
+    issues.push(
+      err(
+        'conflict',
+        'correctAnswers',
+        `answer_status is '${answerStatus}' but a correct answer is given`,
+      ),
+    );
+  }
+
+  correct.forEach((label) => {
+    const i = LABELS.indexOf(label);
+    if (i === -1) {
+      issues.push(
+        err('invalid', 'correctAnswers', `Correct answer '${label}' is not one of A, B, C or D`),
+      );
+      return;
+    }
+    // The check that catches a key of 'C' on a two-option question — the defect
+    // that reads to a learner as being marked wrong for the right answer.
+    if (blank(options[i]?.en) && blank(options[i]?.hi)) {
       issues.push(
         err(
-          'out.of.range',
-          `correctIndices.${i}`,
-          `Correct answer ${idx} does not point at one of the ${options.length} options`,
+          'empty.option',
+          'correctAnswers',
+          `Correct answer includes ${label} but Option ${label} is empty`,
         ),
       );
     }
   });
+
   if (new Set(correct).size !== correct.length) {
-    issues.push(err('duplicate', 'correctIndices', 'The same option is marked correct twice'));
+    issues.push(err('duplicate', 'correctAnswers', 'The same option is marked correct twice'));
   }
-  if (q.kind === 'mcq-single' && correct.length > 1) {
+
+  // ---- explanation
+  //
+  // Required when the answer is known, and not otherwise: writing an
+  // explanation for a question whose correct answer nobody has established
+  // would be inventing reasoning to fit a guess.
+  if (answerStatus === 'ok') {
+    if (!q.explanation || (blank(q.explanation.en) && blank(q.explanation.hi))) {
+      issues.push(err('missing', 'explanation', 'Explanation is missing in both languages'));
+    }
+  }
+
+  // ---- difficulty
+  if (blank(q.difficulty)) {
+    issues.push(err('missing', 'difficulty', 'Difficulty is not set'));
+  } else if (!DIFFICULTIES.includes(q.difficulty as QuestionDifficulty)) {
     issues.push(
-      err('too.many', 'correctIndices', 'A single-correct question has more than one answer'),
+      err('invalid', 'difficulty', `Difficulty '${q.difficulty}' is not easy, medium or hard`),
     );
   }
 
   // ---- placement
-  if (blank(q.subjectId)) issues.push(err('missing', 'subjectId', 'Question has no subject'));
-  if (blank(q.topicId)) issues.push(err('missing', 'topicId', 'Question has no topic'));
+  //
+  // A missing topic is a warning, not a rejection: the row lands as a draft and
+  // somebody classifies it later. Rejecting it would throw away a correctly
+  // transcribed question over a column the sheet may simply not have had.
+  if (blank(q.topicId)) {
+    issues.push(warn('missing', 'topicId', "Topic not set — can't be published until it has one"));
+  }
+  if (q.year !== undefined && (q.year < 2000 || q.year > 2030)) {
+    issues.push(warn('out.of.range', 'year', `Year ${q.year} is outside 2000-2030`));
+  }
   if (!q.examIds?.length) {
     issues.push(warn('missing', 'examIds', 'Question is not attached to any exam'));
   }
 
   if (refs) {
-    if (q.subjectId && !refs.subjectIds.has(q.subjectId)) {
-      issues.push(unknownRef('subjectId', q.subjectId, 'subject', refs.subjectIds));
-    }
     if (q.topicId && !refs.topicIds.has(q.topicId)) {
       issues.push(unknownRef('topicId', q.topicId, 'topic', refs.topicIds));
+    }
+    // The sheet still has a subject column, but the schema no longer stores one:
+    // subject is whatever the topic belongs to. Ignoring the column silently
+    // would let a row filed under the wrong subject import looking correct, so
+    // the two are compared and a disagreement is reported. The topic wins,
+    // because it is the value that actually decides where the question lands.
+    if (q.declaredSubjectId && q.topicId) {
+      const actual = refs.subjectOfTopic?.get(q.topicId);
+      if (actual && actual !== q.declaredSubjectId) {
+        issues.push(
+          warn(
+            'mismatch',
+            'subjectId',
+            `Sheet says subject '${q.declaredSubjectId}' but topic '${q.topicId}' belongs to '${actual}' — the topic wins`,
+          ),
+        );
+      }
     }
     if (q.unitId && refs.unitIds?.size && !refs.unitIds.has(q.unitId)) {
       issues.push(unknownRef('unitId', q.unitId, 'unit', refs.unitIds));

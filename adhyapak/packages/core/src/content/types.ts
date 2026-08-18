@@ -1,4 +1,12 @@
-import type { Bilingual, QuestionDifficulty, Question, TeachingLevel } from '../types';
+import type {
+  AnswerStatus,
+  Bilingual,
+  MaybeBilingual,
+  OptionLabel,
+  Question,
+  QuestionDifficulty,
+  TeachingLevel,
+} from '../types';
 
 /**
  * The content model.
@@ -125,18 +133,36 @@ export interface ContentQuestion {
   /** Placement. `examIds` may be empty for a question that is syllabus-generic. */
   examIds: string[];
   levels: TeachingLevel[];
-  subjectId: string;
   unitId?: string;
-  topicId: string;
+  /** Absent on a draft nobody has classified yet; required to publish. */
+  topicId?: string;
   subtopicId?: string;
+  /** The paper this was asked in. Absent for syllabus content shared across exams. */
+  paperId?: string;
+  /**
+   * The subject the source sheet claimed, kept only long enough to check it
+   * against the topic. Never stored: subject is a property of the topic now.
+   */
+  declaredSubjectId?: string;
 
-  text: Bilingual;
-  options: Bilingual[];
-  /** Indices into `options`. One entry for single-correct; several for multiple. */
-  correctIndices: number[];
-  explanation: Bilingual;
+  /** Nullable per language: the bank holds questions written in only one. */
+  text: MaybeBilingual;
+  /** Ordered A, B, C, D. */
+  options: MaybeBilingual[];
+  /** Every option the key accepts. Empty when `answerStatus` is not 'ok'. */
+  correctAnswers: OptionLabel[];
+  answerStatus: AnswerStatus;
+  graceMarksAwarded: boolean;
+  excludedFromTotal: boolean;
+  explanation: MaybeBilingual;
 
   difficulty: QuestionDifficulty;
+
+  /** Where in its paper: the number printed beside it, and which printed set. */
+  questionNo?: number;
+  paperSet?: string;
+  /** Year the paper was sat. */
+  year?: number;
   /** Per-question override; the test's own marks apply when absent. */
   marks?: number;
   negativeMarks?: number;
@@ -174,49 +200,35 @@ export const toQuestion = (
 ): Question | null => {
   if (!isLive(q.status)) return null;
   if (!RENDERABLE_KINDS.includes(q.kind)) return null;
-  const correctIndex = q.correctIndices[0];
-  if (correctIndex === undefined) return null;
+  // A question whose key is unsettled has nothing to mark against, so it is not
+  // renderable however published it claims to be.
+  if (q.answerStatus === 'ok' && q.correctAnswers.length === 0) return null;
 
   return {
     id: q.id,
-    subjectId: q.subjectId,
     topicId: q.topicId,
+    paperId: q.paperId,
     examIds: q.examIds,
     text: q.text,
     options: q.options,
-    correctIndex,
+    correctAnswers: q.correctAnswers,
+    answerStatus: q.answerStatus,
+    graceMarksAwarded: q.graceMarksAwarded,
+    excludedFromTotal: q.excludedFromTotal,
     explanation: q.explanation,
     difficulty: q.difficulty,
-    previousYear: q.pyq ? formatPyq(q.pyq, examShortName) : undefined,
+    year: q.year ?? q.pyq?.year,
     avgTimeSeconds: q.avgTimeSeconds,
     accuracy: q.accuracy,
   };
 };
 
-/** Lifts a legacy seed question into the library model, for a one-way migration. */
-export const fromQuestion = (q: Question, now = new Date().toISOString()): ContentQuestion => ({
-  id: q.id,
-  status: 'published',
-  kind: 'mcq-single',
-  examIds: q.examIds,
-  levels: [],
-  subjectId: q.subjectId,
-  topicId: q.topicId,
-  text: q.text,
-  options: q.options,
-  correctIndices: [q.correctIndex],
-  explanation: q.explanation,
-  difficulty: q.difficulty,
-  // The legacy field is prose, so it cannot be parsed into a PyqRef without
-  // guessing. It is preserved as provenance rather than invented as metadata.
-  source: q.previousYear,
-  tags: [],
-  conceptTags: [],
-  avgTimeSeconds: q.avgTimeSeconds,
-  accuracy: q.accuracy,
-  createdAt: now,
-  updatedAt: now,
-});
+/*
+ * `fromQuestion` used to lift a bundled seed question into the library model.
+ * It is gone with the bundled bank: there is no legacy shape left to lift, and
+ * a converter with nothing to convert is a function that only ever misleads
+ * whoever finds it next.
+ */
 
 /* ----------------------------------------------------------------- notes */
 

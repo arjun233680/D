@@ -311,24 +311,96 @@ export interface BatchModule {
 
 export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
 
+/**
+ * An option label, as printed on the paper.
+ *
+ * The whole system speaks letters — the answer key, the candidate, the coaching
+ * sheet and now `attempt_answers.selected_option`. An index is a fact about our
+ * storage order; a letter is a fact about the question, and the two used to be
+ * translated at every call site, which is where an off-by-one eventually marks
+ * a right answer wrong.
+ */
+export type OptionLabel = 'A' | 'B' | 'C' | 'D';
+
+export const OPTION_LABELS: readonly OptionLabel[] = ['A', 'B', 'C', 'D'];
+
+/** The label for a position in `Question.options`. */
+export const optionLabel = (index: number): OptionLabel | undefined => OPTION_LABELS[index];
+
+/**
+ * Whether the answer key is settled, and if not, why.
+ *
+ * `dropped` is a question the commission withdrew after a challenge;
+ * `key_pending` is one whose answer nobody has established yet. Neither can be
+ * marked, and conflating them with a wrong answer is what the old single-index
+ * model did to every learner who attempted one.
+ */
+export type AnswerStatus = 'ok' | 'dropped' | 'key_pending';
+
+/**
+ * A string that may exist in only one language.
+ *
+ * The bank genuinely holds both: Haryana GK written only in Hindi is not a
+ * defective English question. Rendering goes through `inLang`, which falls back
+ * rather than showing a blank.
+ */
+export interface MaybeBilingual {
+  en?: string;
+  hi?: string;
+}
+
+/**
+ * The text to show, falling back to the other language when one is missing.
+ *
+ * A Hindi-only question shown to somebody reading in English is still worth
+ * more than an empty card, and the alternative — hiding it — would remove
+ * content the audience actually needs.
+ */
+export const inLang = (text: MaybeBilingual | undefined, lang: Lang): string =>
+  text?.[lang] ?? text?.[lang === 'en' ? 'hi' : 'en'] ?? '';
+
 export interface Question {
   id: string;
-  subjectId: string;
-  topicId: string;
+  /** Absent on a draft that has not been classified yet. */
+  topicId?: string;
+  /** The paper this was asked in. Absent for syllabus content shared across exams. */
+  paperId?: string;
+  /** Which exams this is worth practising for. */
   examIds: string[];
-  text: Bilingual;
-  options: Bilingual[];
-  /** Index into `options`. */
-  correctIndex: number;
-  explanation: Bilingual;
+  text: MaybeBilingual;
+  /** Ordered A, B, C, D. A missing entry is an option the paper did not carry. */
+  options: MaybeBilingual[];
+  /** Every option the key accepts. More than one when the key says "2 & 4". */
+  correctAnswers: OptionLabel[];
+  answerStatus: AnswerStatus;
+  /** Withdrawn question whose marks go to everybody. */
+  graceMarksAwarded: boolean;
+  /** Withdrawn question struck from the paper's total. */
+  excludedFromTotal: boolean;
+  explanation: MaybeBilingual;
   difficulty: QuestionDifficulty;
-  /** e.g. "CTET Dec 2022 Paper 1" — powers the PYQ tag. */
-  previousYear?: string;
+  /** Year the paper was sat, where known. */
+  year?: number;
   /** Seconds the average learner takes; used in the analysis screen. */
   avgTimeSeconds: number;
   /** Share of learners who answered correctly, 0-1. */
   accuracy: number;
 }
+
+/**
+ * Whether a chosen option counts as correct.
+ *
+ * The single marking rule on the client, mirroring `answer_is_correct` in the
+ * database. Both exist because the server grades the score and the client
+ * renders instant feedback, and they must not disagree.
+ */
+export const isCorrectAnswer = (
+  selected: OptionLabel | null | undefined,
+  question: Pick<Question, 'correctAnswers' | 'answerStatus'>,
+): boolean =>
+  selected != null &&
+  question.answerStatus === 'ok' &&
+  question.correctAnswers.includes(selected);
 
 /* ----------------------------------------------------------------- tests */
 
@@ -379,8 +451,8 @@ export type QuestionStatus =
 
 export interface AttemptAnswer {
   questionId: string;
-  /** null means visited but left blank. */
-  selectedIndex: number | null;
+  /** null means visited but left blank. Same letters as `Question.correctAnswers`. */
+  selectedOption: OptionLabel | null;
   markedForReview: boolean;
   /** Milliseconds spent on this question across all visits. */
   timeSpentMs: number;

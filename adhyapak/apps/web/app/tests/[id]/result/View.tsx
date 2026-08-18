@@ -18,6 +18,8 @@ import {
   UI,
   type SolutionFilter,
 } from '@adhyapak/core';
+import { isCorrectAnswer, OPTION_LABELS, inLang } from '@adhyapak/core';
+import type { OptionLabel } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, EmptyState, ProgressBar, Stat } from '@/components/ui';
 import { QuestionSolution } from '@/components/QuestionSolution';
@@ -66,11 +68,11 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
     .map((qid) => {
       const question = getQuestion(qid);
       if (!question) return null;
-      const selectedIndex = attempt?.answers[qid]?.selectedIndex ?? null;
+      const selectedOption = attempt?.answers[qid]?.selectedOption ?? null;
       return {
         question,
-        selectedIndex,
-        correct: selectedIndex === question.correctIndex,
+        selectedOption,
+        correct: isCorrectAnswer(selectedOption, question),
         timeSpentMs: attempt?.answers[qid]?.timeSpentMs ?? 0,
       };
     })
@@ -82,7 +84,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
   const numbered = rows.map((row, i) => ({
     ...row,
     number: i + 1,
-    outcome: solutionOutcome(row.selectedIndex, row.question.correctIndex),
+    outcome: solutionOutcome(row.selectedOption, row.question),
   }));
   const filterOptions = solutionFilterOptions(numbered.map((r) => r.outcome));
   const visibleRows = numbered.filter((r) => matchesSolutionFilter(r.outcome, filter));
@@ -321,7 +323,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                 key={row.question.id}
                 question={row.question}
                 number={row.number}
-                selectedIndex={row.selectedIndex}
+                selectedOption={row.selectedOption}
                 lang={lang}
                 footer={
                   /* Only the learner's own time, which was actually measured.

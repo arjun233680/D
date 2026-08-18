@@ -1,4 +1,11 @@
-import type { Bilingual, QuestionDifficulty, TeachingLevel } from '../types';
+import type {
+  AnswerStatus,
+  Bilingual,
+  OptionLabel,
+  QuestionDifficulty,
+  TeachingLevel,
+} from '../types';
+import { OPTION_LABELS } from '../types';
 import type { ContentQuestion, ContentStatus, PyqRef, QuestionKind } from './types';
 import { validateQuestion, type ContentRefs, type Issue, type ValidationResult } from './validation';
 
@@ -257,6 +264,48 @@ export function parseAnswer(raw: string, optionCount: number): number[] {
 }
 
 /**
+ * The answer key as the schema stores it: letters, plus why it might be empty.
+ *
+ * Three things a real answer key does that a single index could not say:
+ *
+ *   "2 & 4" is a double answer — the commission accepted either, so both
+ *   letters go in and grading takes any of them.
+ *
+ *   "*" is the mark boards print beside a question they withdrew after a
+ *   challenge. It has no correct answer and never will, and recording it as one
+ *   is how a dropped question came to be marked wrong for everybody.
+ *
+ *   A blank cell is not the same as a withdrawn question. It means nobody has
+ *   established the answer yet, which is `key_pending` — a state somebody has
+ *   to resolve, rather than one to be quietly graded around.
+ */
+export function parseAnswerKey(raw: string): {
+  correctAnswers: OptionLabel[];
+  answerStatus: AnswerStatus;
+} {
+  const cleaned = raw.trim();
+  if (cleaned === '*' || cleaned.toLowerCase() === 'dropped') {
+    return { correctAnswers: [], answerStatus: 'dropped' };
+  }
+  // An empty cell means nobody has established the answer yet — a real state
+  // that somebody resolves later, and importable as a draft.
+  if (cleaned === '') return { correctAnswers: [], answerStatus: 'key_pending' };
+  const indices = parseAnswer(cleaned, OPTION_LABELS.length);
+  // A cell that was filled in but names no option is a transcription error, not
+  // a pending key. Calling it 'ok' with no answer is what makes validation
+  // reject the row instead of importing a question nothing can mark — quietly
+  // filing "F" as "answer not known yet" is how a typo becomes permanent.
+  if (indices.length === 0) return { correctAnswers: [], answerStatus: 'ok' };
+  // Sorted so {B,D} never arrives as {D,B}: two rows with the same key must
+  // compare equal, and the database check is on the set, not the order.
+  const labels = [...new Set(indices)]
+    .sort((a, b) => a - b)
+    .map((i) => OPTION_LABELS[i])
+    .filter((l): l is OptionLabel => l !== undefined);
+  return { correctAnswers: labels, answerStatus: 'ok' };
+}
+
+/**
  * An integer from a cell that may have come back from a spreadsheet as a float.
  *
  * Google Sheets exports a numeric column as "2020.0" and "22.0", so a year and
@@ -341,8 +390,29 @@ export function importQuestions(rows: Row[], options: ImportOptions = {}): Impor
   let duplicateIds = 0;
   let withPyq = 0;
 
+  // A column that is absent from the sheet is a different failure from a cell
+  // that is blank, and only the second is a legitimate "answer not known yet".
+  // Without this, a file with no answer column at all imported every row as a
+  // pending-key draft — thousands of questions nothing can mark, reported as a
+  // clean import.
+  const missingRequired = (['question', 'answer'] as const).filter((f) => !col[f]);
+
   rows.forEach((row, i) => {
     const lineNumber = i + 2; // header is row 1
+
+    if (missingRequired.length) {
+      rejected.push({
+        row: lineNumber,
+        issues: missingRequired.map((f) => ({
+          severity: 'error' as const,
+          code: 'missing.column',
+          field: f,
+          message: `The sheet has no ${f} column — map one before importing`,
+        })),
+        raw: row,
+      });
+      return;
+    }
     const timestamp = now();
 
     const options4 = [
@@ -378,14 +448,23 @@ export function importQuestions(rows: Row[], options: ImportOptions = {}): Impor
       kind,
       examIds: resolvedExams,
       levels: levels.length ? levels : defaultLevels,
-      subjectId: get(row, 'subject') ?? '',
+      declaredSubjectId: get(row, 'subject') || undefined,
       unitId: get(row, 'unit') || undefined,
-      topicId: get(row, 'topic') ?? '',
+      topicId: get(row, 'topic') || undefined,
       subtopicId: get(row, 'subtopic') || undefined,
+      paperId: get(row, 'paper') || undefined,
       text: bilingual(get(row, 'question'), get(row, 'questionHi')),
       options: options4,
-      correctIndices: parseAnswer(get(row, 'answer') ?? '', options4.length),
+      ...parseAnswerKey(get(row, 'answer') ?? ''),
+      // A withdrawn question's marking convention is not in the sheet — the
+      // board announces it separately — so import records the withdrawal and
+      // leaves both conventions off until somebody sets them.
+      graceMarksAwarded: false,
+      excludedFromTotal: false,
       explanation: bilingual(get(row, 'explanation'), get(row, 'explanationHi')),
+      questionNo: integerFrom(get(row, 'questionNumber')),
+      paperSet: get(row, 'set') || undefined,
+      year: integerFrom(get(row, 'year')) ?? pyq?.year,
       difficulty: parseDifficulty(get(row, 'difficulty')),
       marks: marksRaw ? Number(marksRaw) : undefined,
       negativeMarks: negRaw ? Number(negRaw) : undefined,

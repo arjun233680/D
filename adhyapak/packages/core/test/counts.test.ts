@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import { getTopic } from '../src/data/subjects';
 import {
   QUESTIONS,
   configureBackend,
@@ -141,14 +142,18 @@ describe('countQuestions asks the database, not the bundle', () => {
       },
     );
     const p = calls[0]!.params;
-    assert.equal(p.get('exam_ids'), 'cs.{htet}');
-    assert.equal(p.get('subject_id'), 'eq.cdp');
-    assert.equal(p.get('pyq_year'), 'eq.2023');
+    assert.equal(p.get('question_exams.exam_id'), 'eq.htet');
+    assert.ok(p.get('topic_id')?.startsWith('in.'), 'subject narrows to its topics');
+    assert.equal(p.get('year'), 'eq.2023');
     // Level, shift and difficulty were missing from countQuestions while
     // listQuestions honoured all three, so the count above a filtered list
     // described a wider set than the list itself.
-    assert.equal(p.get('levels'), 'cs.{primary}');
-    assert.equal(p.get('pyq_shift'), 'eq.1');
+    // `level` is not a question column any more: a paper carries the level, and
+    // the question carries the paper. Nothing is sent for it.
+    assert.equal(p.get('levels'), null);
+    // Shift is not a question column: it described the sitting of a paper, and
+    // the question now points at the paper itself.
+    assert.equal(p.get('pyq_shift'), null);
   });
 
   it('narrows by difficulty, which it also used to ignore', async () => {
@@ -196,9 +201,9 @@ describe('per-subject counts come from the database too', () => {
     const counts = await withStubbedBackend(
       () =>
         rowsResponse([
-          { subject_id: 'cdp' },
-          { subject_id: 'cdp' },
-          { subject_id: 'haryana-gk' },
+          { topic_id: 'cdp-piaget' },
+          { topic_id: 'cdp-piaget' },
+          { topic_id: 'hgk-history' },
         ]),
       () => countQuestionsBySubject('htet'),
     );
@@ -207,25 +212,26 @@ describe('per-subject counts come from the database too', () => {
 
   it('fetches one column for the whole index rather than one request per tile', async () => {
     const calls = await withStubbedBackend(
-      () => rowsResponse([{ subject_id: 'cdp' }]),
+      () => rowsResponse([{ topic_id: 'cdp-piaget' }]),
       async (calls) => {
         await countQuestionsBySubject('htet');
         return calls;
       },
     );
     assert.equal(calls.length, 1);
-    assert.equal(calls[0]!.params.get('select'), 'subject_id');
+    assert.equal(calls[0]!.params.get('select'), 'topic_id,question_exams!inner(exam_id)');
     assert.equal(calls[0]!.params.get('status'), 'eq.published');
-    assert.equal(calls[0]!.params.get('exam_ids'), 'cs.{htet}');
+    assert.equal(calls[0]!.params.get('question_exams.exam_id'), 'eq.htet');
   });
 });
 
 describe('offline, the count is still the count of what is served', () => {
   it('measures the bundled set when there is no backend', async () => {
-    // Not a contradiction of the above: offline the bundled array *is* the bank,
-    // so counting it is honest. The bug was reading it while connected.
-    const cdp = await countQuestions({ subjectId: 'cdp' });
-    assert.equal(cdp, QUESTIONS.filter((q) => q.subjectId === 'cdp').length);
+    // The bundled bank is empty since 0011, so offline every count is zero.
+    // Asserting that is the honest version of this test: the numbers a screen
+    // shows must match what it can actually serve, and offline it serves
+    // nothing.
+    assert.equal(await countQuestions({ subjectId: 'cdp' }), 0);
   });
 
   it('counts previous-year questions the same way the PYQ tile does', async () => {
@@ -234,7 +240,7 @@ describe('offline, the count is still the count of what is served', () => {
 
   it('tallies bundled questions per subject', async () => {
     const counts = await countQuestionsBySubject();
-    assert.equal(counts.cdp, QUESTIONS.filter((q) => q.subjectId === 'cdp').length);
+    assert.deepEqual(counts, {});
   });
 
   it('reports nothing for a year it cannot verify, rather than a wider set', async () => {
@@ -245,7 +251,9 @@ describe('offline, the count is still the count of what is served', () => {
     assert.equal(await countQuestions({ pyqOnly: true, year: 2023 }), 0);
     assert.equal(await countQuestions({ pyqOnly: true, shift: '1' }), 0);
     // And the unfiltered count is unaffected, so offline practice still works.
-    assert.ok((await countQuestions({ pyqOnly: true })) > 0);
+    // Offline the bank is empty, so a PYQ-only count is zero — and zero is the
+    // honest answer for a build that can serve nothing.
+    assert.equal(await countQuestions({ pyqOnly: true }), 0);
   });
 });
 

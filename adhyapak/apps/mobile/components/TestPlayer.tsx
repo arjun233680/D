@@ -21,6 +21,9 @@ import {
   type TestAttempt,
   type TestResult,
 } from '@adhyapak/core';
+import { getTopic } from '@adhyapak/core';
+import { isCorrectAnswer, OPTION_LABELS, inLang } from '@adhyapak/core';
+import type { OptionLabel } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { Badge, Button, s } from '@/components/ui';
 
@@ -115,7 +118,7 @@ export function TestPlayer({
               ...prev.answers,
               [qid]: {
                 questionId: qid,
-                selectedIndex: prev.answers[qid]?.selectedIndex ?? null,
+                selectedOption: prev.answers[qid]?.selectedOption ?? null,
                 markedForReview: prev.answers[qid]?.markedForReview ?? false,
                 timeSpentMs: (prev.answers[qid]?.timeSpentMs ?? 0) + delta,
               },
@@ -152,7 +155,7 @@ export function TestPlayer({
   const bookmarked = user.bookmarkedQuestionIds.includes(currentId);
 
   // Answered, with feedback on: the question is settled and shows its marking.
-  const revealed = instantFeedback && (answer?.selectedIndex ?? null) !== null;
+  const revealed = instantFeedback && (answer?.selectedOption ?? null) !== null;
 
   const goTo = (qid: string) => {
     setAttempt((prev) => (prev ? visitQuestion(prev, qid) : prev));
@@ -287,7 +290,7 @@ export function TestPlayer({
                 +{test.marksPerQuestion}
                 {test.negativeMarking ? ` / −${test.negativeMarking}` : ''}
               </Text>
-              {question.previousYear ? <Badge tone="info">{question.previousYear}</Badge> : null}
+              {question.year ? <Badge tone="info">{String(question.year)}</Badge> : null}
               <View style={{ flex: 1 }} />
               <Pressable onPress={() => toggleBookmark(currentId)}>
                 <Text style={{ fontSize: 17 }}>{bookmarked ? '🔖' : '📑'}</Text>
@@ -302,13 +305,14 @@ export function TestPlayer({
                 marginTop: theme.space.md,
               }}
             >
-              {t(question.text, lang)}
+              {inLang(question.text, lang)}
             </Text>
 
             <View style={{ marginTop: theme.space.lg, gap: theme.space.md }}>
               {question.options.map((opt, i) => {
-                const selected = answer?.selectedIndex === i;
-                const isKey = i === question.correctIndex;
+                const label = OPTION_LABELS[i];
+                const selected = label !== undefined && answer?.selectedOption === label;
+                const isKey = label !== undefined && question.correctAnswers.includes(label);
                 // Only the key and the learner's own pick are marked. Colouring
                 // every wrong option would give away the next attempt too.
                 const marked = revealed && (isKey || selected);
@@ -323,7 +327,7 @@ export function TestPlayer({
                   <Pressable
                     key={i}
                     disabled={revealed}
-                    onPress={() => setAttempt((prev) => (prev ? selectOption(prev, currentId, i) : prev))}
+                    onPress={() => setAttempt((prev) => (prev ? label ? selectOption(prev, currentId, label) : prev : prev))}
                     style={{
                       flexDirection: 'row',
                       gap: theme.space.md,
@@ -364,7 +368,7 @@ export function TestPlayer({
                       </Text>
                     </View>
                     <Text style={{ flex: 1, fontSize: theme.font.base, lineHeight: 22 }}>
-                      {t(opt, lang)}
+                      {inLang(opt, lang)}
                     </Text>
                     {marked ? <Text>{isKey ? '✅' : '❌'}</Text> : null}
                   </Pressable>
@@ -410,7 +414,7 @@ export function TestPlayer({
                       paddingVertical: 12,
                     }}
                   >
-                    {t(question.explanation, lang)}
+                    {inLang(question.explanation, lang)}
                   </Text>
                 ) : null}
               </View>

@@ -1,8 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getBackend, withFallback } from './client';
 import type {
+  AnswerStatus,
   Bilingual,
   Exam,
+  MaybeBilingual,
+  OptionLabel,
   Lang,
   Batch,
   Note,
@@ -24,6 +27,65 @@ import { buildPracticeSet, currentStreak, type PracticeFilter } from '../engine/
 import { formatPyq } from '../content/types';
 import type { ContentQuestion, ContentStatus, PyqRef } from '../content/types';
 import { fingerprint } from '../content/duplicates';
+import { SUBJECTS, getTopic } from '../data/subjects';
+
+/* ------------------------------------------------------- reading questions */
+
+/** Blank and absent are the same thing; the old jsonb model let them differ. */
+const text = (v: unknown): string | undefined => {
+  const s = typeof v === 'string' ? v.trim() : '';
+  return s === '' ? undefined : s;
+};
+
+const bilingual = (en: unknown, hi: unknown): MaybeBilingual => ({
+  en: text(en),
+  hi: text(hi),
+});
+
+/**
+ * One database row as the shape a screen renders.
+ *
+ * Options come back as an ordered array even though they are stored as eight
+ * columns: every screen walks them in order to draw A, B, C, D, and rebuilding
+ * that walk from named columns at each call site is how one of them ends up
+ * drawing three.
+ */
+export const toQuestionRow = (r: Record<string, unknown>): Question => ({
+  id: r.id as string,
+  topicId: (r.topic_id as string) ?? undefined,
+  paperId: (r.paper_id as string) ?? undefined,
+  // Present only when the caller embedded the junction; an empty list means
+  // "not asked for", which no screen distinguishes from "no tags".
+  examIds: Array.isArray(r.question_exams)
+    ? (r.question_exams as { exam_id: string }[]).map((e) => e.exam_id)
+    : [],
+  text: bilingual(r.question_en, r.question_hi),
+  options: [
+    bilingual(r.option_a_en, r.option_a_hi),
+    bilingual(r.option_b_en, r.option_b_hi),
+    bilingual(r.option_c_en, r.option_c_hi),
+    bilingual(r.option_d_en, r.option_d_hi),
+  ],
+  correctAnswers: ((r.correct_answers as string[]) ?? []) as OptionLabel[],
+  answerStatus: ((r.answer_status as string) ?? 'ok') as AnswerStatus,
+  graceMarksAwarded: Boolean(r.grace_marks_awarded),
+  excludedFromTotal: Boolean(r.excluded_from_total),
+  explanation: bilingual(r.explanation_en, r.explanation_hi),
+  difficulty: r.difficulty as Question['difficulty'],
+  year: (r.year as number) ?? undefined,
+  avgTimeSeconds: (r.avg_time_seconds as number) ?? 40,
+  accuracy: Number(r.accuracy ?? 0.5),
+});
+
+/**
+ * The topics under a subject, for filters that still speak in subjects.
+ *
+ * `questions` no longer carries a subject: it was a denormalised copy that
+ * could disagree with `topics.subject_id`. The syllabus is bundled, so this
+ * resolves locally rather than costing a round trip.
+ */
+const topicIdsForSubject = (subjectId: string): string[] =>
+  SUBJECTS.find((s) => s.id === subjectId)?.topics.map((t) => t.id) ?? [];
 
 /**
  * The one place either app talks to data.
@@ -138,19 +200,23 @@ export const listTests = (examId?: string): Promise<Test[]> =>
  */
 export const listQuestions = (filter: PracticeFilter = {}): Promise<Question[]> =>
   withFallback(async (db) => {
-    let q = db.from('questions').select('*').eq('status', 'published');
-    if (filter.subjectId) q = q.eq('subject_id', filter.subjectId);
-    if (filter.unitId) q = q.eq('unit_id', filter.unitId);
+    // `question_exams!inner` turns the exam filter into a join rather than a
+    // second round trip. Without an exam filter the inner join would still drop
+    // untagged questions, so the embed is only asked for when it is filtered on.
+    const select = filter.examId ? '*, question_exams!inner(exam_id)' : '*';
+    let q = db.from('questions').select(select).eq('status', 'published');
+    // Subject is a property of the topic now, so filtering by it means asking
+    // for that subject's topics. The alternative — a denormalised copy on the
+    // question — is what 0011 removed for disagreeing with `topics.subject_id`.
+    if (filter.subjectId) {
+      q = q.in('topic_id', topicIdsForSubject(filter.subjectId));
+    }
     if (filter.topicId) q = q.eq('topic_id', filter.topicId);
-    if (filter.subtopicId) q = q.eq('subtopic_id', filter.subtopicId);
     if (filter.difficulty) q = q.eq('difficulty', filter.difficulty);
-    if (filter.level) q = q.contains('levels', [filter.level]);
-    // Structured provenance, never the legacy prose column: a year filter has to
-    // mean the year the paper was sat, not a substring match on a sentence.
-    if (filter.year) q = q.eq('pyq_year', filter.year);
-    if (filter.shift) q = q.eq('pyq_shift', filter.shift);
-    if (filter.pyqOnly && !filter.year) q = q.not('pyq_year', 'is', null);
-    if (filter.examId) q = q.contains('exam_ids', [filter.examId]);
+    if (filter.paperId) q = q.eq('paper_id', filter.paperId);
+    if (filter.year) q = q.eq('year', filter.year);
+    if (filter.pyqOnly && !filter.year) q = q.not('year', 'is', null);
+    if (filter.examId) q = q.eq('question_exams.exam_id', filter.examId);
     if (filter.ids) q = q.in('id', filter.ids);
     // A bank of 20,000 questions must never arrive in one response.
     const limit = filter.limit ?? 200;
@@ -158,35 +224,7 @@ export const listQuestions = (filter: PracticeFilter = {}): Promise<Question[]> 
     q = q.range(offset, offset + limit - 1);
     const { data, error } = await q;
     if (error || !data) throw error ?? new Error('no questions');
-    return data.map(
-      (r: Record<string, unknown>): Question => ({
-        id: r.id as string,
-        subjectId: r.subject_id as string,
-        topicId: r.topic_id as string,
-        examIds: (r.exam_ids as string[]) ?? [],
-        text: r.text as Bilingual,
-        options: r.options as Bilingual[],
-        correctIndex: r.correct_index as number,
-        explanation: r.explanation as Bilingual,
-        difficulty: r.difficulty as Question['difficulty'],
-        // Structured provenance wins; the legacy prose column is the fallback
-        // for questions imported before 0005 and never re-tagged.
-        previousYear: r.pyq_year
-          ? formatPyq(
-              {
-                examId: (r.pyq_exam_id as string) ?? '',
-                year: r.pyq_year as number,
-                session: (r.pyq_session as string) ?? undefined,
-                paperLabel: (r.pyq_paper_label as string) ?? undefined,
-                shift: (r.pyq_shift as string) ?? undefined,
-              },
-              seedExam((r.pyq_exam_id as string) ?? '')?.shortName,
-            )
-          : ((r.previous_year as string) ?? undefined),
-        avgTimeSeconds: r.avg_time_seconds as number,
-        accuracy: Number(r.accuracy),
-      }),
-    );
+    return (data as unknown as Record<string, unknown>[]).map(toQuestionRow);
   }, () => buildPracticeSet(filter));
 
 /**
@@ -198,20 +236,17 @@ export const listQuestions = (filter: PracticeFilter = {}): Promise<Question[]> 
 export const countQuestions = (filter: PracticeFilter = {}): Promise<number> =>
   withFallback(
     async (db) => {
-      let q = db.from('questions').select('id', { count: 'exact', head: true }).eq('status', 'published');
-      if (filter.subjectId) q = q.eq('subject_id', filter.subjectId);
+      // Every filter `listQuestions` honours must be honoured here too: this is
+      // the one number on the page whose job is to describe exactly that list,
+      // and the two drifting apart is a bug that reads as a miscount.
+      const select = filter.examId ? 'id, question_exams!inner(exam_id)' : 'id';
+      let q = db.from('questions').select(select, { count: 'exact', head: true }).eq('status', 'published');
+      if (filter.subjectId) q = q.in('topic_id', topicIdsForSubject(filter.subjectId));
       if (filter.topicId) q = q.eq('topic_id', filter.topicId);
-      if (filter.subtopicId) q = q.eq('subtopic_id', filter.subtopicId);
-      if (filter.unitId) q = q.eq('unit_id', filter.unitId);
-      if (filter.examId) q = q.contains('exam_ids', [filter.examId]);
-      if (filter.year) q = q.eq('pyq_year', filter.year);
-      if (filter.pyqOnly && !filter.year) q = q.not('pyq_year', 'is', null);
-      // Level, shift and difficulty were missing here while listQuestions
-      // honoured all three, so a filtered screen showed a count for a wider set
-      // than the list beneath it — the one number on the page that is supposed
-      // to describe exactly that list.
-      if (filter.level) q = q.contains('levels', [filter.level]);
-      if (filter.shift) q = q.eq('pyq_shift', filter.shift);
+      if (filter.paperId) q = q.eq('paper_id', filter.paperId);
+      if (filter.examId) q = q.eq('question_exams.exam_id', filter.examId);
+      if (filter.year) q = q.eq('year', filter.year);
+      if (filter.pyqOnly && !filter.year) q = q.not('year', 'is', null);
       if (filter.difficulty) q = q.eq('difficulty', filter.difficulty);
       const { count, error } = await q;
       if (error) throw error;
@@ -248,13 +283,19 @@ export const countQuestionsBySubject = (examId?: string): Promise<Record<string,
       // to depend on the server behaving.
       const maxPages = 100;
       for (let page = 0, from = 0; page < maxPages; page += 1, from += pageSize) {
-        let q = db.from('questions').select('subject_id').eq('status', 'published');
-        if (examId) q = q.contains('exam_ids', [examId]);
+        // Subject arrives through the topic, which is the only place it is
+        // recorded now. A question with no topic has no subject to count under.
+        const select = examId
+          ? 'topic_id, question_exams!inner(exam_id)'
+          : 'topic_id';
+        let q = db.from('questions').select(select).eq('status', 'published');
+        if (examId) q = q.eq('question_exams.exam_id', examId);
         const { data, error } = await q.range(from, from + pageSize - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
-        for (const row of data as { subject_id: string }[]) {
-          counts[row.subject_id] = (counts[row.subject_id] ?? 0) + 1;
+        for (const row of data as unknown as { topic_id: string | null }[]) {
+          const subjectId = row.topic_id ? getTopic(row.topic_id)?.subjectId : undefined;
+          if (subjectId) counts[subjectId] = (counts[subjectId] ?? 0) + 1;
         }
         if (data.length < pageSize) break;
       }
@@ -263,7 +304,8 @@ export const countQuestionsBySubject = (examId?: string): Promise<Record<string,
     () => {
       const counts: Record<string, number> = {};
       for (const q of buildPracticeSet({ examId, limit: undefined, offset: undefined })) {
-        counts[q.subjectId] = (counts[q.subjectId] ?? 0) + 1;
+        const subjectId = q.topicId ? getTopic(q.topicId)?.subjectId : undefined;
+        if (subjectId) counts[subjectId] = (counts[subjectId] ?? 0) + 1;
       }
       return counts;
     },
@@ -272,12 +314,13 @@ export const countQuestionsBySubject = (examId?: string): Promise<Record<string,
 export const listPyqYears = (examId?: string): Promise<number[]> =>
   withFallback(
     async (db) => {
-      let q = db.from('questions').select('pyq_year').eq('status', 'published').not('pyq_year', 'is', null);
-      if (examId) q = q.contains('exam_ids', [examId]);
+      const select = examId ? 'year, question_exams!inner(exam_id)' : 'year';
+      let q = db.from('questions').select(select).eq('status', 'published').not('year', 'is', null);
+      if (examId) q = q.eq('question_exams.exam_id', examId);
       const { data, error } = await q;
       if (error || !data) throw error ?? new Error('no years');
       const years = new Set<number>();
-      for (const row of data as { pyq_year: number }[]) years.add(row.pyq_year);
+      for (const row of data as unknown as { year: number }[]) years.add(row.year);
       return [...years].sort((a, b) => b - a);
     },
     () => [],
@@ -714,14 +757,14 @@ export const startAttempt = async (test: Test, language: Lang): Promise<string |
 export const saveAnswer = async (
   attemptId: string,
   questionId: string,
-  patch: { selectedIndex: number | null; markedForReview: boolean; timeSpentMs: number },
+  patch: { selectedOption: OptionLabel | null; markedForReview: boolean; timeSpentMs: number },
 ): Promise<void> => {
   const db = getBackend();
   if (!db) return;
   await db.from('attempt_answers').upsert({
     attempt_id: attemptId,
     question_id: questionId,
-    selected_index: patch.selectedIndex,
+    selected_option: patch.selectedOption,
     marked_for_review: patch.markedForReview,
     time_spent_ms: patch.timeSpentMs,
   });
@@ -1027,33 +1070,36 @@ export const commitImport = async (
 
   let written = 0;
   for (const chunk of chunked(questions, chunkSize)) {
+    // The flat shape `commit_import_batch` now takes. Options go out as eight
+    // named columns rather than an array, so a row that is short of options is
+    // short of them in the database too, where the CHECK constraints can see it.
     const payload = chunk.map((q) => ({
       id: q.id,
-      kind: q.kind,
-      subject_id: q.subjectId,
-      unit_id: q.unitId ?? null,
-      topic_id: q.topicId,
-      subtopic_id: q.subtopicId ?? null,
-      exam_ids: q.examIds,
-      levels: q.levels,
-      text: q.text,
-      options: q.options,
-      correct_index: q.correctIndices[0] ?? 0,
-      correct_indices: q.correctIndices,
-      explanation: q.explanation,
+      question_en: q.text.en ?? null,
+      question_hi: q.text.hi ?? null,
+      option_a_en: q.options[0]?.en ?? null,
+      option_b_en: q.options[1]?.en ?? null,
+      option_c_en: q.options[2]?.en ?? null,
+      option_d_en: q.options[3]?.en ?? null,
+      option_a_hi: q.options[0]?.hi ?? null,
+      option_b_hi: q.options[1]?.hi ?? null,
+      option_c_hi: q.options[2]?.hi ?? null,
+      option_d_hi: q.options[3]?.hi ?? null,
+      correct_answers: q.correctAnswers,
+      answer_status: q.answerStatus,
+      grace_marks_awarded: q.graceMarksAwarded,
+      excluded_from_total: q.excludedFromTotal,
+      explanation_en: q.explanation.en ?? null,
+      explanation_hi: q.explanation.hi ?? null,
       difficulty: q.difficulty,
-      marks: q.marks ?? null,
-      negative_marks: q.negativeMarks ?? null,
-      pyq_exam_id: q.pyq?.examId ?? null,
-      pyq_year: q.pyq?.year ?? null,
-      pyq_session: q.pyq?.session ?? null,
-      pyq_paper_label: q.pyq?.paperLabel ?? null,
-      pyq_shift: q.pyq?.shift ?? null,
-      pyq_question_number: q.pyq?.questionNumber ?? null,
+      paper_id: q.paperId ?? null,
+      topic_id: q.topicId ?? null,
+      elective_subject_id: null,
+      year: q.year ?? q.pyq?.year ?? null,
+      question_no: q.questionNo ?? q.pyq?.questionNumber ?? null,
+      paper_set: q.paperSet ?? null,
       source: q.source ?? null,
-      tags: q.tags,
-      concept_tags: q.conceptTags,
-      syllabus_ref: q.syllabusRef ?? null,
+      exam_ids: q.examIds,
       fingerprint: fingerprint(q.text),
     }));
 

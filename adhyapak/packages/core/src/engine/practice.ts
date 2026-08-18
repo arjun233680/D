@@ -1,6 +1,6 @@
 import type { PracticeSessionResult, Question, QuestionDifficulty } from '../types';
 import { QUESTIONS } from '../data/questions';
-import { ALL_TOPICS } from '../data/subjects';
+import { ALL_TOPICS, getTopic } from '../data/subjects';
 
 /**
  * What a practice screen asks for.
@@ -20,6 +20,14 @@ export interface PracticeFilter {
   unitId?: string;
   topicId?: string;
   subtopicId?: string;
+  /**
+   * The paper a question was asked in.
+   *
+   * There is no "TGT paper" — there are twelve — so a paper is the only filter
+   * that names a real set of questions. Absent from the bundled data, which
+   * carries no provenance at all.
+   */
+  paperId?: string;
   difficulty?: QuestionDifficulty;
   /** Only previous-year questions. */
   pyqOnly?: boolean;
@@ -62,10 +70,10 @@ export const buildPracticeSet = (filter: PracticeFilter = {}): Question[] => {
     pool = pool.filter((q) => wanted.has(q.id));
   }
   if (filter.examId) pool = pool.filter((q) => q.examIds.includes(filter.examId!));
-  if (filter.subjectId) pool = pool.filter((q) => q.subjectId === filter.subjectId);
+  if (filter.subjectId) pool = pool.filter((q) => q.topicId !== undefined && getTopic(q.topicId)?.subjectId === filter.subjectId);
   if (filter.topicId) pool = pool.filter((q) => q.topicId === filter.topicId);
   if (filter.difficulty) pool = pool.filter((q) => q.difficulty === filter.difficulty);
-  if (filter.pyqOnly) pool = pool.filter((q) => Boolean(q.previousYear));
+  if (filter.pyqOnly) pool = pool.filter((q) => q.year !== undefined);
   const start = filter.offset ?? 0;
   return filter.limit ? pool.slice(start, start + filter.limit) : pool.slice(start);
 };

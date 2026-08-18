@@ -21,6 +21,9 @@ import {
   type TestAttempt,
   type TestResult,
 } from '@adhyapak/core';
+import { getTopic } from '@adhyapak/core';
+import { isCorrectAnswer, OPTION_LABELS, inLang } from '@adhyapak/core';
+import type { OptionLabel } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 
 /**
@@ -122,7 +125,7 @@ export function TestPlayer({
               ...prev.answers,
               [qid]: {
                 questionId: qid,
-                selectedIndex: prev.answers[qid]?.selectedIndex ?? null,
+                selectedOption: prev.answers[qid]?.selectedOption ?? null,
                 markedForReview: prev.answers[qid]?.markedForReview ?? false,
                 timeSpentMs: (prev.answers[qid]?.timeSpentMs ?? 0) + delta,
               },
@@ -163,7 +166,7 @@ export function TestPlayer({
   const bookmarked = user.bookmarkedQuestionIds.includes(currentId);
 
   // Answered, with feedback on: the question is settled and shows its marking.
-  const revealed = instantFeedback && (answer?.selectedIndex ?? null) !== null;
+  const revealed = instantFeedback && (answer?.selectedOption ?? null) !== null;
 
   const goTo = (qid: string) => {
     setAttempt((prev) => (prev ? visitQuestion(prev, qid) : prev));
@@ -253,9 +256,9 @@ export function TestPlayer({
                   +{test.marksPerQuestion}
                   {test.negativeMarking ? ` / −${test.negativeMarking}` : ''}
                 </span>
-                {question.previousYear ? (
+                {question.year ? (
                   <span className="rounded-full bg-[var(--color-info-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-info)]">
-                    {question.previousYear}
+                    {String(question.year)}
                   </span>
                 ) : null}
                 <div className="flex-1" />
@@ -270,13 +273,14 @@ export function TestPlayer({
               </div>
 
               <p className="mt-3 text-[16px] leading-relaxed font-semibold">
-                {t(question.text, lang)}
+                {inLang(question.text, lang)}
               </p>
 
               <div className="mt-4 space-y-2.5">
                 {question.options.map((opt, i) => {
-                  const selected = answer?.selectedIndex === i;
-                  const isKey = i === question.correctIndex;
+                  const label = OPTION_LABELS[i];
+                  const selected = label !== undefined && answer?.selectedOption === label;
+                  const isKey = label !== undefined && question.correctAnswers.includes(label);
                   // Only the key and the learner's own pick are marked. Colouring
                   // every wrong option would give away the next attempt too.
                   const marked = revealed && (isKey || selected);
@@ -286,7 +290,7 @@ export function TestPlayer({
                       type="button"
                       disabled={revealed}
                       onClick={() =>
-                        setAttempt((prev) => (prev ? selectOption(prev, currentId, i) : prev))
+                        setAttempt((prev) => (prev ? label ? selectOption(prev, currentId, label) : prev : prev))
                       }
                       className={`option-row flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left ${
                         marked
@@ -311,7 +315,7 @@ export function TestPlayer({
                       >
                         {String.fromCharCode(65 + i)}
                       </span>
-                      <span className="flex-1 text-[14px] leading-relaxed">{t(opt, lang)}</span>
+                      <span className="flex-1 text-[14px] leading-relaxed">{inLang(opt, lang)}</span>
                       {marked ? <span>{isKey ? '✅' : '❌'}</span> : null}
                     </button>
                   );
@@ -333,7 +337,7 @@ export function TestPlayer({
                   </button>
                   {explanationOpen ? (
                     <p className="px-3.5 py-3 text-[13px] leading-relaxed">
-                      {t(question.explanation, lang)}
+                      {inLang(question.explanation, lang)}
                     </p>
                   ) : null}
                 </div>
@@ -539,7 +543,7 @@ function Palette({
         {questionIds.map((qid, i) => {
           const status = statusOf(attempt, qid);
           const isCurrent = qid === currentId;
-          const subject = getSubject(findQuestion(qid)?.subjectId ?? '');
+          const subject = getSubject(getTopic(findQuestion(qid)?.topicId ?? '')?.subjectId ?? '');
           return (
             <button
               key={qid}

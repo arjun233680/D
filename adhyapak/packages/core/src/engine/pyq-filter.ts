@@ -1,4 +1,5 @@
 import type { Bilingual, Exam, ExamPaper, Test } from '../types';
+import { getTopic } from '../data/subjects';
 import { getExam, getPaper, paperBrowsableSubjects } from '../data/exams';
 import { getSubject } from '../data/subjects';
 import type { PracticeFilter } from './practice';
@@ -278,14 +279,18 @@ export const pyqEmptyReason = (
  * minutes, not the full paper's 150.
  */
 export const pyqTestFromQuestions = (
-  questions: { id: string; subjectId: string }[],
+  questions: { id: string; topicId?: string }[],
   options: { id: string; title: Bilingual; examId: string; paperId?: string; year?: number },
 ): Test => {
+  // Subject comes through the topic, the only place the schema records it. A
+  // question with no topic yet has no section to sit in, so it is grouped under
+  // '' rather than silently dropped from a paper the learner is about to sit.
   const bySubject = new Map<string, string[]>();
   for (const question of questions) {
-    const ids = bySubject.get(question.subjectId) ?? [];
+    const subjectId = (question.topicId ? getTopic(question.topicId)?.subjectId : undefined) ?? '';
+    const ids = bySubject.get(subjectId) ?? [];
     ids.push(question.id);
-    bySubject.set(question.subjectId, ids);
+    bySubject.set(subjectId, ids);
   }
 
   return {

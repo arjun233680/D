@@ -15,25 +15,25 @@ import {
 
 describe('what became of a question', () => {
   it('is correct when the marked option was the right one', () => {
-    assert.equal(solutionOutcome(2, 2), 'correct');
+    assert.equal(solutionOutcome('C', { correctAnswers: ['C'] as const, answerStatus: 'ok' as const }), 'correct');
   });
 
   it('is incorrect when a different option was marked', () => {
-    assert.equal(solutionOutcome(0, 2), 'incorrect');
+    assert.equal(solutionOutcome('A', { correctAnswers: ['C'] as const, answerStatus: 'ok' as const }), 'incorrect');
   });
 
   it('is unattempted when nothing was marked', () => {
     // null — passed over on screen.
-    assert.equal(solutionOutcome(null, 2), 'unattempted');
+    assert.equal(solutionOutcome(null, { correctAnswers: ['C'] as const, answerStatus: 'ok' as const }), 'unattempted');
     // undefined — never reached at all.
-    assert.equal(solutionOutcome(undefined, 2), 'unattempted');
+    assert.equal(solutionOutcome(undefined, { correctAnswers: ['C'] as const, answerStatus: 'ok' as const }), 'unattempted');
   });
 
   it('does not read option A as unattempted', () => {
     // The bug this guards: `!selectedIndex` is true for 0, so a learner who
     // marked A on every question would be told they attempted none of them.
-    assert.equal(solutionOutcome(0, 0), 'correct');
-    assert.equal(solutionOutcome(0, 1), 'incorrect');
+    assert.equal(solutionOutcome('A', { correctAnswers: ['A'] as const, answerStatus: 'ok' as const }), 'correct');
+    assert.equal(solutionOutcome('A', { correctAnswers: ['B'] as const, answerStatus: 'ok' as const }), 'incorrect');
   });
 });
 
