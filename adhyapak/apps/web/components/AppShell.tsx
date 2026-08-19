@@ -122,10 +122,27 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { lang, user } = useStore();
 
-  // The test player takes over the whole screen, like every real exam engine —
-  // but it is behind the gate too, or a paper could be sat with nowhere to
-  // record it.
-  const immersive = pathname.includes('/attempt');
+  /*
+   * Two screens own the whole viewport.
+   *
+   * The test player, like every real exam engine — but it is behind the gate
+   * too, or a paper could be sat with nowhere to record it.
+   *
+   * And the door itself. Wrapping /sign-in in the shell framed the way in with
+   * a nav bar to places the visitor cannot go, an exam-goal switcher for a
+   * learner with no goal yet, and a "Sign in" button on the sign-in page. The
+   * Studio keeps its chrome: whoever reaches /studio/sign-in is staff and the
+   * nav is theirs.
+   *
+   * Onboarding is the same argument one step later. The learner is signed in
+   * but has not said which exams they sit, so the goal switcher has nothing to
+   * switch between and the nav leads to five screens that would all ask the
+   * question this one is asking.
+   */
+  const immersive =
+    pathname.includes('/attempt') ||
+    pathname.startsWith('/sign-in') ||
+    pathname.startsWith('/onboarding');
   if (immersive) return <RequireAccount>{children}</RequireAccount>;
 
   return (

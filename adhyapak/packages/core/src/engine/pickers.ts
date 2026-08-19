@@ -180,3 +180,75 @@ export const electivePickerItems = (
   const items = subjectPickerItems(choices);
   return pinFirst(items, examFixedSubjects(examId));
 };
+
+/* ------------------------------------------------------------ exam chooser */
+
+/**
+ * The tabs above the exam chooser's grid.
+ *
+ * `centre` rather than `national` because that is the word on the screen and
+ * the word an aspirant uses — "centre ki exam". The scope stored in the
+ * database stays `national`; this type is the reader's vocabulary, and the
+ * mapping between the two lives in one place below.
+ */
+export type ExamChooserFilter = 'all' | 'centre' | 'state' | 'important';
+
+export const EXAM_CHOOSER_FILTERS: readonly ExamChooserFilter[] = [
+  'all',
+  'centre',
+  'state',
+  'important',
+];
+
+/**
+ * The exams a chooser tab should show, in the order the database gave them.
+ *
+ * Deliberately does not re-sort. `listExams` already returns `sort_order` then
+ * short name, and sorting again here would mean the grid's order depended on
+ * which tab you arrived through — the same exam sitting in a different place
+ * under "All" than under "State" is exactly the kind of thing that makes a list
+ * feel untrustworthy.
+ *
+ * The search runs over both languages, the short name and the state, so
+ * "Haryana" finds HTET and HSSC without either of them carrying the word in its
+ * short name.
+ */
+export const filterExamsForChooser = (
+  exams: readonly Exam[],
+  filter: ExamChooserFilter,
+  query: string,
+): Exam[] =>
+  exams.filter((e) => {
+    const inTab =
+      filter === 'all' ||
+      (filter === 'centre' && e.scope === 'national') ||
+      (filter === 'state' && e.scope === 'state') ||
+      (filter === 'important' && e.featured === true);
+    if (!inTab) return false;
+    return matchesQuery(query, e.shortName, e.name.en, e.name.hi, e.state?.en, e.state?.hi);
+  });
+
+/**
+ * The line under an exam's short name in the chooser.
+ *
+ * What a card wants is the acronym spelled out, and where that lives differs by
+ * row. Most exam names are written "SHORT — the words it stands for", so the
+ * half after the dash is exactly it. The recruitment exams are not: KVS's name
+ * is "KVS PRT / TGT / PGT", which is a list of posts rather than an expansion,
+ * and the words a candidate would recognise are the body's — Kendriya Vidyalaya
+ * Sangathan. So: the tail of the name when there is a dash, the authority
+ * otherwise.
+ *
+ * The em dash is the separator every seeded row uses. A hyphen is not accepted
+ * on purpose — "HSSC TGT / PGT / PRT — Haryana" would split at the wrong place
+ * if any hyphen counted.
+ */
+export const examSubtitle = (exam: Exam, lang: 'en' | 'hi'): string => {
+  const name = lang === 'hi' ? exam.name.hi : exam.name.en;
+  const dash = name.indexOf('—');
+  if (dash !== -1) {
+    const tail = name.slice(dash + 1).trim();
+    if (tail) return tail;
+  }
+  return lang === 'hi' ? exam.authority.hi : exam.authority.en;
+};

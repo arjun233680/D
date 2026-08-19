@@ -113,6 +113,8 @@ interface ExamRow {
   highlights: Bilingual[];
   official_site: string;
   vacancies: number | null;
+  sort_order?: number;
+  featured?: boolean;
   exam_papers?: unknown[];
   exam_updates?: { date: string; kind: string; title: Bilingual; detail: Bilingual }[];
   exam_sources?: { label: string; url: string; checked_on: string }[];
@@ -136,6 +138,8 @@ const toExam = (row: ExamRow, seed?: Exam): Exam => ({
   highlights: row.highlights,
   officialSite: row.official_site,
   vacancies: row.vacancies ?? undefined,
+  featured: row.featured ?? false,
+  sortOrder: row.sort_order ?? undefined,
   updates: (row.exam_updates ?? []).map((u) => ({
     date: u.date,
     kind: u.kind as Exam['updates'][number]['kind'],
@@ -156,8 +160,12 @@ export const listExams = (): Promise<Exam[]> =>
     const { data, error } = await db
       .from('exams')
       .select('*, exam_updates(*), exam_sources(*)')
-      // Was ordered by a seeded "learners" count. Short name is arbitrary but
-      // at least stable, and the goal picker groups them properly anyway.
+      // Was ordered by a seeded "learners" count, then by short name — which is
+      // alphabetical, and put AP TET above CTET in a chooser whose first screen
+      // is the dozen exams most aspirants actually sit. `sort_order` carries
+      // that judgement in the database; short name still breaks ties, so the
+      // unranked tail stays in a stable, findable order.
+      .order('sort_order', { ascending: true })
       .order('short_name', { ascending: true });
     if (error || !data) throw error ?? new Error('no exams');
     return (data as ExamRow[]).map((row) => toExam(row, seedExam(row.id)));
@@ -632,6 +640,42 @@ export const getCurrentUser = async (): Promise<User | null> => {
  * unwind a UI that has already moved on. False means "still only local", which
  * is the honest state offline and the state the store retries from.
  */
+
+/* --------------------------------------------------- the learner's exam set */
+
+/**
+ * Which exams this learner said they are preparing for.
+ *
+ * Empty is a real answer and not a failure: it is what a learner who has never
+ * reached the chooser looks like, and it is what sends them there. So an
+ * offline build and a signed-out visitor both read as `[]` rather than throwing
+ * — the caller's next move is the same in every one of those cases.
+ *
+ * Distinct from `user.goalExamId`, which stays the single exam the app is
+ * scoped to. See the comment on `learner_exams` in migration 0019.
+ */
+export const fetchLearnerExamIds = async (): Promise<string[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const { data, error } = await db.from('learner_exams').select('exam_id');
+  if (error || !data) return [];
+  return (data as { exam_id: string }[]).map((r) => r.exam_id);
+};
+
+/**
+ * Replaces the learner's exam set, and reports whether it landed.
+ *
+ * Goes through `set_learner_exams` rather than a delete plus an insert, so the
+ * two halves cannot be separated by a dropped connection — see the function's
+ * own comment in 0019. The boolean is what the chooser needs: it must not
+ * navigate away from the question until the answer is saved.
+ */
+export const saveLearnerExamIds = async (examIds: readonly string[]): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  const { error } = await db.rpc('set_learner_exams', { p_exam_ids: [...examIds] });
+  return !error;
+};
 
 /**
  * Records the chosen goal through `set_goal`, which also stamps `onboarded_at`.

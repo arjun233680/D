@@ -162,6 +162,22 @@ export interface Exam {
   updates: ExamUpdate[];
   /** Where each of the above was verified. Shown to the learner. */
   sources: Source[];
+  /**
+   * Headlined in the exam chooser's "Important" filter.
+   *
+   * Optional because the bundled content predates the column and carries no
+   * answer for it. Absent reads as "not headlined", which is the right default
+   * for an offline build: the chooser still lists every exam, it just has no
+   * editorial shortlist to offer.
+   */
+  featured?: boolean;
+  /**
+   * Position in the exam chooser grid — lower first, ties broken by short name.
+   *
+   * Optional for the same reason as `featured`. Absent sorts with the unranked
+   * tail rather than jumping the queue.
+   */
+  sortOrder?: number;
 }
 
 /* --------------------------------------------------------------- subjects */
