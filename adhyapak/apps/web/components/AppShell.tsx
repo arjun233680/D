@@ -142,7 +142,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const immersive =
     pathname.includes('/attempt') ||
     pathname.startsWith('/sign-in') ||
-    pathname.startsWith('/onboarding');
+    pathname.startsWith('/onboarding') ||
+    // The dashboard carries the design's own header and bottom bar. The
+    // remaining inner screens still wear this shell, so its nav and the
+    // dashboard's do not yet look like one another — that is a known gap, not
+    // a decision.
+    pathname === '/';
   if (immersive) return <RequireAccount>{children}</RequireAccount>;
 
   return (

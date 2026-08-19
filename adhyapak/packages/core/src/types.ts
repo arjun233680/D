@@ -610,3 +610,48 @@ export interface DoubtAnswer {
   body: Bilingual;
   answeredAt: string;
 }
+
+/* --------------------------------------------------------------- levels */
+
+/**
+ * A teaching level, in the vocabulary an aspirant uses.
+ *
+ * Deliberately not `exam_papers.post`, which is one board's name for one of its
+ * papers — "Level 1", "Varg 3", "PGT Tier 2". Somebody sitting HTET, CTET and
+ * DSSSB together is preparing to teach a set of classes, and this is the shared
+ * word for that. See migration 0020.
+ */
+export interface Level {
+  id: string;
+  /** The acronym as printed on the card: PRT, TGT, PGT. */
+  name: string;
+  fullName: Bilingual;
+  /** "Classes 6 to 10". Absent for the catch-all level, which spans none. */
+  classes?: Bilingual;
+  icon: string;
+  color: string;
+  sortOrder: number;
+}
+
+/**
+ * A subject as offered at one level.
+ *
+ * The hint differs by level, which is why this is not just a `Subject`:
+ * Science reads "Physics, Chemistry, Biology" at TGT, and at PGT those are
+ * three separate papers and Science is not offered at all.
+ */
+export interface LevelSubject {
+  levelId: string;
+  subjectId: string;
+  name: Bilingual;
+  hint?: Bilingual;
+  icon: string;
+  color: string;
+  sortOrder: number;
+}
+
+/** What the learner chose to study at one level. */
+export interface LearnerSubject {
+  levelId: string;
+  subjectId: string;
+}

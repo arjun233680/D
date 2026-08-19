@@ -1,670 +1,407 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  BATCHES,
-  EXAMS,
-  TESTS,
-  electivesForPaper,
-  examPickerGroups,
-  electivePickerItems,
   currentStreak,
-  formatDate,
-  getExam,
-  getPaper,
-  getSubject,
-  getTopic,
-  liveVideos,
-  recommendedTopics,
-  subjectsForPaperOrEmpty,
+  fetchLearnerExamIds,
+  fetchLearnerLevelIds,
+  fetchLearnerSubjects,
+  listExams,
+  listLevelSubjects,
+  listLevels,
   t,
-  UI,
   type Exam,
+  type Level,
+  type LevelSubject,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 
 /**
- * Dashboard.
+ * The dashboard.
  *
- * Answers one question: what should I do right now. Batches, tests, notes,
- * videos and current affairs each own a page of their own, so the dashboard
- * links to them rather than repeating their contents — what it shows instead is
- * what no browse page can: the countdown, the streak, the next thing to
- * practise, and what changed in this exam's cycle.
+ * Answers one question — what should I do right now — against what the learner
+ * told onboarding: the exams they sit, the levels they teach at, and the
+ * subject they chose for each. Every card here is one of those answers made
+ * actionable.
+ *
+ * WHAT IS REAL AND WHAT IS ZERO
+ *
+ * The streak and the questions-solved count come from the learner's own
+ * activity. Study time and topics-completed have no source yet — nothing in the
+ * schema records a minute spent or a topic finished — so they render as zero
+ * with an honest label rather than as an invented percentage. The design shows
+ * "45% Completed" on a selection card; that number would have to be made up
+ * today, and a fabricated progress bar is worse than a bar at zero, because a
+ * learner who has practised nothing would be told they are nearly halfway.
+ * When topic completion is tracked, these read from it and nothing here moves.
+ *
+ * Rendered outside the app shell, like onboarding: this screen carries the
+ * design's own header and bottom bar.
  */
 
-/** Icon shortcuts. No rails: a rail here would be a second copy of a page. */
-// Upload is not here. It is the admin module's, and it sat in a learner's
-// shortcut row offering an educator tool to somebody preparing for an exam.
-const LIBRARY = [
-  { href: '/notes', icon: '📚', label: { en: 'Notes', hi: 'नोट्स' }, color: '#F97316' },
-  { href: '/videos', icon: '🎥', label: { en: 'Videos', hi: 'वीडियो' }, color: '#DB2777' },
-  { href: '/practice/pyq', icon: '📜', label: { en: 'Previous year', hi: 'विगत वर्ष' }, color: '#0891B2' },
-  { href: '/doubts', icon: '💬', label: { en: 'Doubts', hi: 'शंका' }, color: '#7C3AED' },
-  { href: '/current-affairs', icon: '📰', label: { en: 'Affairs', hi: 'समसामयिकी' }, color: '#DC2626' },
-];
+const VIOLET = '#6d4aed';
+const VIOLET_LIGHT = '#8b5cf6';
+const INK = '#1e1b4b';
 
-const daysUntil = (iso: string | undefined): number | null => {
-  if (!iso) return null;
-  const diff = new Date(iso).getTime() - Date.now();
-  return diff > 0 ? Math.ceil(diff / 86_400_000) : null;
-};
+interface Selection {
+  level: Level;
+  subject: LevelSubject;
+  exam?: Exam;
+}
+
+const QUICK = [
+  { href: '/notes', icon: '📖', label: { en: 'Notes', hi: 'नोट्स' }, sub: { en: 'Study Smart', hi: 'बेहतर पढ़ाई' }, tint: '#efeafe', color: '#6d4aed' },
+  { href: '/practice/pyq', icon: '📄', label: { en: 'PYQ', hi: 'विगत वर्ष' }, sub: { en: 'Previous Year Questions', hi: 'विगत वर्ष प्रश्न' }, tint: '#e8f7ee', color: '#16a34a' },
+  { href: '/tests', icon: '📋', label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' }, sub: { en: 'Practice & Improve', hi: 'अभ्यास एवं सुधार' }, tint: '#e6f0fd', color: '#2563eb' },
+  { href: '/tests', icon: '🎯', label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' }, sub: { en: 'Real Exam Experience', hi: 'वास्तविक परीक्षा अनुभव' }, tint: '#fff1e6', color: '#ea580c' },
+  { href: '/current-affairs', icon: '🌐', label: { en: 'Current Affairs', hi: 'समसामयिकी' }, sub: { en: 'Stay Updated Daily', hi: 'रोज़ अपडेट रहें' }, tint: '#fdeaf3', color: '#db2777' },
+] as const;
+
+const NAV = [
+  { href: '/', icon: '🏠', label: { en: 'Home', hi: 'होम' } },
+  { href: '/notes', icon: '📖', label: { en: 'Study', hi: 'अध्ययन' } },
+  { href: '/analytics/pyq', icon: '📊', label: { en: 'Performance', hi: 'प्रदर्शन' } },
+  { href: '/profile', icon: '👤', label: { en: 'Profile', hi: 'प्रोफ़ाइल' } },
+] as const;
 
 export default function HomePage() {
-  const { lang, user, results } = useStore();
+  const { lang, user, results, ready } = useStore();
   const hi = lang === 'hi';
+  const router = useRouter();
 
-  const exam = getExam(user.goalExamId);
-  const examName = exam ? t(exam.name, lang) : '';
-  const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
-  const accent = exam?.color ?? '#4F46E5';
-  const streak = currentStreak(user.activeDates);
-  const attempts = Object.values(results);
-  const countdown = daysUntil(exam?.nextExamDate);
-  const avgAccuracy = attempts.length
-    ? Math.round(attempts.reduce((sum, x) => sum + x.accuracy, 0) / attempts.length)
-    : 0;
+  const [selections, setSelections] = useState<Selection[] | null>(null);
 
-  // What to do next, in priority order.
-  const dailyQuiz = TESTS.find((x) => x.type === 'daily-quiz');
-  const nextMock = TESTS.find(
-    (x) => x.examId === user.goalExamId && x.type === 'mock' && !results[x.id],
-  );
-  const weakTopicId = attempts.flatMap((x) => x.weakTopics)[0]?.topicId;
-  // Empty when the paper has an unresolved elective: the home feed then
-  // recommends nothing rather than recommending somebody else's subject.
-  const subjectIds = subjectsForPaperOrEmpty(paper?.id, user.electiveSubjectId);
-  const suggested = weakTopicId ? getTopic(weakTopicId) : recommendedTopics(subjectIds, 1)[0];
-  const live = liveVideos().filter((v) => v.examIds.includes(user.goalExamId));
-  // The home screen is this exam's dashboard, so an enrolment from a previous
-  // goal does not belong on it. It is still on the batches page, which is where
-  // your own enrolments live.
-  const myBatch = BATCHES.find(
-    (b) => b.examId === user.goalExamId && user.enrolledBatchIds.includes(b.id),
-  );
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const [examIds, levelIds, chosen] = await Promise.all([
+        fetchLearnerExamIds(),
+        fetchLearnerLevelIds(),
+        fetchLearnerSubjects(),
+      ]);
+      if (!live) return;
+      // Nothing chosen means onboarding was never finished — the chooser is the
+      // one screen that can work out which question is still outstanding.
+      if (examIds.length === 0 || chosen.length === 0) {
+        router.replace('/onboarding/exams');
+        return;
+      }
 
-  const upcoming = (exam?.updates ?? []).filter(
-    (u) => new Date(u.date).getTime() >= Date.now() - 86_400_000,
-  );
-  const timeline = (upcoming.length ? upcoming : (exam?.updates ?? []).slice(-2)).slice(0, 3);
+      const [levels, exams] = await Promise.all([listLevels(), listExams()]);
+      if (!live) return;
+      const offers = await Promise.all(levelIds.map((id) => listLevelSubjects(id)));
+      if (!live) return;
 
-  // Nobody has a goal until they choose one, and the whole dashboard is scoped
-  // by it — the countdown, the cut-off, the next mock, the recommended topic.
-  // It used to open on CTET's because the bundled learner was seeded with it,
-  // which meant a first-time visitor was shown a countdown to an exam they had
-  // never said they were sitting.
-  if (!exam) return <GoalPicker />;
+      const mine = exams.filter((e) => examIds.includes(e.id));
+      const built = chosen
+        .map((pick, i): Selection | undefined => {
+          const level = levels.find((l) => l.id === pick.levelId);
+          const subject = offers.flat().find(
+            (o) => o.levelId === pick.levelId && o.subjectId === pick.subjectId,
+          );
+          if (!level || !subject) return undefined;
+          /*
+           * The badge is an exam, and which one is a genuine ambiguity: the
+           * learner picked several and did not say which level belongs to
+           * which. Pairing them off in order is a presentation choice, not a
+           * claim — hence no attempt to look clever about it.
+           */
+          return { level, subject, exam: mine[i % Math.max(mine.length, 1)] };
+        })
+        .filter((s): s is Selection => s !== undefined);
 
-  // What to do today, in priority order. A live class jumps the queue while it
-  // is on air and only while it is.
-  const liveNow = live[0];
-  const rows = [
-    dailyQuiz && {
-      href: `/tests/${dailyQuiz.id}`,
-      icon: '⚡',
-      tint: '#4F46E5',
-      title: hi ? 'आज की प्रश्नोत्तरी' : "Today's quiz",
-      sub: `10 ${hi ? 'प्रश्न' : 'questions'} · 10 ${hi ? 'मिनट' : 'min'}`,
-      cta: hi ? 'अभी करें' : 'Practise now',
-    },
-    suggested && {
-      href: `/practice/topic/${suggested.id}`,
-      icon: '🎯',
-      tint: '#D97706',
-      title: weakTopicId
-        ? hi ? 'कमज़ोर टॉपिक सुधारें' : 'Fix your weak topic'
-        : hi ? 'सर्वाधिक भार वाला टॉपिक' : 'Highest-weightage topic',
-      sub: `${getSubject(suggested.subjectId)?.icon ?? ''} ${t(suggested.name, lang)}`,
-      cta: hi ? 'अभ्यास' : 'Practise',
-    },
-    nextMock && {
-      href: `/tests/${nextMock.id}`,
-      icon: '📝',
-      tint: '#0891B2',
-      title: hi ? 'अगला मॉक टेस्ट' : 'Next mock test',
-      sub: t(nextMock.title, lang),
-      cta: hi ? 'टेस्ट दें' : 'Attempt',
-    },
-    myBatch && {
-      href: `/batches/${myBatch.id}`,
-      icon: '🎓',
-      tint: '#0284C7',
-      title: hi ? 'आपका बैच' : 'Your batch',
-      sub: t(myBatch.title, lang),
-      cta: hi ? 'खोलें' : 'Open',
-    },
-  ].filter(Boolean) as ActionItem[];
+      setSelections(built);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [router]);
+
+  const streak = useMemo(() => currentStreak(user.activeDates ?? []), [user.activeDates]);
+  const solved = results?.length ?? 0;
+
+  if (!ready || selections === null) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-[#faf9ff]">
+        <p className="text-[13px] text-[#8b869e]">{hi ? 'लाया जा रहा है…' : 'Loading…'}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 px-4 pt-4 pb-10 sm:px-0 sm:pt-5">
-      {/* --------------------------------------------------------- 1. the day
-          A prep app is opened daily, so the page names the day rather than
-          repeating the app's own name back at somebody who just tapped its
-          icon. The date runs through `formatDate`, which is deterministic —
-          the platform's own formatter disagrees with itself between the build
-          machine and the browser, and broke hydration when it was trusted. */}
-      <header className="flex items-baseline justify-between gap-3">
-        <h1 className="text-[22px] font-extrabold tracking-tight sm:text-[26px]">
-          {hi ? 'आज' : 'Today'}
-          <span className="ml-2 text-[15px] font-semibold text-[var(--color-faint)]">
-            {formatDate(new Date().toISOString().slice(0, 10), lang)}
-          </span>
-        </h1>
-        {/* The exam switcher lives in the header bar, which on the website is
-            already the top-most row on the page. A second one here would be two
-            controls doing one job. This is the way into the exam's own page. */}
-        <Link href={`/goal/${exam.slug}`} className="shrink-0 text-[12px] font-bold" style={{ color: accent }}>
-          {exam.emoji} {exam.shortName} →
-        </Link>
-      </header>
-
-      {/* ------------------------------------------------------- 2. the deadline
-          Slimmer than it was. The countdown is the reason to open the app on a
-          Tuesday; the rest of the exam's detail lives on its own page. */}
-      <Link
-        href={`/goal/${exam.slug}`}
-        className="relative isolate flex items-center gap-4 overflow-hidden rounded-2xl px-5 py-4 text-white"
-        style={{ background: `linear-gradient(120deg, ${accent} 0%, ${accent}cc 100%)` }}
-      >
-        <span aria-hidden className="pointer-events-none absolute -top-16 -left-10 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
-        <span className="relative min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-extrabold">{t(exam.name, lang)}</span>
-          {paper ? (
-            <span className="mt-0.5 block truncate text-[12px] text-white/80">{t(paper.name, lang)}</span>
-          ) : null}
-        </span>
-        {countdown !== null ? (
-          <span className="relative shrink-0 text-right">
-            <span className="block text-[26px] leading-none font-extrabold tabular-nums">{countdown}</span>
-            <span className="mt-0.5 block text-[10px] font-semibold tracking-wide text-white/75 uppercase">
-              {hi ? 'दिन शेष' : 'days left'}
-            </span>
-          </span>
-        ) : paper ? (
-          <span className="relative shrink-0 text-right">
-            <span className="block text-[26px] leading-none font-extrabold tabular-nums">
-              {paper.cutoffGeneral}%
-            </span>
-            <span className="mt-0.5 block text-[10px] font-semibold tracking-wide text-white/75 uppercase">
-              {hi ? 'कट-ऑफ' : 'cut-off'}
-            </span>
-          </span>
-        ) : null}
-      </Link>
-
-      {/* ------------------------------------------------------- 3. two figures
-          Both are counted from the learner's own record. There is deliberately
-          no "0 / 2 practice" here: a daily target implies a study plan this app
-          does not have, and the progress bar on it would be against nothing. */}
-      <section className="grid grid-cols-2 gap-3">
-        <Tile
-          label={hi ? 'श्रृंखला' : 'Streak'}
-          value={`${streak}`}
-          unit={hi ? (streak === 1 ? 'दिन' : 'दिन') : streak === 1 ? 'day' : 'days'}
-          foot={
-            streak > 0
-              ? hi ? 'बनाए रखिए' : 'Keep it going'
-              : hi ? 'आज से शुरू कीजिए' : 'Start it today'
-          }
-          color="#D97706"
-        />
-        <Tile
-          label={hi ? 'बुकमार्क' : 'Bookmarks'}
-          value={`${user.bookmarkedQuestionIds.length}`}
-          unit={hi ? 'प्रश्न' : 'saved'}
-          foot={hi ? 'दोबारा हल करें →' : 'Practise them →'}
-          href="/practice/bookmarks"
-          color="#4F46E5"
-        />
-      </section>
-
-      {/* ------------------------------------------ 4. the one thing to do now */}
-      {liveNow ? (
-        <FeatureRow
-          href={`/videos/${liveNow.id}`}
-          icon="🔴"
-          tint="#DC2626"
-          label={hi ? 'अभी लाइव' : 'Live now'}
-          title={t(liveNow.title, lang)}
-          cta={hi ? 'जुड़ें' : 'Join'}
-          accent="#DC2626"
-        />
-      ) : rows[0] ? (
-        <FeatureRow
-          href={rows[0].href}
-          icon={rows[0].icon}
-          tint={rows[0].tint}
-          label={hi ? 'आज का अभ्यास' : "Today's practice"}
-          title={rows[0].title}
-          sub={rows[0].sub}
-          cta={rows[0].cta}
-          accent={accent}
-        />
-      ) : null}
-
-      {/* ------------------------------------------------------- 5. the rest */}
-      {rows.length > 1 ? (
-        <section className="space-y-2.5">
-          {rows.slice(liveNow ? 0 : 1).map((r) => (
-            <Row key={r.href} href={r.href} icon={r.icon} tint={r.tint} title={r.title} sub={r.sub} />
-          ))}
-        </section>
-      ) : null}
-
-      {/* --------------------------------------------------------- 6. shortcuts
-          Back to tiles rather than the chip row, in the softer style: a tinted
-          square, one word under it. They are shortcuts to pages already in the
-          header, so they stay small and stay here rather than at the top. */}
-      <section>
-        <h2 className="mb-3 text-[17px] font-extrabold">{hi ? 'सामग्री' : 'Quick access'}</h2>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-          {LIBRARY.map((item) => (
-            <Link key={item.href} href={item.href} className="flex flex-col items-center gap-2">
-              <span
-                className="grid h-14 w-14 place-items-center rounded-2xl text-2xl transition-transform hover:-translate-y-0.5"
-                style={{ background: `${item.color}1f` }}
-              >
-                {item.icon}
-              </span>
-              <span className="text-center text-[12px] leading-tight font-semibold">
-                {t(item.label, lang)}
-              </span>
+    <div className="min-h-dvh bg-[#faf9ff] pb-24">
+      <div className="mx-auto w-full max-w-[760px] px-5 pt-5">
+        <div className="flex items-center justify-between">
+          <Link
+            href="/profile"
+            aria-label={hi ? 'प्रोफ़ाइल' : 'Profile'}
+            className="grid h-11 w-11 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
+          >
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+              <path d="M3 6h14M3 10h14M3 14h14" stroke={INK} strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </Link>
+          <div className="flex gap-2.5">
+            <Link
+              href="/explore"
+              aria-label={hi ? 'खोजें' : 'Search'}
+              className="grid h-11 w-11 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+                <circle cx="9" cy="9" r="6" stroke={INK} strokeWidth="1.9" />
+                <path d="m13.6 13.6 3.4 3.4" stroke={INK} strokeWidth="1.9" strokeLinecap="round" />
+              </svg>
             </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------- 7. what changed */}
-      {timeline.length ? (
-        <section>
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2 className="flex items-center gap-2 text-[12px] font-bold tracking-[0.12em] text-[var(--color-faint)] uppercase">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
-              {hi ? `${exam.shortName} अपडेट` : `${exam.shortName} updates`}
-            </h2>
-            <Link href={`/goal/${exam.slug}`} className="text-[12px] font-bold" style={{ color: accent }}>
-              {hi ? 'सभी' : 'All'}
+            <Link
+              href="/current-affairs"
+              aria-label={hi ? 'सूचनाएँ' : 'Updates'}
+              className="relative grid h-11 w-11 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+                <path
+                  d="M10 3a5 5 0 0 0-5 5v3l-1.4 2.2h12.8L15 11V8a5 5 0 0 0-5-5Z"
+                  stroke={INK}
+                  strokeWidth="1.7"
+                  strokeLinejoin="round"
+                />
+                <path d="M8.2 16a2 2 0 0 0 3.6 0" stroke={INK} strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#6d4aed]" />
             </Link>
           </div>
-          <ol className="space-y-2.5">
-            {timeline.map((u) => (
-              <li key={`${u.date}-${u.title.en}`} className="card p-4">
-                <p className="text-[11px] font-bold tracking-wide" style={{ color: accent }}>
-                  {formatDate(u.date, lang)}
-                </p>
-                <h3 className="mt-1 text-[14px] leading-snug font-bold">{t(u.title, lang)}</h3>
-                <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-muted)]">
-                  {t(u.detail, lang)}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
+        </div>
 
-      <footer className="border-t border-[var(--color-line)] pt-7">
-        <h2 className="text-[14px] font-bold">
-          {hi
-            ? 'अध्यापक — शिक्षक भर्ती परीक्षाओं की संपूर्ण तैयारी'
-            : 'Adhyapak — complete preparation for teaching exams'}
-        </h2>
-        <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-[var(--color-muted)]">
-          {hi
-            ? `${examName ? examName + ' ' : ''}हेतु नोट्स, MCQ अभ्यास, विगत वर्ष प्रश्न तथा पूर्ण मॉक टेस्ट — हिंदी एवं अंग्रेज़ी दोनों में।`
-            : `Notes, MCQ practice, previous-year questions and full-length mock tests${examName ? ` for ${examName}` : ''} — in both Hindi and English.`}
-        </p>
-      </footer>
+        <header className="relative mt-4 pr-24 sm:pr-44">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="grid h-10 w-10 place-items-center rounded-xl"
+              style={{ background: `linear-gradient(135deg, ${VIOLET}, ${VIOLET_LIGHT})` }}
+              aria-hidden
+            >
+              <svg width="21" height="21" viewBox="0 0 40 40" fill="none">
+                <path d="M20 9 31 13.6 20 18.2 9 13.6 20 9Z" fill="#fff" />
+                <path d="M12 21h7.4c.4 0 .6.3.6.7V31c0-.5-.3-.8-.8-.8H12V21Z" fill="#fff" opacity=".95" />
+                <path d="M28 21h-7.4c-.4 0-.6.3-.6.7V31c0-.5.3-.8.8-.8H28V21Z" fill="#fff" opacity=".78" />
+              </svg>
+            </span>
+            <span className="text-[26px] font-extrabold tracking-tight" style={{ color: INK }}>
+              Adhyapak
+            </span>
+          </div>
+          <p className="mt-3 text-[17px] font-extrabold" style={{ color: INK }}>
+            {hi ? `नमस्ते, ${user.name || 'साथी'}! 👋` : `Hello, ${user.name || 'there'}! 👋`}
+          </p>
+          <p className="mt-0.5 text-[13.5px] text-[#6b7280]">
+            {hi ? 'चलिए तैयारी जारी रखें।' : "Let's continue your learning journey."}
+          </p>
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute -top-1 right-0 w-[92px] sm:w-[150px]"
+            viewBox="0 0 180 130"
+            fill="none"
+          >
+            <circle cx="140" cy="34" r="32" fill="#efecfd" />
+            <path d="M60 76c-9-3-14-11-12-19 9-1 17 4 19 12" fill="#34c77b" opacity=".8" />
+            <rect x="66" y="86" width="96" height="14" rx="4" fill="#7c5cf7" />
+            <rect x="72" y="100" width="88" height="14" rx="4" fill="#fbc02d" />
+            <rect x="62" y="114" width="102" height="13" rx="4" fill="#eef1fb" />
+            <path d="M113 40 158 56l-45 16-45-16 45-16Z" fill="#5b46d6" />
+            <path d="M88 64v13c0 5 11 9 25 9s25-4 25-9V64l-25 9-25-9Z" fill="#6d4aed" />
+          </svg>
+        </header>
+
+        {/* ---------------------------------------------------- selections */}
+        <section className="mt-7">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-[16px] font-extrabold" style={{ color: INK }}>
+              <span aria-hidden>🔖</span>
+              {hi ? 'मेरे चुनाव' : 'My Selections'}
+            </h2>
+            <Link
+              href="/onboarding/exams"
+              className="flex items-center gap-1.5 rounded-xl border border-[#e2dcf7] px-3 py-2 text-[12.5px] font-bold"
+              style={{ color: VIOLET }}
+            >
+              ✎ {hi ? 'बदलें' : 'Change Selections'}
+            </Link>
+          </div>
+
+          <div className="rail mt-3 flex gap-3">
+            {selections.map((s) => (
+              <article
+                key={s.level.id}
+                className="min-w-[70%] shrink-0 rounded-2xl border border-[#eceaf6] bg-white p-4 sm:min-w-[46%]"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span
+                    className="rounded-lg px-2 py-1 text-[11px] font-bold"
+                    style={{
+                      backgroundColor: `${s.exam?.color ?? VIOLET}1a`,
+                      color: s.exam?.color ?? VIOLET,
+                    }}
+                  >
+                    {s.exam?.shortName ?? '—'}
+                  </span>
+                  <span
+                    className="grid h-11 w-11 place-items-center rounded-2xl text-[19px]"
+                    style={{ backgroundColor: `${s.subject.color}1a` }}
+                    aria-hidden
+                  >
+                    {s.subject.icon}
+                  </span>
+                </div>
+                <p className="mt-2 text-[21px] leading-none font-extrabold" style={{ color: INK }}>
+                  {s.level.name}
+                </p>
+                <p className="mt-1 text-[14px] font-semibold text-[#4b5563]">
+                  {t(s.subject.name, lang)}
+                </p>
+                <p className="mt-3 text-[12px] text-[#8b869e]">
+                  {hi ? 'अभी शुरू नहीं किया' : 'Not started yet'}
+                </p>
+                <div className="mt-1.5 h-1.5 w-full rounded-full bg-[#efecfa]">
+                  <div className="h-1.5 w-0 rounded-full" style={{ background: VIOLET }} />
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* -------------------------------------------------- quick access */}
+        <section className="mt-7">
+          <h2 className="flex items-center gap-2 text-[16px] font-extrabold" style={{ color: INK }}>
+            <span aria-hidden>⚡</span>
+            {hi ? 'त्वरित पहुँच' : 'Quick Access'}
+          </h2>
+          <p className="mt-0.5 text-[12.5px] text-[#8b869e]">
+            {hi ? 'आपकी तैयारी, आसान बनाई गई' : 'Your exam prep, simplified'}
+          </p>
+          <div className="rail mt-3 flex gap-3">
+            {QUICK.map((q) => (
+              <Link
+                key={q.label.en}
+                href={q.href}
+                className="flex min-w-[132px] shrink-0 flex-col rounded-2xl p-3.5"
+                style={{ backgroundColor: q.tint }}
+              >
+                <span aria-hidden className="text-[24px]">
+                  {q.icon}
+                </span>
+                <span className="mt-2 text-[14px] font-bold" style={{ color: INK }}>
+                  {t(q.label, lang)}
+                </span>
+                <span className="mt-0.5 text-[11.5px] leading-snug text-[#6b7280]">
+                  {t(q.sub, lang)}
+                </span>
+                <span
+                  aria-hidden
+                  className="mt-3 grid h-7 w-7 place-items-center rounded-full text-white"
+                  style={{ background: q.color }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M4 10h11m0 0-4-4m4 4-4 4"
+                      stroke="#fff"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* ------------------------------------------------ today's snapshot */}
+        <section className="mt-7">
+          <h2 className="flex items-center gap-2 text-[16px] font-extrabold" style={{ color: INK }}>
+            <span aria-hidden>📊</span>
+            {hi ? 'आज का सारांश' : "Today's Snapshot"}
+          </h2>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Stat
+              icon="🎯"
+              tint="#e8f7ee"
+              label={hi ? 'हल किए प्रश्न' : 'Questions Solved'}
+              value={String(solved)}
+            />
+            <Stat
+              icon="🔥"
+              tint="#fff1e6"
+              label={hi ? 'दैनिक श्रृंखला' : 'Daily Streak'}
+              value={hi ? `${streak} दिन` : `${streak} day${streak === 1 ? '' : 's'}`}
+            />
+          </div>
+          {/*
+            Study time and topics completed are in the design and are not here:
+            nothing in the schema records either, and a tile reading "42 min"
+            that nobody measured is a lie told in a confident font.
+          */}
+          <p className="mt-2.5 text-[11.5px] leading-relaxed text-[#a8a3bd]">
+            {hi
+              ? 'अध्ययन समय और पूर्ण विषय तब दिखेंगे जब उनका रिकॉर्ड रखा जाने लगेगा।'
+              : 'Study time and topics completed appear once the app starts recording them.'}
+          </p>
+        </section>
+      </div>
+
+      {/* -------------------------------------------------------- bottom nav */}
+      <nav className="fixed inset-x-0 bottom-0 border-t border-[#eeebf8] bg-white">
+        <div className="mx-auto grid max-w-[760px] grid-cols-4">
+          {NAV.map((item) => {
+            const active = item.href === '/';
+            return (
+              <Link
+                key={item.label.en}
+                href={item.href}
+                className="flex flex-col items-center gap-1 py-2.5"
+              >
+                <span aria-hidden className={`text-[19px] ${active ? '' : 'opacity-45 grayscale'}`}>
+                  {item.icon}
+                </span>
+                <span
+                  className="text-[10.5px] font-semibold"
+                  style={{ color: active ? VIOLET : '#9b96b0' }}
+                >
+                  {t(item.label, lang)}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+        <div className="h-[env(safe-area-inset-bottom)]" />
+      </nav>
     </div>
   );
 }
 
-/** One counted figure, in the soft-tile style of the reference. */
-function Tile({
+function Stat({
+  icon,
+  tint,
   label,
   value,
-  unit,
-  foot,
-  color,
-  href,
 }: {
+  icon: string;
+  tint: string;
   label: string;
   value: string;
-  unit: string;
-  foot: string;
-  color: string;
-  href?: string;
 }) {
-  const inner = (
-    <>
-      <p className="text-[11px] font-bold tracking-[0.1em] uppercase" style={{ color }}>
-        {label}
-      </p>
-      <p className="mt-1.5 text-[26px] leading-none font-extrabold tabular-nums">
+  return (
+    <div className="rounded-2xl border border-[#eceaf6] bg-white p-3.5">
+      <span
+        className="grid h-9 w-9 place-items-center rounded-xl text-[17px]"
+        style={{ backgroundColor: tint }}
+        aria-hidden
+      >
+        {icon}
+      </span>
+      <p className="mt-2 text-[19px] font-extrabold" style={{ color: INK }}>
         {value}
-        <span className="ml-1.5 text-[13px] font-semibold text-[var(--color-muted)]">{unit}</span>
       </p>
-      <p className="mt-1.5 text-[12px] font-semibold" style={href ? { color } : undefined}>
-        {href ? foot : <span className="text-[var(--color-muted)]">{foot}</span>}
-      </p>
-    </>
-  );
-  return href ? (
-    <Link href={href} className="card p-4 transition-shadow hover:shadow-[0_10px_24px_-16px_rgba(11,17,32,0.4)]">
-      {inner}
-    </Link>
-  ) : (
-    <div className="card p-4">{inner}</div>
-  );
-}
-
-/** The single most important thing to do, with its own button. */
-function FeatureRow({
-  href,
-  icon,
-  tint,
-  label,
-  title,
-  sub,
-  cta,
-  accent,
-}: {
-  href: string;
-  icon: string;
-  tint: string;
-  label: string;
-  title: string;
-  sub?: string;
-  cta: string;
-  accent: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="card flex items-center gap-4 p-4 transition-shadow hover:shadow-[0_10px_24px_-16px_rgba(11,17,32,0.4)] sm:p-5"
-      style={{ borderColor: `${accent}59` }}
-    >
-      <span
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xl"
-        style={{ background: `${tint}1f` }}
-      >
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[11px] font-bold tracking-[0.1em] uppercase" style={{ color: accent }}>
-          {label}
-        </span>
-        <span className="mt-0.5 block truncate text-[14px] font-bold">{title}</span>
-        {/* On its own line: joined with the title it truncated the part that
-            says what the thing costs you — "10 questions · 10 min". */}
-        {sub ? (
-          <span className="block truncate text-[12px] text-[var(--color-muted)]">{sub}</span>
-        ) : null}
-      </span>
-      <span
-        className="shrink-0 rounded-full px-4 py-2 text-[12px] font-bold text-white"
-        style={{ background: accent }}
-      >
-        {cta}
-      </span>
-    </Link>
-  );
-}
-
-/** A quieter row: icon, two lines, a chevron. */
-function Row({
-  href,
-  icon,
-  tint,
-  title,
-  sub,
-}: {
-  href: string;
-  icon: string;
-  tint: string;
-  title: string;
-  sub: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="card flex items-center gap-3.5 p-3.5 transition-colors hover:border-[var(--color-line-strong)]"
-    >
-      <span
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[18px]"
-        style={{ background: `${tint}1f` }}
-      >
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-bold">{title}</span>
-        <span className="block truncate text-[12px] text-[var(--color-muted)]">{sub}</span>
-      </span>
-      <span className="shrink-0 text-[var(--color-line-strong)]">›</span>
-    </Link>
-  );
-}
-
-interface ActionItem {
-  href: string;
-  icon: string;
-  tint: string;
-  title: string;
-  sub: string;
-  cta: string;
-}
-
-/**
- * The first screen of a brand-new visit: choose what you are preparing for.
- *
- * Deliberately the whole page rather than a banner above an empty dashboard.
- * Every panel below the fold — countdown, cut-off, next mock, weak topic — is
- * scoped to the goal, so with none chosen there is nothing truthful to render
- * underneath. Choosing writes `set_goal` for a signed-in learner and stays
- * local for everybody else, which is the same contract as the goal switcher in
- * the header.
- */
-function GoalPicker() {
-  const { lang, setGoal } = useStore();
-  const hi = lang === 'hi';
-
-  const [query, setQuery] = useState('');
-  const [examId, setExamId] = useState<string | null>(null);
-  const [paperId, setPaperId] = useState<string | null>(null);
-  const [subjectId, setSubjectId] = useState<string | null>(null);
-
-  const examGroups = useMemo(() => examPickerGroups(query, lang), [query, lang]);
-  const exam = examId ? getExam(examId) : undefined;
-  // No fallback to `papers[0]`. That silently recorded a PGT candidate who
-  // tapped HTET and then Continue as sitting Level 1 — wrong syllabus, wrong
-  // cut-off, and nothing on screen having asked. A single-paper exam has one
-  // answer and it is chosen for them; anything else has to be picked.
-  const needsPaper = Boolean(exam && exam.papers.length > 1);
-  const chosenPaperId = needsPaper ? (paperId ?? undefined) : exam?.papers[0]?.id;
-  const group = electivesForPaper(chosenPaperId)[0];
-
-  // Each step invalidates the ones under it. HTET TGT's twelve subjects and
-  // CTET Paper 2's two share no options, so a subject carried across a paper
-  // change would be one the new paper does not offer.
-  const pickExam = (id: string) => {
-    setExamId(id);
-    setPaperId(null);
-    setSubjectId(null);
-  };
-  const pickPaper = (id: string) => {
-    setPaperId(id);
-    setSubjectId(null);
-  };
-
-  const ready = Boolean(exam) && Boolean(chosenPaperId) && (!group || Boolean(subjectId));
-
-  const confirm = () => {
-    if (!exam || !ready) return;
-    setGoal(exam.id, chosenPaperId, subjectId ?? undefined);
-  };
-
-  return (
-    <div className="space-y-6 px-4 pt-8 pb-12 sm:px-0">
-      <header>
-        <h1 className="text-2xl font-extrabold sm:text-3xl">
-          {hi ? 'आप कौन-सी परीक्षा दे रहे हैं?' : 'Which exam are you preparing for?'}
-        </h1>
-        <p className="mt-1.5 text-[13px] text-[var(--color-muted)]">
-          {hi
-            ? 'यही तय करता है कि कौन-से विषय, टेस्ट, बैच और कट-ऑफ दिखें। इसे ऊपर दाईं ओर से कभी भी बदला जा सकता है।'
-            : 'This decides which subjects, tests, batches and cut-offs you see. You can change it any time from the top right.'}
-        </p>
-      </header>
-
-      {/*
-        Twenty-eight exams: a search box and two groups, not a wall of cards.
-        National first because CTET is what most people came for and it is one
-        row rather than twenty-three.
-      */}
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={hi ? 'परीक्षा खोजें…' : 'Search exams…'}
-        aria-label={hi ? 'परीक्षा खोजें' : 'Search exams'}
-        className="w-full rounded-xl bg-[var(--color-surface-alt)] px-4 py-2.5 text-[14px] outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
-      />
-
-      {examGroups.length === 0 ? (
-        <p className="text-[13px] text-[var(--color-muted)]">
-          {hi ? 'कोई परीक्षा नहीं मिली।' : 'No exam matches that.'}
-        </p>
-      ) : null}
-
-      {examGroups.map((group) => (
-        <section key={group.title.en}>
-          <h2 className="mb-2 text-[11px] font-bold tracking-wide text-[var(--color-muted)] uppercase">
-            {t(group.title, lang)}
-          </h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {group.items.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => pickExam(item.value)}
-                aria-pressed={examId === item.value}
-                className={`flex items-center gap-3 rounded-xl p-3 text-left transition-colors ${
-                  examId === item.value
-                    ? 'bg-[var(--color-brand-light)]'
-                    : 'hover:bg-[var(--color-surface-alt)]'
-                }`}
-              >
-                <span className="text-2xl">{item.icon}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-bold">
-                    {hi ? item.labelHi : item.labelEn}
-                  </span>
-                  <span className="block truncate text-[12px] text-[var(--color-muted)]">
-                    {hi ? item.hintHi : item.hintEn}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ))}
-
-      {exam && exam.papers.length > 1 ? (
-        <section>
-          <h2 className="text-[15px] font-bold">{hi ? 'कौन-सा पेपर?' : 'Which paper?'}</h2>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            {exam.papers.map((paper) => (
-              <button
-                key={paper.id}
-                type="button"
-                onClick={() => pickPaper(paper.id)}
-                aria-pressed={paperId === paper.id}
-                className={`card p-3 text-left transition-colors ${
-                  paperId === paper.id
-                    ? 'border-[var(--color-brand)] bg-[var(--color-brand-light)]'
-                    : 'hover:border-[var(--color-brand)]'
-                }`}
-              >
-                <span className="block text-[13px] font-bold">{t(paper.name, lang)}</span>
-                <span className="block text-[12px] text-[var(--color-muted)]">
-                  {paper.post ? `${paper.post} · ` : ''}
-                  {paper.totalQuestions} {hi ? 'प्रश्न' : 'questions'} · {paper.durationMinutes} min
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {/*
-        The subject. There is no single "TGT paper" — there are twelve, and they
-        differ only in this block, so until it is answered the app does not know
-        which sixty of a hundred and fifty marks belong to this learner.
-      */}
-      {exam && group ? (
-        <section>
-          <h2 className="text-[15px] font-bold">{t(group.name, lang)}?</h2>
-          <p className="mt-1 text-[12px] text-[var(--color-muted)]">
-            {hi
-              ? 'यही तय करता है कि पेपर का कौन-सा भाग आपका है।'
-              : 'This decides which part of the paper is yours.'}
-          </p>
-          {/*
-            A wrapping grid, not a row of chips. Twelve TGT subjects and
-            twenty-one PGT ones do not fit a row, and a row that scrolls
-            sideways hides most of them off the right edge with no sign of how
-            many are there — a candidate looking for Sanskrit had to drag the
-            list to find out whether it was even offered.
-          */}
-          {/*
-            A wrapping grid, not a row of chips. Twelve TGT subjects and
-            twenty-one PGT ones do not fit a row, and one that scrolls sideways
-            hides most of them off the right edge with no sign of how many are
-            there — a candidate looking for Sanskrit had to drag the list to
-            find out whether it was even offered.
-          */}
-          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {electivePickerItems(group.choices, exam.id).map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setSubjectId(item.value)}
-                aria-pressed={subjectId === item.value}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition-colors ${
-                  subjectId === item.value
-                    ? 'bg-[var(--color-brand-light)] text-[var(--color-brand-dark)]'
-                    : 'bg-[var(--color-surface-alt)] hover:bg-[var(--color-brand-light)]'
-                }`}
-              >
-                <span>{item.icon}</span>
-                <span className="min-w-0 truncate">{hi ? item.labelHi : item.labelEn}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {exam ? (
-        <button
-          type="button"
-          onClick={confirm}
-          disabled={!ready}
-          className="w-full rounded-full bg-[var(--color-brand)] px-5 py-3 text-[14px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
-        >
-          {hi
-            ? `${exam.shortName} की तैयारी शुरू करें`
-            : `Start preparing for ${exam.shortName}`}
-        </button>
-      ) : null}
-
-      <p className="text-[12px] text-[var(--color-muted)]">
-        {hi
-          ? 'साइन इन करने पर यह चुनाव आपके खाते में सहेजा जाता है और हर डिवाइस पर साथ चलता है।'
-          : 'Signed in, this choice is saved to your account and follows you to every device.'}{' '}
-        <Link href="/sign-in" className="font-bold text-[var(--color-brand)] underline">
-          {hi ? 'साइन इन' : 'Sign in'}
-        </Link>
-      </p>
+      <p className="text-[11.5px] text-[#6b7280]">{label}</p>
     </div>
   );
 }

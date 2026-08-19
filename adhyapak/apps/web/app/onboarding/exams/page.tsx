@@ -6,6 +6,8 @@ import {
   EXAM_CHOOSER_FILTERS,
   examSubtitle,
   fetchLearnerExamIds,
+  fetchLearnerLevelIds,
+  fetchLearnerSubjects,
   filterExamsForChooser,
   isBackendConfigured,
   listExams,
@@ -67,10 +69,25 @@ export default function ChooseExamPage() {
   useEffect(() => {
     let live = true;
     void (async () => {
-      const [list, already] = await Promise.all([listExams(), fetchLearnerExamIds()]);
+      const [list, already, levelIds, subjects] = await Promise.all([
+        listExams(),
+        fetchLearnerExamIds(),
+        fetchLearnerLevelIds(),
+        fetchLearnerSubjects(),
+      ]);
       if (!live) return;
+      /*
+       * This screen is the flow's front door, so it decides where in the flow
+       * the learner belongs — all three answers are read once here rather than
+       * each step bouncing to the next. A learner who finished onboarding
+       * months ago sees one redirect on sign-in instead of three, and one who
+       * closed the tab midway resumes on the question they stopped at.
+       */
       if (already.length > 0) {
-        router.replace('/');
+        if (levelIds.length === 0) router.replace('/onboarding/level');
+        else if (levelIds.some((id) => !subjects.some((s) => s.levelId === id)))
+          router.replace('/onboarding/subject');
+        else router.replace('/');
         return;
       }
       setExams(list);
@@ -106,7 +123,7 @@ export default function ChooseExamPage() {
       setFailed(true);
       return;
     }
-    router.push('/');
+    router.push('/onboarding/level');
   };
 
   if (!ready || exams === null) {

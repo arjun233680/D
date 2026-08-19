@@ -4,6 +4,9 @@ import type {
   AnswerStatus,
   Bilingual,
   Exam,
+  LearnerSubject,
+  Level,
+  LevelSubject,
   MaybeBilingual,
   OptionLabel,
   Lang,
@@ -1338,3 +1341,145 @@ export const listPyqYearCounts = (filter: {
     },
     () => [],
   );
+
+/* ------------------------------------------------- levels and their subjects */
+
+/**
+ * The teaching levels onboarding offers.
+ *
+ * There is no bundled fallback, unlike exams and notes: levels arrived with
+ * migration 0020 and the offline content predates them. An offline build gets
+ * an empty list, and the screen says so rather than inventing four cards that
+ * the database might disagree with. That is a real gap — onboarding cannot be
+ * completed offline — and it is recorded here rather than papered over.
+ */
+export const listLevels = async (): Promise<Level[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const { data, error } = await db
+    .from('levels')
+    .select('*')
+    .order('sort_order', { ascending: true });
+  if (error || !data) return [];
+  return (data as {
+    id: string;
+    name: string;
+    full_name: Bilingual;
+    classes: Bilingual | null;
+    icon: string;
+    color: string;
+    sort_order: number;
+  }[]).map((r) => ({
+    id: r.id,
+    name: r.name,
+    fullName: r.full_name,
+    classes: r.classes ?? undefined,
+    icon: r.icon,
+    color: r.color,
+    sortOrder: r.sort_order,
+  }));
+};
+
+/**
+ * The subjects one level examines, in the order the board lists them.
+ *
+ * The subject's own name, icon and colour are joined from `subjects` so the
+ * cards stay consistent with every other screen that renders a subject; only
+ * the hint is per-level.
+ */
+export const listLevelSubjects = async (levelId: string): Promise<LevelSubject[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const { data, error } = await db
+    .from('level_subjects')
+    .select('level_id, subject_id, hint, sort_order, subjects(name, icon, color)')
+    .eq('level_id', levelId)
+    .order('sort_order', { ascending: true });
+  if (error || !data) return [];
+
+  /*
+   * The embed is typed as an array because PostgREST cannot tell a to-one from
+   * a to-many at the type level, but `level_subjects.subject_id` is a plain
+   * foreign key so exactly one row comes back. Normalising both shapes here
+   * means the rest of this function does not care which the client believed.
+   */
+  type Joined = { name: Bilingual; icon: string; color: string };
+  const rows = data as unknown as {
+    level_id: string;
+    subject_id: string;
+    hint: Bilingual | null;
+    sort_order: number;
+    subjects: Joined | Joined[] | null;
+  }[];
+
+  return rows
+    .map((r) => {
+      const subject = Array.isArray(r.subjects) ? r.subjects[0] : r.subjects;
+      if (!subject) return undefined;
+      const offer: LevelSubject = {
+        levelId: r.level_id,
+        subjectId: r.subject_id,
+        name: subject.name,
+        hint: r.hint ?? undefined,
+        icon: subject.icon,
+        color: subject.color,
+        sortOrder: r.sort_order,
+      };
+      return offer;
+    })
+    .filter((s): s is LevelSubject => s !== undefined);
+};
+
+/** The levels this learner said they sit. Empty means they have not answered. */
+export const fetchLearnerLevelIds = async (): Promise<string[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const { data, error } = await db.from('learner_levels').select('level_id');
+  if (error || !data) return [];
+  return (data as { level_id: string }[]).map((r) => r.level_id);
+};
+
+/**
+ * Replaces the learner's set of levels.
+ *
+ * Removing a level takes its subject with it — see `set_learner_levels` in
+ * 0020 for why that has to happen in the same statement.
+ */
+export const saveLearnerLevelIds = async (levelIds: readonly string[]): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  const { error } = await db.rpc('set_learner_levels', { p_level_ids: [...levelIds] });
+  return !error;
+};
+
+/** The subject chosen for each level the learner sits. */
+export const fetchLearnerSubjects = async (): Promise<LearnerSubject[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const { data, error } = await db.from('learner_subjects').select('level_id, subject_id');
+  if (error || !data) return [];
+  return (data as { level_id: string; subject_id: string }[]).map((r) => ({
+    levelId: r.level_id,
+    subjectId: r.subject_id,
+  }));
+};
+
+/**
+ * Records the subject for one level.
+ *
+ * The RPC re-checks that the subject is offered at that level and that the
+ * level is one of the learner's own, so a stale tab cannot write a syllabus
+ * nobody asked for.
+ */
+export const saveLearnerSubject = async (
+  levelId: string,
+  subjectId: string,
+): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  const { error } = await db.rpc('set_learner_subject', {
+    p_level_id: levelId,
+    p_subject_id: subjectId,
+  });
+  return !error;
+};
