@@ -1369,6 +1369,7 @@ export const listLevels = async (): Promise<Level[]> => {
     icon: string;
     color: string;
     sort_order: number;
+    requires_subject?: boolean;
   }[]).map((r) => ({
     id: r.id,
     name: r.name,
@@ -1377,6 +1378,10 @@ export const listLevels = async (): Promise<Level[]> => {
     icon: r.icon,
     color: r.color,
     sortOrder: r.sort_order,
+    // Defaults to true, matching the column: a level that predates 0021, or a
+    // row read from an older project, still gets asked rather than silently
+    // skipping a question it may well need.
+    requiresSubject: r.requires_subject ?? true,
   }));
 };
 
@@ -1482,4 +1487,116 @@ export const saveLearnerSubject = async (
     p_subject_id: subjectId,
   });
   return !error;
+};
+
+/* --------------------------------------------------- one learner's paper */
+
+/** A block of the paper the learner sits, as the PYQ screen lists them. */
+export interface PrepSection {
+  subjectId: string;
+  name: Bilingual;
+  icon: string;
+  color: string;
+  /** Questions this block carries in the blueprint — 30 for CDP, 60 elective. */
+  questions: number;
+  /** True where the blueprint left the subject to the candidate's choice. */
+  elective: boolean;
+}
+
+/**
+ * The sections of an exam's paper for a given post, with the elective resolved.
+ *
+ * `paper_sections` describes the blueprint: CDP 30, Hindi 15, English 15, and a
+ * 60-mark block whose subject is whichever the candidate applied in. That last
+ * one is a hole in the shape, and this fills it with the learner's own subject
+ * so the screen can list seven named sections rather than six and a question
+ * mark.
+ *
+ * `post` rather than a paper id, because the learner told onboarding a level —
+ * TGT — and which paper that is differs per exam. HTET calls it Level 2, CTET
+ * calls it Paper 2, and neither of those is a word the learner used.
+ */
+export const listPrepSections = async (
+  examId: string,
+  post: string,
+  electiveSubjectId?: string,
+): Promise<PrepSection[]> => {
+  const db = getBackend();
+  if (!db) return [];
+
+  const { data: papers } = await db
+    .from('exam_papers')
+    .select('id, post')
+    .eq('exam_id', examId);
+  const paper = (papers as { id: string; post: string | null }[] | null)?.find(
+    (p) => (p.post ?? '').toUpperCase() === post.toUpperCase(),
+  );
+  if (!paper) return [];
+
+  const { data, error } = await db
+    .from('paper_sections')
+    .select('subject_id, elective_group_id, questions, subjects(name, icon, color)')
+    .eq('paper_id', paper.id)
+    .order('questions', { ascending: false });
+  if (error || !data) return [];
+
+  type Joined = { name: Bilingual; icon: string; color: string };
+  const rows = data as unknown as {
+    subject_id: string | null;
+    elective_group_id: string | null;
+    questions: number;
+    subjects: Joined | Joined[] | null;
+  }[];
+
+  // The elective row carries no subject of its own, so its name and colour come
+  // from the learner's choice — looked up once rather than per row.
+  let chosen: Joined | undefined;
+  if (electiveSubjectId) {
+    const { data: s } = await db
+      .from('subjects')
+      .select('name, icon, color')
+      .eq('id', electiveSubjectId)
+      .maybeSingle();
+    chosen = (s as Joined | null) ?? undefined;
+  }
+
+  return rows
+    .map((r): PrepSection | undefined => {
+      if (r.elective_group_id) {
+        if (!chosen || !electiveSubjectId) return undefined;
+        return {
+          subjectId: electiveSubjectId,
+          name: chosen.name,
+          icon: chosen.icon,
+          color: chosen.color,
+          questions: r.questions,
+          elective: true,
+        };
+      }
+      const s = Array.isArray(r.subjects) ? r.subjects[0] : r.subjects;
+      if (!s || !r.subject_id) return undefined;
+      return {
+        subjectId: r.subject_id,
+        name: s.name,
+        icon: s.icon,
+        color: s.color,
+        questions: r.questions,
+        elective: false,
+      };
+    })
+    .filter((s): s is PrepSection => s !== undefined);
+};
+
+export const listTopicsForSubject = async (
+  subjectId: string,
+): Promise<{ id: string; name: Bilingual }[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const { data, error } = await db
+    .from('topics')
+    .select('id, name')
+    .eq('subject_id', subjectId)
+    .order('id', { ascending: true });
+  if (error || !data) return [];
+  return data as { id: string; name: Bilingual }[];
 };

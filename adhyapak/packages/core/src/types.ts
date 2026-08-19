@@ -631,6 +631,16 @@ export interface Level {
   icon: string;
   color: string;
   sortOrder: number;
+  /**
+   * Whether onboarding asks which subject.
+   *
+   * False at primary, where the paper is taught and examined as one whole —
+   * child development, maths, environmental studies and both languages — and
+   * there is nothing for the learner to pick between. Levels that say false are
+   * skipped by the subject step, and a learner who chose only such levels goes
+   * straight to the dashboard.
+   */
+  requiresSubject: boolean;
 }
 
 /**

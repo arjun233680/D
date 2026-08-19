@@ -143,6 +143,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     pathname.includes('/attempt') ||
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/onboarding') ||
+    // The preparation screens carry the design's own drawer, title block and
+    // five-tab bar, so the shell's header and nav would be a second set of both.
+    pathname.startsWith('/prep') ||
     // The dashboard carries the design's own header and bottom bar. The
     // remaining inner screens still wear this shell, so its nav and the
     // dashboard's do not yet look like one another — that is a known gap, not

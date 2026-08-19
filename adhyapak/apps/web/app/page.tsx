@@ -11,6 +11,7 @@ import {
   listExams,
   listLevelSubjects,
   listLevels,
+  nextOnboardingStep,
   t,
   type Exam,
   type Level,
@@ -47,7 +48,8 @@ const INK = '#1e1b4b';
 
 interface Selection {
   level: Level;
-  subject: LevelSubject;
+  /** Absent at levels that have no subject to choose — primary. */
+  subject?: LevelSubject;
   exam?: Exam;
 }
 
@@ -82,26 +84,36 @@ export default function HomePage() {
         fetchLearnerSubjects(),
       ]);
       if (!live) return;
-      // Nothing chosen means onboarding was never finished — the chooser is the
-      // one screen that can work out which question is still outstanding.
-      if (examIds.length === 0 || chosen.length === 0) {
-        router.replace('/onboarding/exams');
-        return;
-      }
 
       const [levels, exams] = await Promise.all([listLevels(), listExams()]);
       if (!live) return;
+
+      /*
+       * The same decision the chooser makes, from the same function.
+       *
+       * Answering it independently here is what creates a loop: a learner who
+       * chose PRT alone owns no `learner_subjects` row, so a test for "has
+       * subjects" calls them unfinished while the chooser — seeing nothing
+       * owed — calls them finished, and the two screens volley them forever.
+       */
+      if (nextOnboardingStep(examIds, levels, levelIds, chosen) !== 'done') {
+        router.replace('/onboarding/exams');
+        return;
+      }
       const offers = await Promise.all(levelIds.map((id) => listLevelSubjects(id)));
       if (!live) return;
 
       const mine = exams.filter((e) => examIds.includes(e.id));
-      const built = chosen
-        .map((pick, i): Selection | undefined => {
-          const level = levels.find((l) => l.id === pick.levelId);
-          const subject = offers.flat().find(
-            (o) => o.levelId === pick.levelId && o.subjectId === pick.subjectId,
-          );
-          if (!level || !subject) return undefined;
+      // One card per level the learner sits, so PRT — which has no subject —
+      // still gets a line of its own rather than vanishing from the dashboard.
+      const built = levelIds
+        .map((levelId, i): Selection | undefined => {
+          const level = levels.find((l) => l.id === levelId);
+          if (!level) return undefined;
+          const pick = chosen.find((c) => c.levelId === levelId);
+          const subject = pick
+            ? offers.flat().find((o) => o.levelId === levelId && o.subjectId === pick.subjectId)
+            : undefined;
           /*
            * The badge is an exam, and which one is a genuine ambiguity: the
            * learner picked several and did not say which level belongs to
@@ -230,8 +242,9 @@ export default function HomePage() {
 
           <div className="rail mt-3 flex gap-3">
             {selections.map((s) => (
-              <article
+              <Link
                 key={s.level.id}
+                href={`/prep?level=${s.level.id}`}
                 className="min-w-[70%] shrink-0 rounded-2xl border border-[#eceaf6] bg-white p-4 sm:min-w-[46%]"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -246,17 +259,20 @@ export default function HomePage() {
                   </span>
                   <span
                     className="grid h-11 w-11 place-items-center rounded-2xl text-[19px]"
-                    style={{ backgroundColor: `${s.subject.color}1a` }}
+                    style={{ backgroundColor: `${(s.subject?.color ?? s.level.color)}1a` }}
                     aria-hidden
                   >
-                    {s.subject.icon}
+                    {s.subject?.icon ?? s.level.icon}
                   </span>
                 </div>
                 <p className="mt-2 text-[21px] leading-none font-extrabold" style={{ color: INK }}>
                   {s.level.name}
                 </p>
+                {/* Primary has no subject line because it has no subject: the
+                    whole paper is the syllabus. The level's own full name says
+                    more there than a blank row would. */}
                 <p className="mt-1 text-[14px] font-semibold text-[#4b5563]">
-                  {t(s.subject.name, lang)}
+                  {s.subject ? t(s.subject.name, lang) : t(s.level.fullName, lang)}
                 </p>
                 <p className="mt-3 text-[12px] text-[#8b869e]">
                   {hi ? 'अभी शुरू नहीं किया' : 'Not started yet'}
@@ -264,7 +280,7 @@ export default function HomePage() {
                 <div className="mt-1.5 h-1.5 w-full rounded-full bg-[#efecfa]">
                   <div className="h-1.5 w-0 rounded-full" style={{ background: VIOLET }} />
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </section>
