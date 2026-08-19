@@ -67,15 +67,15 @@ function PyqBrowser() {
   const [busy, setBusy] = useState(true);
 
   const examId = selection?.exam?.id;
-  const post = selection?.level.name;
+  const level = selection?.level;
   const electiveId = selection?.subject?.subjectId;
 
   useEffect(() => {
     let live = true;
-    if (!examId || !post) return;
+    if (!examId || !level) return;
     void (async () => {
       const [list, sessions] = await Promise.all([
-        listPrepSections(examId, post, electiveId),
+        listPrepSections(examId, level, electiveId),
         listPyqSessions(examId),
       ]);
       if (!live) return;
@@ -87,7 +87,7 @@ function PyqBrowser() {
     return () => {
       live = false;
     };
-  }, [examId, post, electiveId]);
+  }, [examId, level, electiveId]);
 
   // The section and topic tabs both hang off the selected chip, so they load
   // together rather than each keeping its own idea of which section is open.

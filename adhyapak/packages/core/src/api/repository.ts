@@ -1370,6 +1370,7 @@ export const listLevels = async (): Promise<Level[]> => {
     color: string;
     sort_order: number;
     requires_subject?: boolean;
+    teaching_level?: string | null;
   }[]).map((r) => ({
     id: r.id,
     name: r.name,
@@ -1382,6 +1383,7 @@ export const listLevels = async (): Promise<Level[]> => {
     // row read from an older project, still gets asked rather than silently
     // skipping a question it may well need.
     requiresSubject: r.requires_subject ?? true,
+    teachingLevel: r.teaching_level ?? undefined,
   }));
 };
 
@@ -1521,7 +1523,7 @@ export interface PrepSection {
  */
 export const listPrepSections = async (
   examId: string,
-  post: string,
+  level: { teachingLevel?: string; name: string },
   electiveSubjectId?: string,
 ): Promise<PrepSection[]> => {
   const db = getBackend();
@@ -1529,11 +1531,25 @@ export const listPrepSections = async (
 
   const { data: papers } = await db
     .from('exam_papers')
-    .select('id, post')
+    .select('id, post, level')
     .eq('exam_id', examId);
-  const paper = (papers as { id: string; post: string | null }[] | null)?.find(
-    (p) => (p.post ?? '').toUpperCase() === post.toUpperCase(),
-  );
+  const rowsIn = (papers as { id: string; post: string | null; level: string | null }[] | null) ?? [];
+
+  /*
+   * `level` first, `post` only as a fallback.
+   *
+   * `post` is what one board prints — PRT, "Paper II", "Varg 3" — so matching
+   * the learner's level name against it worked for HTET and silently returned
+   * nothing for every other exam, which rendered as a PYQ screen with no
+   * sections at all. `exam_papers.level` is the shared vocabulary and is set on
+   * every seeded paper. The post match survives only for a row that somehow has
+   * no level.
+   */
+  const paper =
+    (level.teachingLevel
+      ? rowsIn.find((p) => (p.level ?? '') === level.teachingLevel)
+      : undefined) ??
+    rowsIn.find((p) => (p.post ?? '').toUpperCase() === level.name.toUpperCase());
   if (!paper) return [];
 
   const { data, error } = await db
