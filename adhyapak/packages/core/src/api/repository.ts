@@ -1560,7 +1560,21 @@ export const listPrepSections = async (
     chosen = (s as Joined | null) ?? undefined;
   }
 
-  return rows
+  /*
+   * Fixed blocks first, largest to smallest, and the elective last regardless
+   * of its size. Ordering purely by question count put the 60-mark elective at
+   * the head of the chips — ahead of Child Development, which every candidate
+   * sits — so the first thing on the screen was the one section that differs
+   * per person. The board prints it last for the same reason.
+   */
+  const ordered = [...rows].sort((a, b) => {
+    const ae = a.elective_group_id ? 1 : 0;
+    const be = b.elective_group_id ? 1 : 0;
+    if (ae !== be) return ae - be;
+    return b.questions - a.questions;
+  });
+
+  return ordered
     .map((r): PrepSection | undefined => {
       if (r.elective_group_id) {
         if (!chosen || !electiveSubjectId) return undefined;
