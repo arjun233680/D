@@ -7,6 +7,7 @@ import {
   fetchLearnerExamIds,
   fetchLearnerLevelIds,
   fetchLearnerSubjects,
+  listElectiveChoices,
   listExams,
   listLevelSubjects,
   listLevels,
@@ -69,7 +70,7 @@ function ChooseSubjectPage() {
    * outstanding, and they go straight to the dashboard.
    */
   const advance = useCallback(
-    (all: Level[], done: Record<string, string>) => {
+    (all: Level[], done: Record<string, string>, examIds: string[]) => {
       const next = all.find((l) => l.requiresSubject && !done[l.id]);
       if (!next) {
         router.replace('/');
@@ -78,7 +79,25 @@ function ChooseSubjectPage() {
       setCurrent(next);
       setPicked(null);
       setOffers(null);
-      void listLevelSubjects(next.id).then(setOffers);
+      void (async () => {
+        /*
+         * What this learner's own exams offer, not a generic list for the
+         * level. CTET Paper II offers two subjects; HTET Level 2 offers
+         * twelve. Showing the generic ten to a CTET candidate offered them
+         * eight subjects they cannot sit.
+         *
+         * `level_subjects` remains the fallback for exams whose papers carry
+         * no elective data yet — an approximate list beats an empty grid, and
+         * it is the same list this screen showed before.
+         */
+        const allowed = await listElectiveChoices(examIds, next.teachingLevels);
+        const generic = await listLevelSubjects(next.id);
+        setOffers(
+          allowed.length > 0
+            ? generic.filter((o) => allowed.includes(o.subjectId) || o.subjectId === 'other-subject')
+            : generic,
+        );
+      })();
     },
     [router],
   );
@@ -114,7 +133,7 @@ function ChooseSubjectPage() {
       setLevels(mine);
       setExams(examList.filter((e) => examIds.includes(e.id)));
       setAnswered(done);
-      advance(mine, done);
+      advance(mine, done, examIds);
     })();
     return () => {
       live = false;
@@ -145,7 +164,7 @@ function ChooseSubjectPage() {
     }
     const done = { ...answered, [current.id]: picked };
     setAnswered(done);
-    advance(levels, done);
+    advance(levels, done, exams.map((e) => e.id));
   };
 
   if (!ready || !current || offers === null) {

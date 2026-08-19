@@ -1779,3 +1779,59 @@ export const listPaperLevelsForExams = async (
   }
   return [...levels];
 };
+
+/**
+ * The subjects a learner may actually choose, for the level they sit.
+ *
+ * Reads `elective_choices` — the per-paper list the boards publish — rather
+ * than the generic per-level list in `level_subjects`. The difference is not
+ * cosmetic: CTET Paper II offers exactly two choices, Mathematics & Science or
+ * Social Studies, while HTET Level 2 offers twelve and DSSSB PGT twenty-one.
+ * Showing one exam's list to another exam's candidate offers them a subject
+ * they cannot sit.
+ *
+ * The union across the learner's exams, because they chose several and each
+ * has its own list. Offering the intersection would hide a subject that one of
+ * their exams genuinely runs; the union lets them pick anything at least one
+ * of their exams examines, which is the question they were actually asked.
+ *
+ * Empty when none of their papers define an elective at all — several exams
+ * have no such data yet — and the caller falls back to `level_subjects` rather
+ * than showing an empty grid.
+ */
+export const listElectiveChoices = async (
+  examIds: readonly string[],
+  teachingLevels: readonly string[],
+): Promise<string[]> => {
+  const db = getBackend();
+  if (!db || examIds.length === 0 || teachingLevels.length === 0) return [];
+
+  const { data: papers } = await db
+    .from('exam_papers')
+    .select('id')
+    .in('exam_id', [...examIds])
+    .in('level', [...teachingLevels]);
+  const paperIds = (papers as { id: string }[] | null)?.map((p) => p.id) ?? [];
+  if (paperIds.length === 0) return [];
+
+  const { data: groups } = await db
+    .from('elective_groups')
+    .select('id')
+    .in('paper_id', paperIds);
+  const groupIds = (groups as { id: string }[] | null)?.map((g) => g.id) ?? [];
+  if (groupIds.length === 0) return [];
+
+  const { data, error } = await db
+    .from('elective_choices')
+    .select('subject_id, sort_order')
+    .in('group_id', groupIds)
+    .order('sort_order', { ascending: true });
+  if (error || !data) return [];
+
+  // Deduped, first-seen order kept: the boards list their own subjects in a
+  // deliberate order and re-sorting would put Art above Science on a paper
+  // whose notification does the opposite.
+  const seen = new Set<string>();
+  for (const row of data as { subject_id: string }[]) seen.add(row.subject_id);
+  return [...seen];
+};
