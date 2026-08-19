@@ -1600,3 +1600,53 @@ export const listTopicsForSubject = async (
   if (error || !data) return [];
   return data as { id: string; name: Bilingual }[];
 };
+
+/** A year the exam was held, and how much of it the bank actually holds. */
+export interface PyqSession {
+  year: number;
+  /** Questions collected so far. Zero until a paper is imported. */
+  collected: number;
+  /** What the board's paper carried, where known. */
+  paperQuestions?: number;
+}
+
+/**
+ * The years an exam has been held, newest first, each with what we have of it.
+ *
+ * Two facts, kept apart on purpose. `pyq_years` says HTET ran from 2018 to
+ * 2024 — true whatever is in our database — and `questions` says how many of
+ * those we have typed up. Deriving the year list from the bank, as this screen
+ * first did, answered the second question by deleting the first: an empty bank
+ * meant an empty screen, and an aspirant was shown nothing where seven papers
+ * exist.
+ *
+ * So every year is listed, and a year we have none of says zero rather than
+ * being hidden. `subjectId` narrows the count to one section without dropping
+ * years, which is what the section-wise tab lists.
+ */
+export const listPyqSessions = async (
+  examId: string,
+  subjectId?: string,
+): Promise<PyqSession[]> => {
+  const db = getBackend();
+  if (!db) return [];
+
+  const { data: years, error } = await db
+    .from('pyq_years')
+    .select('year, paper_questions')
+    .eq('exam_id', examId)
+    .order('year', { ascending: false });
+  if (error || !years) return [];
+
+  const counts = await listPyqYearCounts(subjectId ? { examId, subjectId } : { examId });
+  const collected = new Map<number, number>();
+  for (const row of counts) {
+    collected.set(row.year, (collected.get(row.year) ?? 0) + row.questionCount);
+  }
+
+  return (years as { year: number; paper_questions: number | null }[]).map((y) => ({
+    year: y.year,
+    collected: collected.get(y.year) ?? 0,
+    paperQuestions: y.paper_questions ?? undefined,
+  }));
+};

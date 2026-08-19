@@ -3,11 +3,12 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import {
   listPrepSections,
-  listPyqYearCounts,
+  listPyqSessions,
   listTopicsForSubject,
   t,
   type Bilingual,
   type PrepSection,
+  type PyqSession,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { EmptyNote, INK, MUTED, PrepHeader, PrepNav, PrepShell, VIOLET } from '../ui';
@@ -17,24 +18,22 @@ import { selectionTitle, useSelection } from '../useSelection';
  * Previous year questions, three ways.
  *
  * Full Test    — a whole paper as it was sat, one card per year.
- * Section Wise — one block of the paper across every year: all the CDP that
- *                has ever been asked, by year.
+ * Section Wise — one block of the paper across every year: all the CDP ever
+ *                asked, by year, with an "all years at once" set on top.
  * Topic Wise   — narrower still, down to "Venn Diagrams" or "मुहावरे".
  *
  * The sections are the paper's own blueprint from `paper_sections`, with the
  * 60-mark elective resolved to the learner's chosen subject — so an HTET TGT
  * Science candidate sees seven named sections and a Maths candidate sees the
- * same six plus Maths, without either list being written down anywhere.
+ * same six plus Maths, without either list being written down here.
  *
- * WHAT THE COUNTS MEAN
+ * WHY EVERY YEAR IS LISTED EVEN AT ZERO
  *
- * Every number here is questions actually in the bank, not the blueprint's.
- * The design shows "150" against each year and "1260" against all years, which
- * is what a complete import would look like; with nothing imported the honest
- * figure is zero, and a year with forty of its hundred and fifty collected
- * must say forty. So years with nothing are not listed at all — a card that
- * opens onto an empty paper is worse than an explanation — and each tab says
- * so plainly instead.
+ * The years come from `pyq_years` — when the board actually held the exam —
+ * and the counts from the bank. Those are different facts and the screen used
+ * to conflate them: it built its year list out of `questions`, so an empty bank
+ * showed an empty screen, and an aspirant saw nothing where seven papers exist.
+ * Now 2018 to 2024 always appear, and a year we hold none of says zero.
  */
 
 type Tab = 'full' | 'section' | 'topic';
@@ -45,7 +44,7 @@ const TABS: { id: Tab; icon: string; label: Bilingual }[] = [
   { id: 'topic', icon: '☰', label: { en: 'Topic Wise', hi: 'टॉपिक अनुसार' } },
 ];
 
-/** Card tints, cycled so a list of years does not read as one grey block. */
+/** Card tints, cycled so a column of years does not read as one grey block. */
 const TINTS = ['#f1eefc', '#e8f7ee', '#fff3e6', '#fdeaf3', '#e6f0fd', '#f6efff', '#e9f7f3'];
 
 function PyqBrowser() {
@@ -56,57 +55,54 @@ function PyqBrowser() {
   const [tab, setTab] = useState<Tab>('full');
   const [sections, setSections] = useState<PrepSection[]>([]);
   const [active, setActive] = useState<string | null>(null);
-  const [years, setYears] = useState<{ year: number; questions: number }[]>([]);
+  const [paperYears, setPaperYears] = useState<PyqSession[]>([]);
+  const [sectionYears, setSectionYears] = useState<PyqSession[]>([]);
   const [topics, setTopics] = useState<{ id: string; name: Bilingual }[]>([]);
   const [busy, setBusy] = useState(true);
 
   const examId = selection?.exam?.id;
   const post = selection?.level.name;
+  const electiveId = selection?.subject?.subjectId;
 
   useEffect(() => {
     let live = true;
     if (!examId || !post) return;
     void (async () => {
-      const [list, counts] = await Promise.all([
-        listPrepSections(examId, post, selection?.subject?.subjectId),
-        listPyqYearCounts({ examId }),
+      const [list, sessions] = await Promise.all([
+        listPrepSections(examId, post, electiveId),
+        listPyqSessions(examId),
       ]);
       if (!live) return;
       setSections(list);
       setActive((a) => a ?? list[0]?.subjectId ?? null);
-      setYears(aggregate(counts));
+      setPaperYears(sessions);
       setBusy(false);
     })();
     return () => {
       live = false;
     };
-  }, [examId, post, selection?.subject?.subjectId]);
+  }, [examId, post, electiveId]);
 
-  // Section and topic tabs both hang off the chip that is selected, so they
-  // reload together rather than each keeping its own idea of "which section".
+  // The section and topic tabs both hang off the selected chip, so they load
+  // together rather than each keeping its own idea of which section is open.
   useEffect(() => {
     let live = true;
     if (!examId || !active) return;
     void (async () => {
-      const [counts, list] = await Promise.all([
-        listPyqYearCounts({ examId, subjectId: active }),
+      const [sessions, list] = await Promise.all([
+        listPyqSessions(examId, active),
         listTopicsForSubject(active),
       ]);
       if (!live) return;
-      setYears(tab === 'full' ? years : aggregate(counts));
+      setSectionYears(sessions);
       setTopics(list);
     })();
     return () => {
       live = false;
     };
-    // `years` is written here and must not re-trigger the effect that writes it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [examId, active, tab]);
+  }, [examId, active]);
 
-  const chosen = useMemo(
-    () => sections.find((s) => s.subjectId === active),
-    [sections, active],
-  );
+  const chosen = useMemo(() => sections.find((s) => s.subjectId === active), [sections, active]);
 
   if (loading || !selection) {
     return (
@@ -157,33 +153,32 @@ function PyqBrowser() {
 
             <div className="px-5 pt-5">
               {tab === 'full' ? (
-                <FullTest years={years} busy={busy} hi={hi} />
+                <FullTest years={paperYears} busy={busy} hi={hi} />
               ) : (
                 <>
-                  <SectionChips
-                    sections={sections}
-                    active={active}
-                    onPick={setActive}
-                    lang={lang}
-                  />
+                  <SectionChips sections={sections} active={active} onPick={setActive} lang={lang} />
                   {chosen ? (
                     <section className="mt-4 rounded-2xl bg-[#f4f1fd] p-4">
                       <div className="flex items-center gap-3">
                         <span
-                          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-[20px]"
+                          className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-[21px]"
                           style={{ backgroundColor: `${chosen.color}1a` }}
                           aria-hidden
                         >
                           {chosen.icon}
                         </span>
                         <div className="min-w-0">
-                          <p className="text-[17px] font-extrabold" style={{ color: chosen.color }}>
+                          <p className="text-[18px] font-extrabold" style={{ color: chosen.color }}>
                             {t(chosen.name, lang)}
                           </p>
                           <p className="text-[12px]" style={{ color: MUTED }}>
-                            {hi
-                              ? `कुल टॉपिक्स: ${topics.length} · पेपर में ${chosen.questions} प्रश्न`
-                              : `${topics.length} topics · ${chosen.questions} questions in the paper`}
+                            {tab === 'topic'
+                              ? hi
+                                ? `कुल टॉपिक्स: ${topics.length}`
+                                : `${topics.length} topics`
+                              : hi
+                                ? 'विगत वर्ष प्रश्न — वर्ष अनुसार'
+                                : 'Practice PYQs year wise'}
                           </p>
                         </div>
                       </div>
@@ -191,7 +186,7 @@ function PyqBrowser() {
                   ) : null}
 
                   {tab === 'section' ? (
-                    <SectionWise years={years} hi={hi} />
+                    <SectionWise years={sectionYears} hi={hi} />
                   ) : (
                     <TopicWise topics={topics} lang={lang} hi={hi} />
                   )}
@@ -207,17 +202,9 @@ function PyqBrowser() {
   );
 }
 
-/* ----------------------------------------------------------------- tabs */
+/* ------------------------------------------------------------------ tabs */
 
-function FullTest({
-  years,
-  busy,
-  hi,
-}: {
-  years: { year: number; questions: number }[];
-  busy: boolean;
-  hi: boolean;
-}) {
+function FullTest({ years, busy, hi }: { years: PyqSession[]; busy: boolean; hi: boolean }) {
   return (
     <>
       <div className="flex items-start gap-3 rounded-2xl bg-white p-4">
@@ -234,14 +221,20 @@ function FullTest({
               : 'Solve complete previous year papers as a real exam'}
           </p>
         </div>
+        <span
+          className="shrink-0 rounded-xl border border-[#ded9f3] px-3 py-2 text-[12px] font-bold"
+          style={{ color: VIOLET }}
+        >
+          {hi ? 'पैटर्न' : 'Exam Pattern'}
+        </span>
       </div>
 
       <div className="mt-4">
         {busy ? null : years.length === 0 ? (
           <EmptyNote>
             {hi
-              ? 'अभी कोई विगत वर्ष पेपर लोड नहीं हुआ है। जैसे ही पेपर आयात होंगे, हर वर्ष यहाँ अपने प्रश्नों की संख्या के साथ दिखेगा।'
-              : 'No past papers loaded yet. As papers are imported, each year appears here with the number of questions behind it.'}
+              ? 'इस परीक्षा के लिए अभी कोई वर्ष दर्ज नहीं है।'
+              : 'No years recorded for this exam yet.'}
           </EmptyNote>
         ) : (
           <div className="grid grid-cols-2 gap-3">
@@ -254,14 +247,22 @@ function FullTest({
                 <span aria-hidden className="text-[22px]">
                   🗓️
                 </span>
-                <p className="mt-1 text-[22px] font-extrabold" style={{ color: INK }}>
+                <p className="mt-1 text-[23px] leading-none font-extrabold" style={{ color: INK }}>
                   {y.year}
                 </p>
-                <p className="mt-2 text-[11.5px]" style={{ color: MUTED }}>
+                <p className="mt-3 text-[11.5px]" style={{ color: MUTED }}>
                   {hi ? 'प्रश्नों की संख्या' : 'No. of Questions'}
                 </p>
-                <p className="text-[16px] font-bold" style={{ color: INK }}>
-                  {y.questions}
+                <p className="text-[17px] font-bold" style={{ color: INK }}>
+                  {y.collected}
+                  {/* A year we hold part of says so, rather than implying the
+                      whole paper is here. */}
+                  {y.paperQuestions && y.collected < y.paperQuestions ? (
+                    <span className="text-[12px] font-semibold" style={{ color: MUTED }}>
+                      {' '}
+                      / {y.paperQuestions}
+                    </span>
+                  ) : null}
                 </p>
               </article>
             ))}
@@ -272,32 +273,35 @@ function FullTest({
   );
 }
 
-function SectionWise({ years, hi }: { years: { year: number; questions: number }[]; hi: boolean }) {
-  const total = years.reduce((sum, y) => sum + y.questions, 0);
+function SectionWise({ years, hi }: { years: PyqSession[]; hi: boolean }) {
+  const total = years.reduce((sum, y) => sum + y.collected, 0);
   if (years.length === 0) {
     return (
       <div className="mt-4">
         <EmptyNote>
-          {hi
-            ? 'इस अनुभाग के लिए अभी कोई प्रश्न बैंक में नहीं है।'
-            : 'No questions in the bank for this section yet.'}
+          {hi ? 'इस अनुभाग के लिए अभी कोई वर्ष नहीं है।' : 'No years for this section yet.'}
         </EmptyNote>
       </div>
     );
   }
+  const first = years[years.length - 1]!.year;
+  const last = years[0]!.year;
   return (
     <div className="mt-4 space-y-2.5">
       <Row
-        title={hi ? `सभी वर्ष एक साथ` : 'All Years at a Time'}
+        title={
+          hi
+            ? `सभी वर्ष (${first}-${last}) एक साथ`
+            : `All Years (${first}-${last}) at a Time`
+        }
         note={hi ? `कुल प्रश्न: ${total}` : `Total questions: ${total}`}
-        icon="🗓️"
+        sub={hi ? 'संयुक्त PYQ' : 'Combined PYQs'}
       />
       {years.map((y) => (
         <Row
           key={y.year}
           title={String(y.year)}
-          note={hi ? `कुल प्रश्न: ${y.questions}` : `Total questions: ${y.questions}`}
-          icon="🗓️"
+          note={hi ? `कुल प्रश्न: ${y.collected}` : `Total questions: ${y.collected}`}
         />
       ))}
     </div>
@@ -326,13 +330,13 @@ function TopicWise({
   const shown = all ? topics : topics.slice(0, 16);
   return (
     <div className="mt-4">
-      <div className="divide-y divide-[#f1eefa] rounded-2xl bg-white">
+      <div className="divide-y divide-[#f4f1fd] rounded-2xl bg-white">
         {shown.map((topic, i) => (
           <div key={topic.id} className="flex items-center gap-3 px-4 py-3.5">
             <span aria-hidden className="text-[15px]">
               📖
             </span>
-            <span className="text-[13px] font-semibold" style={{ color: MUTED }}>
+            <span className="w-6 text-[13px] font-semibold" style={{ color: MUTED }}>
               {i + 1}.
             </span>
             <span className="min-w-0 flex-1 text-[14px]" style={{ color: INK }}>
@@ -364,7 +368,7 @@ function TopicWise({
   );
 }
 
-/* ------------------------------------------------------------ fragments */
+/* ------------------------------------------------------------- fragments */
 
 function SectionChips({
   sections,
@@ -414,19 +418,24 @@ function SectionChips({
   );
 }
 
-function Row({ title, note, icon }: { title: string; note: string; icon: string }) {
+function Row({ title, note, sub }: { title: string; note: string; sub?: string }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5">
       <span
         aria-hidden
         className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#f1eefc] text-[16px]"
       >
-        {icon}
+        🗓️
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[14.5px] font-bold" style={{ color: INK }}>
           {title}
         </span>
+        {sub ? (
+          <span className="block text-[11.5px]" style={{ color: MUTED }}>
+            {sub}
+          </span>
+        ) : null}
         <span className="block text-[12px]" style={{ color: MUTED }}>
           {note}
         </span>
@@ -437,17 +446,6 @@ function Row({ title, note, icon }: { title: string; note: string; icon: string 
     </div>
   );
 }
-
-/** `pyq_year_counts` is per topic per year; a screen wants it per year. */
-const aggregate = (
-  rows: { year: number; questionCount: number }[],
-): { year: number; questions: number }[] => {
-  const byYear = new Map<number, number>();
-  for (const r of rows) byYear.set(r.year, (byYear.get(r.year) ?? 0) + r.questionCount);
-  return [...byYear.entries()]
-    .map(([year, questions]) => ({ year, questions }))
-    .sort((a, b) => b.year - a.year);
-};
 
 export default function Page() {
   return (
