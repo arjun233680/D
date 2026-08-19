@@ -105,7 +105,14 @@ export default function ChooseLevelPage() {
       setFailed(true);
       return;
     }
-    router.push('/onboarding/subject');
+    /*
+     * Straight to the dashboard when nothing left asks a subject question —
+     * PRT on its own is the case. Routing to the subject step and letting it
+     * bounce would work, but it shows a loading screen on the way to somewhere
+     * it was never going to stop.
+     */
+    const anyAsks = (levels ?? []).some((l) => chosen.has(l.id) && l.requiresSubject);
+    router.push(anyAsks ? '/onboarding/subject' : '/');
   };
 
   if (!ready || levels === null) {

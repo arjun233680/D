@@ -59,10 +59,17 @@ export default function ChooseSubjectPage() {
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  /** Moves to the first level with no subject yet, or leaves onboarding. */
+  /**
+   * Moves to the next level that still needs a subject, or leaves onboarding.
+   *
+   * Levels with `requiresSubject: false` are stepped over entirely — primary is
+   * one whole paper with nothing to choose between. A learner who picked only
+   * such levels never sees this screen at all: they arrive, nothing is
+   * outstanding, and they go straight to the dashboard.
+   */
   const advance = useCallback(
     (all: Level[], done: Record<string, string>) => {
-      const next = all.find((l) => !done[l.id]);
+      const next = all.find((l) => l.requiresSubject && !done[l.id]);
       if (!next) {
         router.replace('/');
         return;

@@ -11,6 +11,8 @@ import {
   filterExamsForChooser,
   isBackendConfigured,
   listExams,
+  listLevels,
+  nextOnboardingStep,
   saveLearnerExamIds,
   type Exam,
   type ExamChooserFilter,
@@ -69,11 +71,12 @@ export default function ChooseExamPage() {
   useEffect(() => {
     let live = true;
     void (async () => {
-      const [list, already, levelIds, subjects] = await Promise.all([
+      const [list, already, levelIds, subjects, levels] = await Promise.all([
         listExams(),
         fetchLearnerExamIds(),
         fetchLearnerLevelIds(),
         fetchLearnerSubjects(),
+        listLevels(),
       ]);
       if (!live) return;
       /*
@@ -83,11 +86,15 @@ export default function ChooseExamPage() {
        * months ago sees one redirect on sign-in instead of three, and one who
        * closed the tab midway resumes on the question they stopped at.
        */
-      if (already.length > 0) {
-        if (levelIds.length === 0) router.replace('/onboarding/level');
-        else if (levelIds.some((id) => !subjects.some((s) => s.levelId === id)))
-          router.replace('/onboarding/subject');
-        else router.replace('/');
+      const step = nextOnboardingStep(already, levels, levelIds, subjects);
+      if (step !== 'exams') {
+        router.replace(
+          step === 'level'
+            ? '/onboarding/level'
+            : step === 'subject'
+              ? '/onboarding/subject'
+              : '/',
+        );
         return;
       }
       setExams(list);

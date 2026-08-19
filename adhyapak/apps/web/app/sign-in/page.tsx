@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   isBackendConfigured,
   sendPhoneOtp,
   signInWithGoogle,
-  signOut,
   verifyPhoneOtp,
   type AuthError,
 } from '@adhyapak/core';
@@ -38,7 +37,7 @@ const VIOLET_LIGHT = '#8b5cf6';
 type Step = 'phone' | 'code';
 
 export default function SignInPage() {
-  const { lang, toggleLang, user } = useStore();
+  const { lang, toggleLang, user, ready } = useStore();
   const hi = lang === 'hi';
   const router = useRouter();
 
@@ -53,6 +52,27 @@ export default function SignInPage() {
   // A build-time fact, so it is read once at render rather than watched.
   const noBackend = !isBackendConfigured();
   const signedIn = Boolean(user.signedIn && user.id);
+
+  /*
+   * A signed-in learner has no business on the door.
+   *
+   * This page used to greet them with a card — "Signed in as …" over a "Start
+   * preparing" button — which is a second click asking them to confirm
+   * something they already did. Coming back from Google lands here, so that
+   * card was the last thing between finishing sign-in and using the app.
+   *
+   * The chooser is the destination rather than `/` because it is the one screen
+   * that works out which onboarding question is still outstanding, and it
+   * forwards to the dashboard when none are. Sign-out lives on the profile
+   * page, which is where somebody looking for it would go.
+   *
+   * `ready` guards the redirect: the store hydrates from localStorage after
+   * mount, so acting on `signedIn` before then would bounce a signed-in learner
+   * who is only momentarily indistinguishable from a stranger.
+   */
+  useEffect(() => {
+    if (ready && signedIn) router.replace('/onboarding/exams');
+  }, [ready, signedIn, router]);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,14 +125,6 @@ export default function SignInPage() {
       setError(started.error);
       setBusy(false);
     }
-  };
-
-  const leave = async () => {
-    setBusy(true);
-    await signOut();
-    setBusy(false);
-    setStep('phone');
-    setCode('');
   };
 
   return (
@@ -177,32 +189,7 @@ export default function SignInPage() {
           </p>
         ) : null}
 
-        {signedIn ? (
-          <section className="mt-6 rounded-[22px] bg-white p-5 shadow-[0_10px_30px_-12px_rgba(76,52,160,0.28)]">
-            <p className="text-[14px] text-[#1e1b4b]">
-              {hi ? 'साइन इन:' : 'Signed in as'}{' '}
-              <span className="font-bold">{user.name || user.email}</span>
-            </p>
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => router.push('/')}
-                className="flex-1 rounded-2xl py-3 text-[14px] font-bold text-white"
-                style={{ background: `linear-gradient(90deg, ${VIOLET}, ${VIOLET_LIGHT})` }}
-              >
-                {hi ? 'तैयारी शुरू करें' : 'Start preparing'}
-              </button>
-              <button
-                type="button"
-                onClick={leave}
-                disabled={busy}
-                className="rounded-2xl border border-[#e8e4f6] px-4 text-[14px] font-bold text-[#6b7280] disabled:opacity-50"
-              >
-                {hi ? 'साइन आउट' : 'Sign out'}
-              </button>
-            </div>
-          </section>
-        ) : (
+        {signedIn ? null : (
           <>
             <section className="mt-6 rounded-[22px] bg-white p-5 shadow-[0_10px_30px_-12px_rgba(76,52,160,0.28)]">
               <div className="flex items-center gap-3">
