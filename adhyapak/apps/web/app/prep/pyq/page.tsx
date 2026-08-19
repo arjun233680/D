@@ -4,11 +4,14 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import {
   listPrepSections,
   listPyqSessions,
+  listSubjectParts,
   listTopicsForSubject,
+  listTopicsForSubjectTree,
   t,
   type Bilingual,
   type PrepSection,
   type PyqSession,
+  type SubjectPart,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { EmptyNote, INK, MUTED, PrepHeader, PrepNav, PrepShell, VIOLET } from '../ui';
@@ -58,6 +61,9 @@ function PyqBrowser() {
   const [paperYears, setPaperYears] = useState<PyqSession[]>([]);
   const [sectionYears, setSectionYears] = useState<PyqSession[]>([]);
   const [topics, setTopics] = useState<{ id: string; name: Bilingual }[]>([]);
+  const [parts, setParts] = useState<SubjectPart[]>([]);
+  /** Which part of a composite section is open — null means "All". */
+  const [part, setPart] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
   const examId = selection?.exam?.id;
@@ -89,18 +95,36 @@ function PyqBrowser() {
     let live = true;
     if (!examId || !active) return;
     void (async () => {
-      const [sessions, list] = await Promise.all([
+      const [sessions, children] = await Promise.all([
         listPyqSessions(examId, active),
-        listTopicsForSubject(active),
+        listSubjectParts(active),
       ]);
       if (!live) return;
       setSectionYears(sessions);
+      setParts(children);
+      setPart(null);
+      // "All" spans the section and its parts; a part tab is just that subject.
+      const list = children.length > 0 ? await listTopicsForSubjectTree(active) : await listTopicsForSubject(active);
+      if (!live) return;
       setTopics(list);
     })();
     return () => {
       live = false;
     };
   }, [examId, active]);
+
+  // A part tab narrows the topic list to that subject; "All" spans the tree.
+  useEffect(() => {
+    let live = true;
+    if (!active || parts.length === 0) return;
+    void (async () => {
+      const list = part ? await listTopicsForSubject(part) : await listTopicsForSubjectTree(active);
+      if (live) setTopics(list);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [part, active, parts.length]);
 
   const chosen = useMemo(() => sections.find((s) => s.subjectId === active), [sections, active]);
 
@@ -169,19 +193,51 @@ function PyqBrowser() {
                         </span>
                         <div className="min-w-0">
                           <p className="text-[18px] font-extrabold" style={{ color: chosen.color }}>
-                            {t(chosen.name, lang)}
+                            {chosen.shortName}
                           </p>
-                          <p className="text-[12px]" style={{ color: MUTED }}>
+                          {/* The syllabus wording under the chip's short one —
+                              "CDP" over "(Child Development & Pedagogy)". */}
+                          <p className="text-[12.5px]" style={{ color: MUTED }}>
+                            ({t(chosen.name, lang)})
+                          </p>
+                          <p className="mt-0.5 text-[12px]" style={{ color: MUTED }}>
                             {tab === 'topic'
-                              ? hi
-                                ? `कुल टॉपिक्स: ${topics.length}`
-                                : `${topics.length} topics`
+                              ? parts.length > 0
+                                ? hi
+                                  ? `कुल टॉपिक्स: ${parts.length} विषय, ${topics.length} टॉपिक्स`
+                                  : `${parts.length} subjects, ${topics.length} topics`
+                                : hi
+                                  ? `कुल टॉपिक्स: ${topics.length}`
+                                  : `${topics.length} topics`
                               : hi
                                 ? 'विगत वर्ष प्रश्न — वर्ष अनुसार'
-                                : 'Practice PYQs year wise'}
+                                : 'Practice PYQs Year Wise'}
                           </p>
                         </div>
                       </div>
+
+                      {/* A section that is several subjects offers them as tabs.
+                          One that is not shows nothing here — a lone "All" tab
+                          is a control with no choice in it. */}
+                      {parts.length > 0 ? (
+                        <div className="rail mt-3 flex gap-2">
+                          <PartTab
+                            label={hi ? 'सभी' : 'All'}
+                            on={part === null}
+                            color={chosen.color}
+                            onClick={() => setPart(null)}
+                          />
+                          {parts.map((p) => (
+                            <PartTab
+                              key={p.subjectId}
+                              label={p.shortName}
+                              on={part === p.subjectId}
+                              color={chosen.color}
+                              onClick={() => setPart(p.subjectId)}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
                     </section>
                   ) : null}
 
@@ -404,7 +460,7 @@ function SectionChips({
               className="text-center text-[11px] leading-tight font-semibold"
               style={{ color: on ? s.color : MUTED }}
             >
-              {t(s.name, lang)}
+              {s.shortName}
             </span>
             <span
               aria-hidden
@@ -415,6 +471,34 @@ function SectionChips({
         );
       })}
     </div>
+  );
+}
+
+function PartTab({
+  label,
+  on,
+  color,
+  onClick,
+}: {
+  label: string;
+  on: boolean;
+  color: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className="shrink-0 rounded-xl px-4 py-2 text-[13px] font-semibold"
+      style={
+        on
+          ? { background: color, color: '#fff' }
+          : { border: '1px solid #e8e4f6', background: '#fff', color: MUTED }
+      }
+    >
+      {label}
+    </button>
   );
 }
 

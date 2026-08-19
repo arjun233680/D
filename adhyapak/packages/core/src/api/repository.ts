@@ -1495,6 +1495,9 @@ export const saveLearnerSubject = async (
 export interface PrepSection {
   subjectId: string;
   name: Bilingual;
+  /** What the chip says — "Numerical Aptitude" where `name` is the syllabus's
+   *  "Quantitative Aptitude". Falls back to the English name when unset. */
+  shortName: string;
   icon: string;
   color: string;
   /** Questions this block carries in the blueprint — 30 for CDP, 60 elective. */
@@ -1535,12 +1538,12 @@ export const listPrepSections = async (
 
   const { data, error } = await db
     .from('paper_sections')
-    .select('subject_id, elective_group_id, questions, subjects(name, icon, color)')
+    .select('subject_id, elective_group_id, questions, subjects(name, short_name, icon, color)')
     .eq('paper_id', paper.id)
     .order('questions', { ascending: false });
   if (error || !data) return [];
 
-  type Joined = { name: Bilingual; icon: string; color: string };
+  type Joined = { name: Bilingual; short_name: string | null; icon: string; color: string };
   const rows = data as unknown as {
     subject_id: string | null;
     elective_group_id: string | null;
@@ -1554,7 +1557,7 @@ export const listPrepSections = async (
   if (electiveSubjectId) {
     const { data: s } = await db
       .from('subjects')
-      .select('name, icon, color')
+      .select('name, short_name, icon, color')
       .eq('id', electiveSubjectId)
       .maybeSingle();
     chosen = (s as Joined | null) ?? undefined;
@@ -1581,6 +1584,7 @@ export const listPrepSections = async (
         return {
           subjectId: electiveSubjectId,
           name: chosen.name,
+          shortName: chosen.short_name ?? chosen.name.en,
           icon: chosen.icon,
           color: chosen.color,
           questions: r.questions,
@@ -1592,6 +1596,7 @@ export const listPrepSections = async (
       return {
         subjectId: r.subject_id,
         name: s.name,
+        shortName: s.short_name ?? s.name.en,
         icon: s.icon,
         color: s.color,
         questions: r.questions,
@@ -1663,4 +1668,69 @@ export const listPyqSessions = async (
     collected: collected.get(y.year) ?? 0,
     paperQuestions: y.paper_questions ?? undefined,
   }));
+};
+
+/** One part of a composite subject — Physics within Science. */
+export interface SubjectPart {
+  subjectId: string;
+  shortName: string;
+  name: Bilingual;
+  icon: string;
+  color: string;
+}
+
+/**
+ * The subjects a section is made of, if it is made of any.
+ *
+ * "Science" on an HTET TGT paper is one 60-mark block, but a candidate revising
+ * it thinks in Physics, Chemistry and Biology, and the screen offers those as
+ * tabs. Empty for a section that is genuinely one subject — Child Development
+ * has no parts — and the tabs disappear rather than showing a single "All".
+ */
+export const listSubjectParts = async (parentId: string): Promise<SubjectPart[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const { data, error } = await db
+    .from('subjects')
+    .select('id, short_name, name, icon, color')
+    .eq('parent_subject_id', parentId)
+    .order('sort_order', { ascending: true });
+  if (error || !data) return [];
+  return (data as {
+    id: string;
+    short_name: string | null;
+    name: Bilingual;
+    icon: string;
+    color: string;
+  }[]).map((r) => ({
+    subjectId: r.id,
+    shortName: r.short_name ?? r.name.en,
+    name: r.name,
+    icon: r.icon,
+    color: r.color,
+  }));
+};
+
+/**
+ * Topics across a subject and every part of it.
+ *
+ * The "All" tab under Science lists Physics, Chemistry and Biology together,
+ * which is one query rather than three merged in the screen — and it keeps the
+ * count on the header honest, because "3 subjects, 69 topics" has to be the
+ * same number the list below it renders.
+ */
+export const listTopicsForSubjectTree = async (
+  subjectId: string,
+): Promise<{ id: string; name: Bilingual }[]> => {
+  const db = getBackend();
+  if (!db) return [];
+  const parts = await listSubjectParts(subjectId);
+  const ids = [subjectId, ...parts.map((p) => p.subjectId)];
+  const { data, error } = await db
+    .from('topics')
+    .select('id, name')
+    .in('subject_id', ids)
+    .order('id', { ascending: true });
+  if (error || !data) return [];
+  return data as { id: string; name: Bilingual }[];
 };
