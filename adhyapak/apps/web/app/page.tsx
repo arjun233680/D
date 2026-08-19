@@ -144,7 +144,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-dvh bg-[#faf9ff] pb-24">
-      <div className="mx-auto w-full max-w-[760px] px-5 pt-5">
+      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-5">
         <div className="flex items-center justify-between">
           <Link
             href="/profile"
@@ -232,7 +232,7 @@ export default function HomePage() {
               {hi ? 'मेरे चुनाव' : 'My Selections'}
             </h2>
             <Link
-              href="/onboarding/exams"
+              href="/onboarding/exams?change=1"
               className="flex items-center gap-1.5 rounded-xl border border-[#e2dcf7] px-3 py-2 text-[12.5px] font-bold"
               style={{ color: VIOLET }}
             >
@@ -366,7 +366,7 @@ export default function HomePage() {
 
       {/* -------------------------------------------------------- bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 border-t border-[#eeebf8] bg-white">
-        <div className="mx-auto grid max-w-[760px] grid-cols-4">
+        <div className="mx-auto grid max-w-[760px] lg:max-w-[1040px] grid-cols-4">
           {NAV.map((item) => {
             const active = item.href === '/';
             return (

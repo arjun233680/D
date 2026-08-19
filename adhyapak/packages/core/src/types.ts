@@ -642,16 +642,19 @@ export interface Level {
    */
   requiresSubject: boolean;
   /**
-   * The `exam_papers.level` this level means — primary, upper-primary,
-   * senior-secondary.
+   * The `exam_papers.level` values this level covers.
    *
    * The shared vocabulary that lets a level find its paper in any exam. Matching
    * on the level's own name instead only ever worked for HTET, which happens to
    * label its papers PRT/TGT/PGT; CTET calls the same two papers "Paper I" and
-   * "Paper II", UPTET "Level 1" and "Level 2". Undefined where the level maps
-   * onto no teaching paper at all.
+   * "Paper II", UPTET "Level 1" and "Level 2".
+   *
+   * Plural because TGT spans classes 6 to 10 and the papers split that in two:
+   * CTET's Paper II is `upper-primary`, DSSSB's and KVS's TGT papers are
+   * `secondary`. Matching one of those left the other with no paper at all.
+   * Empty where the level maps onto no teaching paper.
    */
-  teachingLevel?: string;
+  teachingLevels: string[];
 }
 
 /**

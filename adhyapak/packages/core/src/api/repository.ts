@@ -1370,7 +1370,7 @@ export const listLevels = async (): Promise<Level[]> => {
     color: string;
     sort_order: number;
     requires_subject?: boolean;
-    teaching_level?: string | null;
+    teaching_levels?: string[] | null;
   }[]).map((r) => ({
     id: r.id,
     name: r.name,
@@ -1383,7 +1383,7 @@ export const listLevels = async (): Promise<Level[]> => {
     // row read from an older project, still gets asked rather than silently
     // skipping a question it may well need.
     requiresSubject: r.requires_subject ?? true,
-    teachingLevel: r.teaching_level ?? undefined,
+    teachingLevels: r.teaching_levels ?? [],
   }));
 };
 
@@ -1523,7 +1523,7 @@ export interface PrepSection {
  */
 export const listPrepSections = async (
   examId: string,
-  level: { teachingLevel?: string; name: string },
+  level: { teachingLevels?: string[]; name: string },
   electiveSubjectId?: string,
 ): Promise<PrepSection[]> => {
   const db = getBackend();
@@ -1545,9 +1545,10 @@ export const listPrepSections = async (
    * every seeded paper. The post match survives only for a row that somehow has
    * no level.
    */
+  const covers = level.teachingLevels ?? [];
   const paper =
-    (level.teachingLevel
-      ? rowsIn.find((p) => (p.level ?? '') === level.teachingLevel)
+    (covers.length > 0
+      ? rowsIn.find((p) => covers.includes(p.level ?? ''))
       : undefined) ??
     rowsIn.find((p) => (p.post ?? '').toUpperCase() === level.name.toUpperCase());
   if (!paper) return [];
@@ -1749,4 +1750,32 @@ export const listTopicsForSubjectTree = async (
     .order('id', { ascending: true });
   if (error || !data) return [];
   return data as { id: string; name: Bilingual }[];
+};
+
+/**
+ * Which `exam_papers.level` values a set of exams actually examine.
+ *
+ * The level chooser offered PRT, TGT and PGT to everybody, and CTET has no PGT
+ * paper at all — so a CTET candidate could pick a level their exam does not
+ * run, and then reach a PYQ screen with nothing behind it. Asking the papers
+ * is the only honest answer, and it costs one query.
+ *
+ * Empty when nothing is known, and the caller shows every level rather than
+ * none: an unanswerable question is better than a screen with no options.
+ */
+export const listPaperLevelsForExams = async (
+  examIds: readonly string[],
+): Promise<string[]> => {
+  const db = getBackend();
+  if (!db || examIds.length === 0) return [];
+  const { data, error } = await db
+    .from('exam_papers')
+    .select('level')
+    .in('exam_id', [...examIds]);
+  if (error || !data) return [];
+  const levels = new Set<string>();
+  for (const row of data as { level: string | null }[]) {
+    if (row.level) levels.add(row.level);
+  }
+  return [...levels];
 };

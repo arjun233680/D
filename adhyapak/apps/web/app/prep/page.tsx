@@ -53,7 +53,7 @@ function PrepDashboard() {
     <PrepShell lang={lang}>
       {(openMenu) => (
         <div className="min-h-dvh bg-[#faf9ff] pb-24">
-          <div className="mx-auto w-full max-w-[760px]">
+          <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px]">
             <PrepHeader title={title} subtitle={subtitle} onMenu={openMenu} lang={lang} />
 
             {/* The design shows "45% Completed" over a filled bar. Nothing
@@ -73,7 +73,7 @@ function PrepDashboard() {
                 {hi ? 'अध्ययन एवं अभ्यास' : 'Study & Practice'}
               </h2>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
                 {TILES.map((tile) => (
                   <Link
                     key={tile.label.en + tile.href}

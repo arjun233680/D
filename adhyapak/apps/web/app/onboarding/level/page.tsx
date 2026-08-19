@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   examSubtitle,
   fetchLearnerExamIds,
   fetchLearnerLevelIds,
   listExams,
   listLevels,
+  listPaperLevelsForExams,
   saveLearnerLevelIds,
   t,
   type Exam,
@@ -38,10 +39,12 @@ import {
  * the comment at the head of migration 0020 for why those are different
  * questions.
  */
-export default function ChooseLevelPage() {
+function ChooseLevelPage() {
   const { lang, ready } = useStore();
   const hi = lang === 'hi';
   const router = useRouter();
+  /** Carried through every step so "Change Selection" edits rather than onboards. */
+  const changing = useSearchParams().get('change') === '1';
 
   const [levels, setLevels] = useState<Level[] | null>(null);
   const [exams, setExams] = useState<Exam[]>([]);
@@ -66,9 +69,27 @@ export default function ChooseLevelPage() {
         router.replace('/onboarding/exams');
         return;
       }
-      setLevels(levelList);
+      /*
+       * Only levels the chosen exams actually examine.
+       *
+       * CTET has no PGT paper; offering PGT to a CTET candidate lets them pick
+       * a level their exam does not run and then land on a PYQ screen with
+       * nothing behind it. A level with no `teachingLevels` — the catch-all —
+       * is always offered, and if the papers tell us nothing the whole list
+       * stands, because an unanswerable question beats an empty screen.
+       */
+      const offered = await listPaperLevelsForExams(examIds);
+      if (!live) return;
+      const usable =
+        offered.length === 0
+          ? levelList
+          : levelList.filter(
+              (l) => l.teachingLevels.length === 0 || l.teachingLevels.some((tl) => offered.includes(tl)),
+            );
+
+      setLevels(usable);
       setExams(examList.filter((e) => examIds.includes(e.id)));
-      setChosen(new Set(levelIds));
+      setChosen(new Set(levelIds.filter((id) => usable.some((l) => l.id === id))));
     })();
     return () => {
       live = false;
@@ -112,7 +133,7 @@ export default function ChooseLevelPage() {
      * it was never going to stop.
      */
     const anyAsks = (levels ?? []).some((l) => chosen.has(l.id) && l.requiresSubject);
-    router.push(anyAsks ? '/onboarding/subject' : '/');
+    router.push(anyAsks ? (changing ? '/onboarding/subject?change=1' : '/onboarding/subject') : '/');
   };
 
   if (!ready || levels === null) {
@@ -125,7 +146,7 @@ export default function ChooseLevelPage() {
 
   return (
     <div className="relative min-h-dvh bg-[#faf9ff] pb-40">
-      <div className="mx-auto w-full max-w-[760px] px-5 pt-6">
+      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-6">
         <div className="flex items-center gap-4">
           <BackButton fallback="/onboarding/exams" />
           <StepRail step={2} />
@@ -223,5 +244,13 @@ export default function ChooseLevelPage() {
         ) : null}
       </ContinueBar>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh bg-[#faf9ff]" />}>
+      <ChooseLevelPage />
+    </Suspense>
   );
 }

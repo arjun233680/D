@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   EXAM_CHOOSER_FILTERS,
   examSubtitle,
@@ -48,10 +48,18 @@ const FILTER_LABEL: Record<ExamChooserFilter, { en: string; hi: string; icon: st
   important: { en: 'Important', hi: 'प्रमुख', icon: '★' },
 };
 
-export default function ChooseExamPage() {
+function ChooseExamPage() {
   const { lang, user, ready } = useStore();
   const hi = lang === 'hi';
   const router = useRouter();
+  /*
+   * "Change Selection" arrives here with `?change=1`.
+   *
+   * Without it this screen forwards anyone who has already answered — which is
+   * right on sign-in and exactly wrong when they came to change the answer. The
+   * drawer's link used to bounce straight back to the dashboard.
+   */
+  const changing = useSearchParams().get('change') === '1';
 
   const [exams, setExams] = useState<Exam[] | null>(null);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
@@ -86,6 +94,14 @@ export default function ChooseExamPage() {
        * months ago sees one redirect on sign-in instead of three, and one who
        * closed the tab midway resumes on the question they stopped at.
        */
+      if (changing) {
+        // Pre-ticked with what they chose last time: this is an edit, not a
+        // fresh question, and re-picking five exams from scratch to add a sixth
+        // is how a learner loses one by accident.
+        setChosen(new Set(already));
+        setExams(list);
+        return;
+      }
       const step = nextOnboardingStep(already, levels, levelIds, subjects);
       if (step !== 'exams') {
         router.replace(
@@ -102,7 +118,7 @@ export default function ChooseExamPage() {
     return () => {
       live = false;
     };
-  }, [router]);
+  }, [router, changing]);
 
   const visible = useMemo(
     () => (exams ? filterExamsForChooser(exams, filter, query) : []),
@@ -130,7 +146,7 @@ export default function ChooseExamPage() {
       setFailed(true);
       return;
     }
-    router.push('/onboarding/level');
+    router.push(changing ? '/onboarding/level?change=1' : '/onboarding/level');
   };
 
   if (!ready || exams === null) {
@@ -145,7 +161,7 @@ export default function ChooseExamPage() {
 
   return (
     <div className="relative min-h-dvh bg-[#faf9ff] pb-44">
-      <div className="mx-auto w-full max-w-[760px] px-5 pt-10">
+      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-10">
         {/* The art sits in the top corner and the heading is kept clear of it,
             so the two never collide on a narrow phone. */}
         <header className="relative pr-20 sm:pr-40">
@@ -239,7 +255,7 @@ export default function ChooseExamPage() {
           while scrolling a list this long — a footer at the bottom of 29 cards
           is a footer nobody scrolls back to. */}
       <div className="fixed inset-x-0 bottom-0 border-t border-[#eeebf8] bg-[#faf9ff]/95 backdrop-blur">
-        <div className="mx-auto w-full max-w-[760px] px-5 py-4">
+        <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 py-4">
           {failed ? (
             <p
               role="alert"
@@ -408,5 +424,14 @@ function ArrowIcon() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+/** `useSearchParams` needs a Suspense boundary in an exported app. */
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh bg-[#faf9ff]" />}>
+      <ChooseExamPage />
+    </Suspense>
   );
 }

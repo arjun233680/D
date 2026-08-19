@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   examSubtitle,
   fetchLearnerExamIds,
@@ -45,10 +45,11 @@ import {
  * place, and there is no step counter in a URL to get out of sync with what was
  * actually saved.
  */
-export default function ChooseSubjectPage() {
+function ChooseSubjectPage() {
   const { lang, ready } = useStore();
   const hi = lang === 'hi';
   const router = useRouter();
+  const changing = useSearchParams().get('change') === '1';
 
   const [levels, setLevels] = useState<Level[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
@@ -102,7 +103,14 @@ export default function ChooseSubjectPage() {
         return;
       }
       const mine = levelList.filter((l) => levelIds.includes(l.id));
-      const done = Object.fromEntries(subjects.map((s) => [s.levelId, s.subjectId]));
+      /*
+       * Editing asks every level again, even ones already answered — that is
+       * what "change my subject" means. Onboarding resumes instead, skipping
+       * what is already saved.
+       */
+      const done = changing
+        ? {}
+        : Object.fromEntries(subjects.map((s) => [s.levelId, s.subjectId]));
       setLevels(mine);
       setExams(examList.filter((e) => examIds.includes(e.id)));
       setAnswered(done);
@@ -111,7 +119,7 @@ export default function ChooseSubjectPage() {
     return () => {
       live = false;
     };
-  }, [router, advance]);
+  }, [router, advance, changing]);
 
   const strip = useMemo(
     () =>
@@ -150,7 +158,7 @@ export default function ChooseSubjectPage() {
 
   return (
     <div className="relative min-h-dvh bg-[#faf9ff] pb-40">
-      <div className="mx-auto w-full max-w-[760px] px-5 pt-6">
+      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-6">
         <div className="flex items-center gap-4">
           <BackButton fallback="/onboarding/level" />
           <StepRail step={3} />
@@ -240,5 +248,13 @@ export default function ChooseSubjectPage() {
         ) : null}
       </ContinueBar>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh bg-[#faf9ff]" />}>
+      <ChooseSubjectPage />
+    </Suspense>
   );
 }

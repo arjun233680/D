@@ -144,7 +144,7 @@ function PyqBrowser() {
     <PrepShell lang={lang}>
       {(openMenu) => (
         <div className="min-h-dvh bg-[#faf9ff] pb-24">
-          <div className="mx-auto w-full max-w-[760px]">
+          <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px]">
             <PrepHeader
               title="PYQ"
               subtitle={selectionTitle(selection, subjectName)}
@@ -293,7 +293,7 @@ function FullTest({ years, busy, hi }: { years: PyqSession[]; busy: boolean; hi:
               : 'No years recorded for this exam yet.'}
           </EmptyNote>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {years.map((y, i) => (
               <article
                 key={y.year}
@@ -343,7 +343,7 @@ function SectionWise({ years, hi }: { years: PyqSession[]; hi: boolean }) {
   const first = years[years.length - 1]!.year;
   const last = years[0]!.year;
   return (
-    <div className="mt-4 space-y-2.5">
+    <div className="mt-4 space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-2.5 lg:space-y-0">
       <Row
         title={
           hi
@@ -386,9 +386,9 @@ function TopicWise({
   const shown = all ? topics : topics.slice(0, 16);
   return (
     <div className="mt-4">
-      <div className="divide-y divide-[#f4f1fd] rounded-2xl bg-white">
+      <div className="divide-y divide-[#f4f1fd] rounded-2xl bg-white lg:grid lg:grid-cols-2 lg:gap-x-6 lg:divide-y-0 lg:p-2">
         {shown.map((topic, i) => (
-          <div key={topic.id} className="flex items-center gap-3 px-4 py-3.5">
+          <div key={topic.id} className="flex items-center gap-3 border-b border-[#f4f1fd] px-4 py-3.5 lg:border-b-0">
             <span aria-hidden className="text-[15px]">
               📖
             </span>
@@ -437,8 +437,11 @@ function SectionChips({
   onPick: (id: string) => void;
   lang: 'en' | 'hi';
 }) {
+  // A scroll rail only while the row cannot fit. Given the width it lays out
+  // properly instead, because a rail on a desktop hides half its contents
+  // behind a scrollbar nobody thinks to look for.
   return (
-    <div className="rail flex gap-4 pb-1">
+    <div className="rail flex gap-4 pb-1 sm:flex-wrap sm:justify-start sm:overflow-visible">
       {sections.map((s) => {
         const on = s.subjectId === active;
         return (
@@ -447,7 +450,7 @@ function SectionChips({
             type="button"
             onClick={() => onPick(s.subjectId)}
             aria-pressed={on}
-            className="flex w-[74px] shrink-0 flex-col items-center gap-1.5"
+            className="flex w-[74px] shrink-0 flex-col items-center gap-1.5 sm:w-[88px]"
           >
             <span
               className="grid h-12 w-12 place-items-center rounded-full text-[20px]"

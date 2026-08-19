@@ -20,6 +20,7 @@ const level = (id: string, requiresSubject: boolean): Level => ({
   color: '#000000',
   sortOrder: 10,
   requiresSubject,
+  teachingLevels: [],
 });
 
 const PRT = level('prt', false);
