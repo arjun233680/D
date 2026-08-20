@@ -67,43 +67,36 @@ function PrepDashboard() {
               </div>
             </div>
 
-            <section className="mt-5 px-5">
-              <h2 className="flex items-center gap-2 text-[17px] font-extrabold" style={{ color: INK }}>
+            <section className="mt-4 px-5">
+              <h2 className="flex items-center gap-2 text-[18px] font-extrabold" style={{ color: INK }}>
                 <span aria-hidden>📖</span>
                 {hi ? 'अध्ययन एवं अभ्यास' : 'Study & Practice'}
               </h2>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
+              <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                 {TILES.map((tile) => (
                   <Link
                     key={tile.label.en + tile.href}
                     href={tile.href}
-                    className="flex flex-col items-center rounded-2xl p-4 text-center"
+                    className="flex items-center gap-2.5 rounded-2xl p-3"
                     style={{ backgroundColor: tile.tint }}
                   >
-                    <span aria-hidden className="text-[30px] leading-none">
-                      {tile.icon}
-                    </span>
-                    <span className="mt-3 text-[14px] font-bold" style={{ color: INK }}>
-                      {t(tile.label, lang)}
-                    </span>
-                    <span className="mt-1 text-[11.5px] leading-snug" style={{ color: MUTED }}>
-                      {t(tile.sub, lang)}
-                    </span>
                     <span
                       aria-hidden
-                      className="mt-3 grid h-7 w-7 place-items-center rounded-full"
-                      style={{ background: tile.dot }}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/70 text-[18px]"
                     >
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                        <path
-                          d="M4 10h11m0 0-4-4m4 4-4 4"
-                          stroke="#fff"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      {tile.icon}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[15px] font-bold" style={{ color: INK }}>
+                        {t(tile.label, lang)}
+                      </span>
+                      <span
+                        className="block truncate text-[12px] leading-snug"
+                        style={{ color: MUTED }}
+                      >
+                        {t(tile.sub, lang)}
+                      </span>
                     </span>
                   </Link>
                 ))}
@@ -113,11 +106,11 @@ function PrepDashboard() {
                 href="/notes"
                 className="mt-3 flex items-center gap-3 rounded-2xl bg-[#e9f7f3] p-4"
               >
-                <span aria-hidden className="text-[24px]">
+                <span aria-hidden className="text-[22px]">
                   Σ
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-bold" style={{ color: INK }}>
+                  <span className="block text-[16px] font-bold" style={{ color: INK }}>
                     {hi ? 'सूत्र संग्रह' : 'Formula Sheet'}
                   </span>
                   <span className="block text-[12px]" style={{ color: MUTED }}>
@@ -142,8 +135,8 @@ function PrepDashboard() {
               </Link>
             </section>
 
-            <section className="mt-7 px-5">
-              <h2 className="flex items-center gap-2 text-[17px] font-extrabold" style={{ color: INK }}>
+            <section className="mt-5 px-5">
+              <h2 className="flex items-center gap-2 text-[18px] font-extrabold" style={{ color: INK }}>
                 <span aria-hidden>🔖</span>
                 {hi ? 'तैयारी जारी रखें' : 'Continue Learning'}
               </h2>

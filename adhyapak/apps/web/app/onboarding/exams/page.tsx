@@ -161,23 +161,23 @@ function ChooseExamPage() {
 
   return (
     <div className="relative min-h-dvh bg-[#faf9ff] pb-44">
-      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-10">
+      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-6">
         {/* The art sits in the top corner and the heading is kept clear of it,
             so the two never collide on a narrow phone. */}
         <header className="relative pr-20 sm:pr-40">
-          <p className="text-[15px] font-bold" style={{ color: VIOLET }}>
+          <p className="text-[16px] font-bold" style={{ color: VIOLET }}>
             {hi ? 'स्वागत है! 👋' : 'Welcome! 👋'}
           </p>
-          <h1 className="mt-1 text-[26px] leading-tight font-extrabold tracking-tight text-[#1e1b4b] sm:text-[34px]">
+          <h1 className="mt-1 text-[22px] leading-tight font-extrabold tracking-tight text-[#1e1b4b] sm:text-[28px]">
             {hi ? 'अपनी परीक्षा चुनें' : 'Choose Your Exam'}
           </h1>
-          <p className="mt-1.5 text-[14px] text-[#6b7280] sm:text-[15px]">
+          <p className="mt-1.5 text-[14px] text-[#6b7280] sm:text-[16px]">
             {hi ? 'शुरू करने के लिए अपनी परीक्षा चुनें' : 'Select your exam to get started'}
           </p>
           <BooksArt />
         </header>
 
-        <div className="relative mt-6">
+        <div className="relative mt-4">
           <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2">
             <SearchIcon />
           </span>
@@ -187,13 +187,13 @@ function ChooseExamPage() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={hi ? 'अपनी परीक्षा खोजें' : 'Search your exam'}
             aria-label={hi ? 'परीक्षा खोजें' : 'Search exams'}
-            className="w-full rounded-2xl border border-[#e8e4f6] bg-white py-3.5 pr-4 pl-11 text-[15px] text-[#1e1b4b] placeholder:text-[#a8a3bd] focus:border-[#c4b5fd] focus:outline-none"
+            className="w-full rounded-2xl border border-[#e8e4f6] bg-white py-3.5 pr-4 pl-11 text-[16px] text-[#1e1b4b] placeholder:text-[#a8a3bd] focus:border-[#c4b5fd] focus:outline-none"
           />
         </div>
 
         {/* A rail, not a wrap: four tabs fit on a phone, and wrapping the fourth
             onto its own line reads as a different kind of control. */}
-        <div className="rail mt-4 flex gap-3 pb-1">
+        <div className="rail mt-3 flex gap-2 pb-1">
           {EXAM_CHOOSER_FILTERS.map((f) => {
             const on = filter === f;
             return (
@@ -212,7 +212,7 @@ function ChooseExamPage() {
                 {/* The icons are the first thing to go on a narrow phone: four
                     readable labels beat four decorated ones where the fourth
                     is off the edge of the screen. */}
-                <span aria-hidden className="hidden text-[15px] sm:inline">
+                <span aria-hidden className="hidden text-[16px] sm:inline">
                   {FILTER_LABEL[f].icon}
                 </span>
                 {hi ? FILTER_LABEL[f].hi : FILTER_LABEL[f].en}
@@ -222,7 +222,7 @@ function ChooseExamPage() {
         </div>
 
         {noBackend ? (
-          <p className="mt-5 rounded-2xl border border-[#f3d9a8] bg-[#fef7e8] px-4 py-3 text-[12.5px] leading-relaxed text-[#7a5a1e]">
+          <p className="mt-5 rounded-2xl border border-[#f3d9a8] bg-[#fef7e8] px-4 py-3 text-[13px] leading-relaxed text-[#7a5a1e]">
             ⚠️{' '}
             {hi
               ? 'कोई डेटाबेस कॉन्फ़िगर नहीं है, इसलिए यह चुनाव सहेजा नहीं जाएगा। सूची बंडल की गई सामग्री से आ रही है।'
@@ -237,7 +237,7 @@ function ChooseExamPage() {
               : 'No exam matches that search.'}
           </p>
         ) : (
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((exam) => (
               <ExamCard
                 key={exam.id}
@@ -259,7 +259,7 @@ function ChooseExamPage() {
           {failed ? (
             <p
               role="alert"
-              className="mb-3 rounded-xl bg-[#fdecec] px-3 py-2 text-[12.5px] text-[#b42318]"
+              className="mb-3 rounded-xl bg-[#fdecec] px-3 py-2 text-[13px] text-[#b42318]"
             >
               {hi
                 ? 'चुनाव सहेजा नहीं जा सका। कनेक्शन जाँचकर पुनः प्रयास करें।'
@@ -275,12 +275,12 @@ function ChooseExamPage() {
               <TickIcon />
             </span>
             <span>
-              <span className="block text-[15px] font-bold text-[#1e1b4b]">
+              <span className="block text-[16px] font-bold text-[#1e1b4b]">
                 {hi
                   ? `${chosen.size} परीक्षा चुनी गई`
                   : `${chosen.size} exam${chosen.size === 1 ? '' : 's'} selected`}
               </span>
-              <span className="block text-[12.5px] text-[#6b7280]">
+              <span className="block text-[13px] text-[#6b7280]">
                 {hi
                   ? 'जारी रखने के लिए एक या अधिक परीक्षाएँ चुनें'
                   : 'Select one or more exams to continue'}
@@ -336,31 +336,33 @@ function ExamCard({
       role="checkbox"
       aria-checked={selected}
       onClick={onToggle}
-      className={`flex flex-col rounded-2xl border bg-white p-3.5 text-left transition-colors ${
+      className={`flex items-center gap-2.5 rounded-2xl border bg-white p-2.5 text-left transition-colors ${
         selected ? 'border-[#6d4aed] bg-[#f8f6ff]' : 'border-[#eceaf6]'
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-[20px]"
-          style={{ backgroundColor: `${exam.color}1a` }}
-          aria-hidden
-        >
-          {exam.emoji}
-        </span>
-        <span
-          aria-hidden
-          className={`mt-1 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border-2 ${
-            selected ? 'border-[#6d4aed] bg-[#6d4aed]' : 'border-[#d8d3ee]'
-          }`}
-        >
-          {selected ? <TickIcon small /> : null}
-        </span>
-      </div>
-      <span className="mt-2.5 text-[15px] leading-tight font-bold text-[#1e1b4b]">
-        {exam.shortName}
+      <span
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[17px]"
+        style={{ backgroundColor: `${exam.color}1a` }}
+        aria-hidden
+      >
+        {exam.emoji}
       </span>
-      <span className="mt-1 line-clamp-2 text-[12px] leading-snug text-[#6b7280]">{subtitle}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] leading-tight font-bold text-[#1e1b4b]">
+          {exam.shortName}
+        </span>
+        <span className="mt-0.5 block truncate text-[12px] leading-snug text-[#6b7280]">
+          {subtitle}
+        </span>
+      </span>
+      <span
+        aria-hidden
+        className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border-2 ${
+          selected ? 'border-[#6d4aed] bg-[#6d4aed]' : 'border-[#d8d3ee]'
+        }`}
+      >
+        {selected ? <TickIcon small /> : null}
+      </span>
     </button>
   );
 }

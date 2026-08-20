@@ -75,7 +75,7 @@ export function BackButton({ fallback }: { fallback: string }) {
         else router.push(fallback);
       }}
       aria-label="Back"
-      className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
     >
       <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
         <path
@@ -146,11 +146,11 @@ export function BooksArt({ className = '' }: { className?: string }) {
 /** The tip strip above the button: "you can change this later". */
 export function Tip({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-5 flex items-start gap-3 rounded-2xl bg-[#f4f1fd] px-4 py-3.5">
-      <span aria-hidden className="text-[15px] leading-none">
+    <div className="mt-5 flex items-start gap-3 rounded-2xl bg-[#f4f1fd] px-4 py-3">
+      <span aria-hidden className="text-[16px] leading-none">
         💡
       </span>
-      <p className="text-[12.5px] leading-relaxed text-[#5c5875]">{children}</p>
+      <p className="text-[13px] leading-relaxed text-[#5c5875]">{children}</p>
     </div>
   );
 }
@@ -195,7 +195,7 @@ export function ErrorNote({ children }: { children: ReactNode }) {
   return (
     <p
       role="alert"
-      className="mb-3 rounded-xl bg-[#fdecec] px-3 py-2 text-[12.5px] leading-relaxed text-[#b42318]"
+      className="mb-3 rounded-xl bg-[#fdecec] px-3 py-2 text-[13px] leading-relaxed text-[#b42318]"
     >
       {children}
     </p>
@@ -220,7 +220,7 @@ export function ChosenExams({
   return (
     <section className="mt-5 rounded-2xl bg-[#f4f1fd] p-3">
       {title ? (
-        <p className="mb-2 px-1 text-[12.5px] font-bold" style={{ color: VIOLET }}>
+        <p className="mb-2 px-1 text-[13px] font-bold" style={{ color: VIOLET }}>
           {title}
         </p>
       ) : null}
@@ -228,7 +228,7 @@ export function ChosenExams({
         {items.map((e) => (
           <div key={e.id} className="flex min-w-[150px] shrink-0 items-start gap-2.5">
             <span
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[18px]"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[16px]"
               style={{ backgroundColor: `${e.color}1a` }}
               aria-hidden
             >
@@ -247,7 +247,7 @@ export function ChosenExams({
                   <Tick small />
                 </span>
               </span>
-              <span className="mt-0.5 line-clamp-2 block text-[11.5px] leading-snug text-[#6b7280]">
+              <span className="mt-0.5 line-clamp-2 block text-[12px] leading-snug text-[#6b7280]">
                 {e.subtitle}
               </span>
             </span>

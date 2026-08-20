@@ -103,10 +103,10 @@ export function Drawer({
                 onClick={onClose}
                 className="flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-[#f6f4fd]"
               >
-                <span aria-hidden className="text-[19px]" style={{ color: item.tint }}>
+                <span aria-hidden className="text-[18px]" style={{ color: item.tint }}>
                   {item.icon}
                 </span>
-                <span className="text-[15px] font-medium" style={{ color: INK }}>
+                <span className="text-[16px] font-medium" style={{ color: INK }}>
                   {hi ? item.label.hi : item.label.en}
                 </span>
               </Link>
@@ -169,7 +169,7 @@ export function PrepHeader({
       ) : null}
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-[21px] leading-tight font-extrabold" style={{ color: INK }}>
+        <h1 className="truncate text-[20px] leading-tight font-extrabold" style={{ color: INK }}>
           {title}
         </h1>
         <p className="truncate text-[13px]" style={{ color: MUTED }}>
@@ -217,7 +217,7 @@ export function PrepNav({ active, lang }: { active: string; lang: 'en' | 'hi' })
                 {item.icon}
               </span>
               <span
-                className="text-[10.5px] font-semibold"
+                className="text-[12px] font-semibold"
                 style={{ color: on ? VIOLET : '#9b96b0' }}
               >
                 {lang === 'hi' ? item.label.hi : item.label.en}

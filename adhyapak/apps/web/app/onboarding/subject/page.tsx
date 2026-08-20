@@ -184,10 +184,10 @@ function ChooseSubjectPage() {
         </div>
 
         <header className="relative mt-5 pr-20 sm:pr-40">
-          <h1 className="text-[26px] leading-tight font-extrabold tracking-tight sm:text-[32px]" style={{ color: INK }}>
+          <h1 className="text-[22px] leading-tight font-extrabold tracking-tight sm:text-[26px]" style={{ color: INK }}>
             {hi ? `अपना ${current.name} विषय चुनें` : `Choose Your ${current.name} Subject`}
           </h1>
-          <p className="mt-1.5 text-[14px] leading-snug text-[#6b7280] sm:text-[15px]">
+          <p className="mt-1.5 text-[14px] leading-snug text-[#6b7280] sm:text-[16px]">
             {hi
               ? `${current.name} स्तर के लिए वह विषय चुनें जिसकी आप तैयारी करना चाहते हैं।`
               : `Select the subject you want to prepare for in ${current.name} level.`}
@@ -197,11 +197,11 @@ function ChooseSubjectPage() {
 
         <ChosenExams items={strip} title={hi ? 'आपकी चुनी परीक्षाएँ' : 'Your Selected Exams'} />
 
-        <h2 className="mt-6 text-[15px] font-bold" style={{ color: VIOLET }}>
+        <h2 className="mt-6 text-[16px] font-bold" style={{ color: VIOLET }}>
           {hi ? `${current.name} विषय चुनें` : `Select ${current.name} Subject`}
         </h2>
 
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer) => {
             const on = picked === offer.subjectId;
             return (
@@ -211,35 +211,35 @@ function ChooseSubjectPage() {
                 role="radio"
                 aria-checked={on}
                 onClick={() => setPicked(offer.subjectId)}
-                className={`flex flex-col rounded-2xl border bg-white p-3.5 text-left transition-colors ${
+                className={`flex items-center gap-2.5 rounded-2xl border bg-white p-2.5 text-left transition-colors ${
                   on ? 'border-[#6d4aed] bg-[#f8f6ff]' : 'border-[#eceaf6]'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <span
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-[20px]"
-                    style={{ backgroundColor: `${offer.color}1a` }}
-                    aria-hidden
-                  >
-                    {offer.icon}
-                  </span>
-                  <span
-                    aria-hidden
-                    className={`mt-1 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border-2 ${
-                      on ? 'border-[#6d4aed] bg-[#6d4aed]' : 'border-[#d8d3ee]'
-                    }`}
-                  >
-                    {on ? <Tick small /> : null}
-                  </span>
-                </div>
-                <span className="mt-2.5 text-[14.5px] leading-tight font-bold" style={{ color: INK }}>
-                  {t(offer.name, lang)}
+                <span
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[17px]"
+                  style={{ backgroundColor: `${offer.color}1a` }}
+                  aria-hidden
+                >
+                  {offer.icon}
                 </span>
-                {offer.hint ? (
-                  <span className="mt-1 line-clamp-3 text-[11.5px] leading-snug text-[#6b7280]">
-                    {t(offer.hint, lang)}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] leading-tight font-bold" style={{ color: INK }}>
+                    {t(offer.name, lang)}
                   </span>
-                ) : null}
+                  {offer.hint ? (
+                    <span className="mt-0.5 block truncate text-[12px] leading-snug text-[#6b7280]">
+                      {t(offer.hint, lang)}
+                    </span>
+                  ) : null}
+                </span>
+                <span
+                  aria-hidden
+                  className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border-2 ${
+                    on ? 'border-[#6d4aed] bg-[#6d4aed]' : 'border-[#d8d3ee]'
+                  }`}
+                >
+                  {on ? <Tick small /> : null}
+                </span>
               </button>
             );
           })}

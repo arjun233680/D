@@ -154,13 +154,13 @@ export default function SignInPage() {
           </h1>
           {/* The tagline is the wordmark's other half — a brand line, not copy,
               so it stays in English in both languages. */}
-          <p className="mt-2 text-[17px] font-semibold">
+          <p className="mt-2 text-[18px] font-semibold">
             <span className="text-[#7c5cf7]">Learn.</span>{' '}
             <span className="text-[#3b9ae1]">Practice.</span>{' '}
             <span className="text-[#22c07a]">Succeed.</span>
           </p>
 
-          <h2 className="mt-9 text-[22px] font-extrabold text-[#1e1b4b]">
+          <h2 className="mt-9 text-[20px] font-extrabold text-[#1e1b4b]">
             {step === 'code'
               ? hi
                 ? 'कोड डालें 📩'
@@ -181,7 +181,7 @@ export default function SignInPage() {
         </header>
 
         {noBackend ? (
-          <p className="mt-5 rounded-2xl border border-[#f3d9a8] bg-[#fef7e8] px-4 py-3 text-[12.5px] leading-relaxed text-[#7a5a1e]">
+          <p className="mt-5 rounded-2xl border border-[#f3d9a8] bg-[#fef7e8] px-4 py-3 text-[13px] leading-relaxed text-[#7a5a1e]">
             ⚠️{' '}
             {hi
               ? 'इस बिल्ड में कोई डेटाबेस कॉन्फ़िगर नहीं है, इसलिए लॉगिन काम नहीं करेगा। ऐप बंडल की गई सामग्री पर चल रहा है।'
@@ -216,7 +216,7 @@ export default function SignInPage() {
                     {/* A select rather than text: +91 is the only code the app
                         serves, and a field that can be typed into is a field
                         that can be typed into wrongly. */}
-                    <span className="flex items-center gap-1 border-r border-[#e8e4f6] px-4 text-[15px] font-semibold text-[#1e1b4b]">
+                    <span className="flex items-center gap-1 border-r border-[#e8e4f6] px-4 text-[16px] font-semibold text-[#1e1b4b]">
                       +91 <ChevronIcon />
                     </span>
                     <input
@@ -230,7 +230,7 @@ export default function SignInPage() {
                       disabled={busy || noBackend}
                       placeholder={hi ? 'मोबाइल नंबर डालें' : 'Enter mobile number'}
                       aria-label={hi ? 'मोबाइल नंबर' : 'Mobile number'}
-                      className="w-full rounded-r-2xl px-4 py-3.5 text-[15px] text-[#1e1b4b] placeholder:text-[#a8a3bd] focus:outline-none disabled:opacity-60"
+                      className="w-full rounded-r-2xl px-4 py-3 text-[16px] text-[#1e1b4b] placeholder:text-[#a8a3bd] focus:outline-none disabled:opacity-60"
                     />
                   </div>
 
@@ -261,7 +261,7 @@ export default function SignInPage() {
                       disabled={busy}
                       placeholder="••••••"
                       aria-label={hi ? 'छह अंकों का कोड' : 'Six-digit code'}
-                      className="w-full rounded-2xl px-4 py-3.5 text-center text-[22px] font-bold tracking-[0.5em] text-[#1e1b4b] placeholder:tracking-[0.4em] placeholder:text-[#cfcadf] focus:outline-none disabled:opacity-60"
+                      className="w-full rounded-2xl px-4 py-3 text-center text-[20px] font-bold tracking-[0.5em] text-[#1e1b4b] placeholder:tracking-[0.4em] placeholder:text-[#cfcadf] focus:outline-none disabled:opacity-60"
                     />
                   </div>
 
@@ -323,7 +323,7 @@ export default function SignInPage() {
           day the terms exist, and not before, because a dead link under the
           word "agree" is worse than no link at all.
         */}
-        <p className="mt-4 text-center text-[12.5px] text-[#8b869e]">
+        <p className="mt-4 text-center text-[13px] text-[#8b869e]">
           {hi ? 'जारी रखने पर आप सहमत हैं ' : 'By continuing you agree to the '}
           <span className="font-semibold text-[#7c5cf7]">
             {hi ? 'सेवा की शर्तों से' : 'Terms of Service'}
@@ -340,7 +340,7 @@ function ErrorNote({ error, hi }: { error: AuthError; hi: boolean }) {
   return (
     <p
       role="alert"
-      className="mt-3 rounded-xl bg-[#fdecec] px-3 py-2 text-[12.5px] leading-relaxed text-[#b42318]"
+      className="mt-3 rounded-xl bg-[#fdecec] px-3 py-2 text-[13px] leading-relaxed text-[#b42318]"
     >
       {hi ? error.hi : error.en}
     </p>

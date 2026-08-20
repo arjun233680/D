@@ -149,7 +149,7 @@ export default function HomePage() {
           <Link
             href="/profile"
             aria-label={hi ? 'प्रोफ़ाइल' : 'Profile'}
-            className="grid h-11 w-11 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
+            className="grid h-9 w-9 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
           >
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
               <path d="M3 6h14M3 10h14M3 14h14" stroke={INK} strokeWidth="2" strokeLinecap="round" />
@@ -159,7 +159,7 @@ export default function HomePage() {
             <Link
               href="/explore"
               aria-label={hi ? 'खोजें' : 'Search'}
-              className="grid h-11 w-11 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
+              className="grid h-9 w-9 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
             >
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
                 <circle cx="9" cy="9" r="6" stroke={INK} strokeWidth="1.9" />
@@ -169,7 +169,7 @@ export default function HomePage() {
             <Link
               href="/current-affairs"
               aria-label={hi ? 'सूचनाएँ' : 'Updates'}
-              className="relative grid h-11 w-11 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
+              className="relative grid h-9 w-9 place-items-center rounded-2xl border border-[#eceaf6] bg-white"
             >
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
                 <path
@@ -198,14 +198,14 @@ export default function HomePage() {
                 <path d="M28 21h-7.4c-.4 0-.6.3-.6.7V31c0-.5.3-.8.8-.8H28V21Z" fill="#fff" opacity=".78" />
               </svg>
             </span>
-            <span className="text-[26px] font-extrabold tracking-tight" style={{ color: INK }}>
+            <span className="text-[22px] font-extrabold tracking-tight" style={{ color: INK }}>
               Adhyapak
             </span>
           </div>
-          <p className="mt-3 text-[17px] font-extrabold" style={{ color: INK }}>
+          <p className="mt-3 text-[18px] font-extrabold" style={{ color: INK }}>
             {hi ? `नमस्ते, ${user.name || 'साथी'}! 👋` : `Hello, ${user.name || 'there'}! 👋`}
           </p>
-          <p className="mt-0.5 text-[13.5px] text-[#6b7280]">
+          <p className="mt-0.5 text-[13px] text-[#6b7280]">
             {hi ? 'चलिए तैयारी जारी रखें।' : "Let's continue your learning journey."}
           </p>
           <svg
@@ -233,7 +233,7 @@ export default function HomePage() {
             </h2>
             <Link
               href="/onboarding/exams?change=1"
-              className="flex items-center gap-1.5 rounded-xl border border-[#e2dcf7] px-3 py-2 text-[12.5px] font-bold"
+              className="flex items-center gap-1.5 rounded-xl border border-[#e2dcf7] px-3 py-2 text-[13px] font-bold"
               style={{ color: VIOLET }}
             >
               ✎ {hi ? 'बदलें' : 'Change Selections'}
@@ -249,7 +249,7 @@ export default function HomePage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <span
-                    className="rounded-lg px-2 py-1 text-[11px] font-bold"
+                    className="rounded-lg px-2 py-1 text-[12px] font-bold"
                     style={{
                       backgroundColor: `${s.exam?.color ?? VIOLET}1a`,
                       color: s.exam?.color ?? VIOLET,
@@ -258,14 +258,14 @@ export default function HomePage() {
                     {s.exam?.shortName ?? '—'}
                   </span>
                   <span
-                    className="grid h-11 w-11 place-items-center rounded-2xl text-[19px]"
+                    className="grid h-9 w-9 place-items-center rounded-2xl text-[16px]"
                     style={{ backgroundColor: `${(s.subject?.color ?? s.level.color)}1a` }}
                     aria-hidden
                   >
                     {s.subject?.icon ?? s.level.icon}
                   </span>
                 </div>
-                <p className="mt-2 text-[21px] leading-none font-extrabold" style={{ color: INK }}>
+                <p className="mt-2 text-[20px] leading-none font-extrabold" style={{ color: INK }}>
                   {s.level.name}
                 </p>
                 {/* Primary has no subject line because it has no subject: the
@@ -291,7 +291,7 @@ export default function HomePage() {
             <span aria-hidden>⚡</span>
             {hi ? 'त्वरित पहुँच' : 'Quick Access'}
           </h2>
-          <p className="mt-0.5 text-[12.5px] text-[#8b869e]">
+          <p className="mt-0.5 text-[13px] text-[#8b869e]">
             {hi ? 'आपकी तैयारी, आसान बनाई गई' : 'Your exam prep, simplified'}
           </p>
           <div className="rail mt-3 flex gap-3">
@@ -302,13 +302,13 @@ export default function HomePage() {
                 className="flex min-w-[132px] shrink-0 flex-col rounded-2xl p-3.5"
                 style={{ backgroundColor: q.tint }}
               >
-                <span aria-hidden className="text-[24px]">
+                <span aria-hidden className="text-[22px]">
                   {q.icon}
                 </span>
                 <span className="mt-2 text-[14px] font-bold" style={{ color: INK }}>
                   {t(q.label, lang)}
                 </span>
-                <span className="mt-0.5 text-[11.5px] leading-snug text-[#6b7280]">
+                <span className="mt-0.5 text-[12px] leading-snug text-[#6b7280]">
                   {t(q.sub, lang)}
                 </span>
                 <span
@@ -356,7 +356,7 @@ export default function HomePage() {
             nothing in the schema records either, and a tile reading "42 min"
             that nobody measured is a lie told in a confident font.
           */}
-          <p className="mt-2.5 text-[11.5px] leading-relaxed text-[#a8a3bd]">
+          <p className="mt-2.5 text-[12px] leading-relaxed text-[#a8a3bd]">
             {hi
               ? 'अध्ययन समय और पूर्ण विषय तब दिखेंगे जब उनका रिकॉर्ड रखा जाने लगेगा।'
               : 'Study time and topics completed appear once the app starts recording them.'}
@@ -379,7 +379,7 @@ export default function HomePage() {
                   {item.icon}
                 </span>
                 <span
-                  className="text-[10.5px] font-semibold"
+                  className="text-[12px] font-semibold"
                   style={{ color: active ? VIOLET : '#9b96b0' }}
                 >
                   {t(item.label, lang)}
@@ -408,16 +408,16 @@ function Stat({
   return (
     <div className="rounded-2xl border border-[#eceaf6] bg-white p-3.5">
       <span
-        className="grid h-9 w-9 place-items-center rounded-xl text-[17px]"
+        className="grid h-9 w-9 place-items-center rounded-xl text-[15px]"
         style={{ backgroundColor: tint }}
         aria-hidden
       >
         {icon}
       </span>
-      <p className="mt-2 text-[19px] font-extrabold" style={{ color: INK }}>
+      <p className="mt-2 text-[18px] font-extrabold" style={{ color: INK }}>
         {value}
       </p>
-      <p className="text-[11.5px] text-[#6b7280]">{label}</p>
+      <p className="text-[12px] text-[#6b7280]">{label}</p>
     </div>
   );
 }
