@@ -60,7 +60,22 @@ export const tint = (hex: string) => `${hex}1a`;
  */
 export function GradientFill({ from = VIOLET, to = VIOLET_LIGHT }: { from?: string; to?: string }) {
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+    /*
+     * `zIndex: -1` is what makes the icons on top of this visible.
+     *
+     * react-native-web gives View and Text `position: relative`, so a label
+     * beside this fill paints above it and looks right. `react-native-svg`
+     * renders a bare <svg>, which stays unpositioned — and CSS paints
+     * positioned elements above unpositioned siblings whatever the DOM order,
+     * so an absolutely positioned gradient covered every icon drawn next to it.
+     * The login logo was an empty violet tile, the phone glyph on its card was
+     * missing, and the arrow on every gradient button had quietly gone.
+     *
+     * Sending the fill behind the in-flow content fixes all of them at once,
+     * and it stays visible because the parent it fills has no background of its
+     * own — a negative z-index sits above the parent's background, not below it.
+     */
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}>
       <Svg width="100%" height="100%">
         <Defs>
           <SvgLinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">

@@ -133,7 +133,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#faf9ff' }}>
+    <View style={{ flex: 1, backgroundColor: '#faf9ff', overflow: 'hidden' }}>
       <Backdrop />
 
       <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>

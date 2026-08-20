@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { t, theme } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { useResponsive } from '@/lib/responsive';
+import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import { selectionTitle, useSelection } from '@/lib/useSelection';
 import {
   CANVAS,
@@ -179,10 +179,7 @@ export default function PrepDashboardScreen() {
                     }}
                   >
                     {TILES.map((tile, i) => (
-                      <View
-                        key={`${tile.label.en}-${i}`}
-                        style={{ width: `${(100 - (columns - 1) * 3) / columns}%` }}
-                      >
+                      <View key={`${tile.label.en}-${i}`} style={{ width: gridItemWidth(r, columns) }}>
                         <Pressable
                           accessibilityRole="link"
                           onPress={() => router.push(tile.href as never)}

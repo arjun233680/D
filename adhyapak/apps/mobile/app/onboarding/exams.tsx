@@ -20,7 +20,7 @@ import {
   type Lang,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { useResponsive } from '@/lib/responsive';
+import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import {
   BAR_CLEARANCE,
   CANVAS,
@@ -328,10 +328,7 @@ export default function ChooseExamScreen() {
                 }}
               >
                 {visible.map((exam) => (
-                  <View
-                    key={exam.id}
-                    style={{ width: `${(100 - (columns - 1) * 3) / columns}%` }}
-                  >
+                  <View key={exam.id} style={{ width: gridItemWidth(r, columns, gap) }}>
                     <ExamCard
                       exam={exam}
                       lang={lang}
@@ -439,12 +436,18 @@ function ExamCard({
         borderRadius: 16,
         borderWidth: 1,
         padding: 12,
-        minHeight: 104,
         borderColor: selected ? VIOLET : LINE,
         backgroundColor: selected ? PICKED_BG : '#fff',
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+      {/* The tick sits in the corner rather than in the row, because in the row
+          it took 26pt off a name column that is only about 80pt wide on a
+          360pt phone — enough to break "SuperTET" across two lines mid-word. */}
+      <View style={{ position: 'absolute', top: 12, right: 12 }}>
+        <CheckDot on={selected} size={20} />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <View
           style={{
             height: 40,
@@ -457,10 +460,16 @@ function ExamCard({
         >
           <Text style={{ fontSize: 19 }}>{exam.emoji}</Text>
         </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={{ flex: 1, minWidth: 0, paddingRight: 24 }}>
+          {/* A step down for the long ones. `shortName` runs from "KVS" to
+              "SUPERTET", and at 15pt the longest of them does not fit the
+              ~70pt this column has on a 360pt phone — it broke mid-word, which
+              reads as a rendering fault rather than a long name. One line
+              always, and the size is what gives way. */}
           <Text
+            numberOfLines={1}
             style={{
-              fontSize: 15,
+              fontSize: exam.shortName.length > 6 ? 13 : 15,
               lineHeight: 19,
               fontFamily: theme.family.displayBold,
               color: INK,
@@ -469,7 +478,6 @@ function ExamCard({
             {exam.shortName}
           </Text>
         </View>
-        <CheckDot on={selected} size={20} />
       </View>
       <Text
         numberOfLines={3}

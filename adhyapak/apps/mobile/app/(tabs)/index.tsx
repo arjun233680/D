@@ -19,7 +19,7 @@ import {
   type LevelSubject,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { useResponsive } from '@/lib/responsive';
+import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import { CANVAS, FAINT, INK, LINE, MUTED, StepLoading, VIOLET, tint } from '@/components/onboarding';
 
 /**
@@ -176,6 +176,8 @@ export default function DashboardScreen() {
   // which is what says "scrollable". Half the width plus a peek does that at
   // any phone size, and settles once a tablet can hold two whole ones.
   const selectionWidth = r.isPhone ? Math.min(r.width * 0.56, 260) : 300;
+  // Two snapshot tiles per row on a phone, four once there is room.
+  const tileW = gridItemWidth(r, r.isPhone ? 2 : 4);
 
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
@@ -632,6 +634,7 @@ export default function DashboardScreen() {
                   label={hi ? 'अध्ययन समय' : 'Study Time'}
                   value={hi ? '0 मिनट' : '0 min'}
                   measured={false}
+                  width={tileW}
                 />
                 <StatTile
                   icon="🎯"
@@ -639,6 +642,7 @@ export default function DashboardScreen() {
                   label={hi ? 'हल किए प्रश्न' : 'Questions Solved'}
                   value={String(solved)}
                   measured
+                  width={tileW}
                 />
                 <StatTile
                   icon="📖"
@@ -646,6 +650,7 @@ export default function DashboardScreen() {
                   label={hi ? 'पूर्ण विषय' : 'Topics Completed'}
                   value="0"
                   measured={false}
+                  width={tileW}
                 />
                 <StatTile
                   icon="🔥"
@@ -653,6 +658,7 @@ export default function DashboardScreen() {
                   label={hi ? 'दैनिक श्रृंखला' : 'Daily Streak'}
                   value={hi ? `${streak} दिन` : `${streak} day${streak === 1 ? '' : 's'}`}
                   measured
+                  width={tileW}
                 />
               </View>
 
@@ -758,18 +764,19 @@ function StatTile({
   label,
   value,
   measured,
+  width,
 }: {
   icon: string;
   tintColor: string;
   label: string;
   value: string;
   measured: boolean;
+  width: number;
 }) {
   return (
     <View
       style={{
-        width: '47.5%',
-        flexGrow: 1,
+        width,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: LINE,

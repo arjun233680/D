@@ -149,15 +149,39 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async (): Promise<AuthResult<AuthState>> => {
     if (Platform.OS === 'web') {
       const { origin, pathname } = window.location;
-      const started = await startGoogleSignIn(`${origin}${pathname}`, {
-        openExternally: false,
-      });
-      if (!started.ok) return started;
+      const returnTo = `${origin}${pathname}`;
+
       /*
-       * `skipBrowserRedirect` is off, so supabase-js has already begun
-       * navigating this tab away. There is no session to return — this page is
-       * being torn down — and the caller must not reset its spinner, or the
-       * button flickers back to life on the way out.
+       * Google refuses to be framed — it answers a request whose top-level
+       * document is somebody else's page with a bare 403 — so inside the
+       * phone-size preview the iframe cannot be the thing that navigates.
+       * `window.top !== window.self` is the only reliable test, and it throws
+       * on a cross-origin parent, which is itself the answer.
+       */
+      let framed = false;
+      try {
+        framed = window.top !== window.self;
+      } catch {
+        framed = true;
+      }
+
+      const started = await startGoogleSignIn(returnTo, { openExternally: framed });
+      if (!started.ok) return started;
+
+      if (framed) {
+        // A real top-level window, because that is the only context Google will
+        // draw in. The session lands in localStorage against this same origin,
+        // so the frame picks it up on its next load.
+        if (!started.value.url) return { ok: false, error: OAUTH_CANCELLED };
+        window.open(started.value.url, '_blank', 'noopener,noreferrer');
+        return { ok: false, error: OAUTH_CANCELLED };
+      }
+
+      /*
+       * Not framed: `skipBrowserRedirect` was off, so supabase-js has already
+       * begun navigating this tab away. There is no session to return — this
+       * page is being torn down — and the caller must not reset its spinner, or
+       * the button flickers back to life on the way out.
        */
       return { ok: false, error: OAUTH_CANCELLED };
     }

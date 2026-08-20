@@ -68,3 +68,17 @@ export const contentStyle = (r: Responsive) => ({
   maxWidth: r.maxWidth,
   alignSelf: 'center' as const,
 });
+
+/**
+ * Width of one cell in a wrapping grid, in points.
+ *
+ * Percentages cannot do this. A two-column grid written as `width: '48.5%'`
+ * with `gap: 12` asks for 97% of the row plus 12 points, which is wider than
+ * the row by about two points on a 390pt phone — so the second card wrapped and
+ * every grid on the app rendered as a single column with a column of empty
+ * space beside it. The gap is in points and the columns have to be too.
+ */
+export const gridItemWidth = (r: Responsive, columns: number, gap = 12): number => {
+  const available = Math.min(r.maxWidth, r.width) - r.gutter * 2;
+  return Math.floor((available - gap * (columns - 1)) / columns);
+};

@@ -19,7 +19,7 @@ import {
   type LevelSubject,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { useResponsive } from '@/lib/responsive';
+import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import {
   BAR_CLEARANCE,
   BackButton,
@@ -242,10 +242,7 @@ export default function ChooseSubjectScreen() {
               {offers.map((offer) => {
                 const on = picked === offer.subjectId;
                 return (
-                  <View
-                    key={offer.subjectId}
-                    style={{ width: `${(100 - (columns - 1) * 3) / columns}%` }}
-                  >
+                  <View key={offer.subjectId} style={{ width: gridItemWidth(r, columns) }}>
                     <Pressable
                       accessibilityRole="radio"
                       accessibilityState={{ checked: on }}

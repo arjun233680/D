@@ -18,7 +18,7 @@ import {
   type SubjectPart,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { useResponsive } from '@/lib/responsive';
+import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import { selectionTitle, useSelection } from '@/lib/useSelection';
 import {
   CANVAS,
@@ -461,6 +461,8 @@ function FullTest({
   examId?: string;
   electiveId?: string;
 }) {
+  const r = useResponsive();
+  const cardW = gridItemWidth(r, r.isPhone ? 2 : 4);
   return (
     <>
       <View
@@ -511,7 +513,7 @@ function FullTest({
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {years.map((y, i) => (
-              <View key={y.year} style={{ width: '48.5%' }}>
+              <View key={y.year} style={{ width: cardW }}>
                 <Pressable
                   accessibilityRole="link"
                   onPress={() =>
