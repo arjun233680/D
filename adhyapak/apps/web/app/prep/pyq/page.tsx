@@ -162,7 +162,7 @@ function PyqBrowser() {
                     type="button"
                     onClick={() => setTab(item.id)}
                     aria-pressed={on}
-                    className="flex items-center justify-center gap-1.5 py-3 text-[13px] font-semibold"
+                    className="flex items-center justify-center gap-1.5 py-3 text-[13.5px] font-semibold"
                     style={{
                       color: on ? VIOLET : MUTED,
                       borderBottom: on ? `2px solid ${VIOLET}` : '2px solid transparent',
@@ -185,7 +185,7 @@ function PyqBrowser() {
                     <section className="mt-4 rounded-2xl bg-[#f4f1fd] p-4">
                       <div className="flex items-center gap-3">
                         <span
-                          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[17px]"
+                          className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-[21px]"
                           style={{ backgroundColor: `${chosen.color}1a` }}
                           aria-hidden
                         >
@@ -197,7 +197,7 @@ function PyqBrowser() {
                           </p>
                           {/* The syllabus wording under the chip's short one —
                               "CDP" over "(Child Development & Pedagogy)". */}
-                          <p className="text-[13px]" style={{ color: MUTED }}>
+                          <p className="text-[12.5px]" style={{ color: MUTED }}>
                             ({t(chosen.name, lang)})
                           </p>
                           <p className="mt-0.5 text-[12px]" style={{ color: MUTED }}>
@@ -264,14 +264,14 @@ function FullTest({ years, busy, hi }: { years: PyqSession[]; busy: boolean; hi:
   return (
     <>
       <div className="flex items-start gap-3 rounded-2xl bg-white p-4">
-        <span aria-hidden className="text-[20px]">
+        <span aria-hidden className="text-[22px]">
           📄
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[16px] font-extrabold" style={{ color: INK }}>
+          <p className="text-[15px] font-extrabold" style={{ color: INK }}>
             {hi ? 'पूर्ण टेस्ट (वर्ष अनुसार)' : 'Full Test (Year Wise)'}
           </p>
-          <p className="text-[13px] leading-snug" style={{ color: MUTED }}>
+          <p className="text-[12.5px] leading-snug" style={{ color: MUTED }}>
             {hi
               ? 'पूरे विगत वर्ष पेपर असली परीक्षा की तरह हल करें'
               : 'Solve complete previous year papers as a real exam'}
@@ -293,23 +293,23 @@ function FullTest({ years, busy, hi }: { years: PyqSession[]; busy: boolean; hi:
               : 'No years recorded for this exam yet.'}
           </EmptyNote>
         ) : (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {years.map((y, i) => (
               <article
                 key={y.year}
-                className="rounded-2xl p-2.5"
+                className="rounded-2xl p-4"
                 style={{ backgroundColor: TINTS[i % TINTS.length] }}
               >
-                <span aria-hidden className="text-[20px]">
+                <span aria-hidden className="text-[22px]">
                   🗓️
                 </span>
-                <p className="mt-1 text-[20px] leading-none font-extrabold" style={{ color: INK }}>
+                <p className="mt-1 text-[23px] leading-none font-extrabold" style={{ color: INK }}>
                   {y.year}
                 </p>
-                <p className="mt-3 text-[12px]" style={{ color: MUTED }}>
+                <p className="mt-3 text-[11.5px]" style={{ color: MUTED }}>
                   {hi ? 'प्रश्नों की संख्या' : 'No. of Questions'}
                 </p>
-                <p className="text-[18px] font-bold" style={{ color: INK }}>
+                <p className="text-[17px] font-bold" style={{ color: INK }}>
                   {y.collected}
                   {/* A year we hold part of says so, rather than implying the
                       whole paper is here. */}
@@ -383,13 +383,13 @@ function TopicWise({
       </div>
     );
   }
-  const shown = all ? topics : topics.slice(0, 20);
+  const shown = all ? topics : topics.slice(0, 16);
   return (
     <div className="mt-4">
       <div className="divide-y divide-[#f4f1fd] rounded-2xl bg-white lg:grid lg:grid-cols-2 lg:gap-x-6 lg:divide-y-0 lg:p-2">
         {shown.map((topic, i) => (
-          <div key={topic.id} className="flex items-center gap-2.5 border-b border-[#f4f1fd] px-3 py-2.5 lg:border-b-0">
-            <span aria-hidden className="text-[16px]">
+          <div key={topic.id} className="flex items-center gap-3 border-b border-[#f4f1fd] px-4 py-3.5 lg:border-b-0">
+            <span aria-hidden className="text-[15px]">
               📖
             </span>
             <span className="w-6 text-[13px] font-semibold" style={{ color: MUTED }}>
@@ -453,14 +453,14 @@ function SectionChips({
             className="flex w-[74px] shrink-0 flex-col items-center gap-1.5 sm:w-[88px]"
           >
             <span
-              className="grid h-10 w-10 place-items-center rounded-full text-[17px]"
+              className="grid h-12 w-12 place-items-center rounded-full text-[20px]"
               style={{ backgroundColor: `${s.color}1a` }}
               aria-hidden
             >
               {s.icon}
             </span>
             <span
-              className="text-center text-[12px] leading-tight font-semibold"
+              className="text-center text-[11px] leading-tight font-semibold"
               style={{ color: on ? s.color : MUTED }}
             >
               {s.shortName}
@@ -507,19 +507,19 @@ function PartTab({
 
 function Row({ title, note, sub }: { title: string; note: string; sub?: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3">
+    <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5">
       <span
         aria-hidden
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#f1eefc] text-[15px]"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#f1eefc] text-[16px]"
       >
         🗓️
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[14px] font-bold" style={{ color: INK }}>
+        <span className="block text-[14.5px] font-bold" style={{ color: INK }}>
           {title}
         </span>
         {sub ? (
-          <span className="block text-[12px]" style={{ color: MUTED }}>
+          <span className="block text-[11.5px]" style={{ color: MUTED }}>
             {sub}
           </span>
         ) : null}

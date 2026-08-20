@@ -153,15 +153,15 @@ function ChooseLevelPage() {
         </div>
 
         <header className="relative mt-5 pr-20 sm:pr-40">
-          <p className="text-[16px] font-bold" style={{ color: VIOLET }}>
+          <p className="text-[15px] font-bold" style={{ color: VIOLET }}>
             {hi
               ? `बढ़िया! ${exams.length} परीक्षाएँ चुनी गईं 🎉`
               : `Great! ${exams.length} exam${exams.length === 1 ? '' : 's'} selected 🎉`}
           </p>
-          <h1 className="mt-1 text-[22px] leading-tight font-extrabold tracking-tight sm:text-[26px]" style={{ color: INK }}>
+          <h1 className="mt-1 text-[26px] leading-tight font-extrabold tracking-tight sm:text-[32px]" style={{ color: INK }}>
             {hi ? 'अपना स्तर चुनें' : 'Select Your Level / Target'}
           </h1>
-          <p className="mt-1.5 text-[14px] leading-snug text-[#6b7280] sm:text-[16px]">
+          <p className="mt-1.5 text-[14px] leading-snug text-[#6b7280] sm:text-[15px]">
             {hi
               ? 'चुनी गई परीक्षाओं में आप जिस स्तर की तैयारी कर रहे हैं, वह चुनें।'
               : 'Choose the level or target you are preparing for in the selected exams.'}
@@ -171,11 +171,11 @@ function ChooseLevelPage() {
 
         <ChosenExams items={strip} />
 
-        <h2 className="mt-6 text-[16px] font-bold" style={{ color: VIOLET }}>
+        <h2 className="mt-6 text-[15px] font-bold" style={{ color: VIOLET }}>
           {hi ? 'स्तर चुनें' : 'Select Level / Target'}
         </h2>
 
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-3">
           {levels.map((level) => {
             const on = chosen.has(level.id);
             return (
@@ -190,7 +190,7 @@ function ChooseLevelPage() {
                 }`}
               >
                 <span
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-[17px]"
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-[21px]"
                   style={{ backgroundColor: `${level.color}1a` }}
                   aria-hidden
                 >
@@ -202,7 +202,11 @@ function ChooseLevelPage() {
                   </span>
                   <span className="block text-[13px] leading-snug text-[#6b7280]">
                     {t(level.fullName, lang)}
-                    {level.classes ? ` (${t(level.classes, lang)})` : ''}
+                    {level.classes ? (
+                      <>
+                        <br />({t(level.classes, lang)})
+                      </>
+                    ) : null}
                   </span>
                 </span>
                 <span
