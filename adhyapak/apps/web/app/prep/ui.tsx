@@ -208,7 +208,7 @@ export function PrepHeader({
 export function PrepNav({ active, lang }: { active: string; lang: 'en' | 'hi' }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[#eeebf8] bg-white">
-      <div className="mx-auto grid max-w-[760px] lg:max-w-[1040px] grid-cols-5">
+      <div className="fluid mx-auto grid max-w-[760px] lg:max-w-[1040px] grid-cols-5">
         {NAV.map((item) => {
           const on = item.href === active;
           return (

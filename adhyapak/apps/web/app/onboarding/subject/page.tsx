@@ -177,7 +177,7 @@ function ChooseSubjectPage() {
 
   return (
     <div className="relative min-h-dvh bg-[#faf9ff] pb-40">
-      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-6">
+      <div className="fluid mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-6">
         <div className="flex items-center gap-4">
           <BackButton fallback="/onboarding/level" />
           <StepRail step={3} />

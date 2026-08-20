@@ -53,7 +53,7 @@ function PrepDashboard() {
     <PrepShell lang={lang}>
       {(openMenu) => (
         <div className="min-h-dvh bg-[#faf9ff] pb-24">
-          <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px]">
+          <div className="fluid mx-auto w-full max-w-[760px] lg:max-w-[1040px]">
             <PrepHeader title={title} subtitle={subtitle} onMenu={openMenu} lang={lang} />
 
             {/* The design shows "45% Completed" over a filled bar. Nothing

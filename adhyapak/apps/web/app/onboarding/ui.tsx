@@ -172,7 +172,7 @@ export function ContinueBar({
 }) {
   return (
     <div className="fixed inset-x-0 bottom-0 border-t border-[#eeebf8] bg-[#faf9ff]/95 backdrop-blur">
-      <div className="mx-auto w-full max-w-[760px] px-5 py-4">
+      <div className="fluid mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 py-4">
         {children}
         <button
           type="button"

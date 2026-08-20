@@ -144,7 +144,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-dvh bg-[#faf9ff] pb-24">
-      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-5">
+      <div className="fluid mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-5">
         <div className="flex items-center justify-between">
           <Link
             href="/profile"

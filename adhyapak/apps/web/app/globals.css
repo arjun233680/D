@@ -96,3 +96,46 @@ body {
     display: none !important;
   }
 }
+
+/*
+ * Fluid UI scale.
+ *
+ * The screens are drawn in fixed pixels — a 13px label, a 36px icon tile, a
+ * 12px gap — which is what keeps them identical to the design. The problem is
+ * only that those pixels mean something different on a 375px phone and a
+ * 1440px monitor: the same card looks cramped on one and lost on the other.
+ *
+ * `zoom` scales the whole block proportionally, so every size inside keeps its
+ * exact relationship to every other. Nothing reflows, nothing moves to a
+ * different column, no colour changes — the card is simply drawn larger or
+ * smaller. That is deliberately different from a responsive grid, which
+ * rearranges the layout; rearranging is what makes a screen stop looking like
+ * its design.
+ *
+ * Clamped so it never shrinks below 0.95 (text stays legible on a small phone)
+ * and never grows past 1.3 (a card should fill more of a monitor, not become a
+ * poster). Applied to scrolling content only — a fixed bottom bar inside a
+ * zoomed box positions itself against the zoomed box, not the window.
+ */
+.fluid {
+  zoom: 1;
+}
+/* Stepped rather than a clamp(): `zoom` takes a unitless number, and mixing one
+   with `vw` — which resolves to a length — makes the whole expression invalid,
+   so the browser silently falls back to 1. Steps are reliable everywhere, and
+   at these intervals the change reads as smooth. */
+@media (max-width: 359px) {
+  .fluid { zoom: 0.94; }
+}
+@media (min-width: 640px) {
+  .fluid { zoom: 1.06; }
+}
+@media (min-width: 900px) {
+  .fluid { zoom: 1.14; }
+}
+@media (min-width: 1200px) {
+  .fluid { zoom: 1.22; }
+}
+@media (min-width: 1500px) {
+  .fluid { zoom: 1.3; }
+}

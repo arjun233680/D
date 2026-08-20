@@ -161,7 +161,7 @@ function ChooseExamPage() {
 
   return (
     <div className="relative min-h-dvh bg-[#faf9ff] pb-44">
-      <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-10">
+      <div className="fluid mx-auto w-full max-w-[760px] lg:max-w-[1040px] px-5 pt-10">
         {/* The art sits in the top corner and the heading is kept clear of it,
             so the two never collide on a narrow phone. */}
         <header className="relative pr-20 sm:pr-40">

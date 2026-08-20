@@ -144,7 +144,7 @@ function PyqBrowser() {
     <PrepShell lang={lang}>
       {(openMenu) => (
         <div className="min-h-dvh bg-[#faf9ff] pb-24">
-          <div className="mx-auto w-full max-w-[760px] lg:max-w-[1040px]">
+          <div className="fluid mx-auto w-full max-w-[760px] lg:max-w-[1040px]">
             <PrepHeader
               title="PYQ"
               subtitle={selectionTitle(selection, subjectName)}
