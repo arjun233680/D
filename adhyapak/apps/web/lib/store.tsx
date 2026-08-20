@@ -139,17 +139,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     const unsubscribe = onAuthStateChange((auth) => {
       if (!auth.userId) {
-        // Signing out clears the cache as well as the state: leaving the
-        // learner in localStorage would hand the next person to open this
-        // browser the previous one's goal, bookmarks and streak.
-        if (remote.current) {
+        /*
+         * No session means not signed in, whether this tab ever had one or not.
+         *
+         * This used to clear only when `remote.current` was set — when the tab
+         * had fetched a learner from the server at least once. On a fresh load
+         * it is false, so a stale `signedIn: true` left in localStorage
+         * survived: the gate let the learner in, and then every write was
+         * refused 401 because the request ran as `anon` with no token. That is
+         * what "Could not save your choice" was.
+         *
+         * `backendConfigured` guards it, so an offline build — which reports no
+         * user because there is no project at all — does not wipe a learner who
+         * is simply working from bundled content.
+         */
+        if (remote.current || auth.backendConfigured) {
           remote.current = false;
           try {
             window.localStorage.removeItem(STORAGE_KEY);
           } catch {
             // Nothing worth blocking a sign-out for.
           }
-          setState((s) => ({ ...s, user: GUEST_USER }));
+          // Only a signed-in cache is worth replacing; a guest is already this.
+          setState((s) => (s.user.signedIn ? { ...s, user: GUEST_USER } : s));
         }
         setSyncing(false);
         return;

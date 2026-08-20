@@ -137,9 +137,19 @@ function ChooseExamPage() {
     if (chosen.size === 0) return;
     setSaving(true);
     setFailed(false);
-    const ok = await saveLearnerExamIds([...chosen]);
+    const outcome = await saveLearnerExamIds([...chosen]);
     setSaving(false);
-    if (!ok) {
+    if (!outcome.ok) {
+      /*
+       * An expired session is not a connection problem, and telling somebody to
+       * check their connection leaves them retrying a request that will keep
+       * being refused — the server answers 401 because with no token the write
+       * runs as `anon`. Send them to the door instead.
+       */
+      if (outcome.expired) {
+        router.replace('/sign-in');
+        return;
+      }
       // Staying put is the whole point. Navigating on a failed write would land
       // them on a dashboard that thinks they never answered, and send them back
       // here on the next load with their choice gone.

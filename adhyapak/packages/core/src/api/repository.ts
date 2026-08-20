@@ -673,11 +673,13 @@ export const fetchLearnerExamIds = async (): Promise<string[]> => {
  * own comment in 0019. The boolean is what the chooser needs: it must not
  * navigate away from the question until the answer is saved.
  */
-export const saveLearnerExamIds = async (examIds: readonly string[]): Promise<boolean> => {
+export const saveLearnerExamIds = async (
+  examIds: readonly string[],
+): Promise<WriteOutcome> => {
   const db = getBackend();
-  if (!db) return false;
+  if (!db) return { ok: false, expired: false };
   const { error } = await db.rpc('set_learner_exams', { p_exam_ids: [...examIds] });
-  return !error;
+  return error ? explainWriteFailure(error) : { ok: true };
 };
 
 /**
@@ -1452,11 +1454,13 @@ export const fetchLearnerLevelIds = async (): Promise<string[]> => {
  * Removing a level takes its subject with it — see `set_learner_levels` in
  * 0020 for why that has to happen in the same statement.
  */
-export const saveLearnerLevelIds = async (levelIds: readonly string[]): Promise<boolean> => {
+export const saveLearnerLevelIds = async (
+  levelIds: readonly string[],
+): Promise<WriteOutcome> => {
   const db = getBackend();
-  if (!db) return false;
+  if (!db) return { ok: false, expired: false };
   const { error } = await db.rpc('set_learner_levels', { p_level_ids: [...levelIds] });
-  return !error;
+  return error ? explainWriteFailure(error) : { ok: true };
 };
 
 /** The subject chosen for each level the learner sits. */
@@ -1481,14 +1485,14 @@ export const fetchLearnerSubjects = async (): Promise<LearnerSubject[]> => {
 export const saveLearnerSubject = async (
   levelId: string,
   subjectId: string,
-): Promise<boolean> => {
+): Promise<WriteOutcome> => {
   const db = getBackend();
-  if (!db) return false;
+  if (!db) return { ok: false, expired: false };
   const { error } = await db.rpc('set_learner_subject', {
     p_level_id: levelId,
     p_subject_id: subjectId,
   });
-  return !error;
+  return error ? explainWriteFailure(error) : { ok: true };
 };
 
 /* --------------------------------------------------- one learner's paper */
@@ -1834,4 +1838,47 @@ export const listElectiveChoices = async (
   const seen = new Set<string>();
   for (const row of data as { subject_id: string }[]) seen.add(row.subject_id);
   return [...seen];
+};
+
+/**
+ * Why a learner-owned write failed, when it failed.
+ *
+ * The three onboarding saves returned a bare boolean, so every screen reported
+ * the same "check your connection" whatever went wrong. The failure that
+ * actually happens is not a network one: with no session the request runs as
+ * `anon`, PostgREST answers 401, and Postgres logs "permission denied for
+ * function set_learner_exams". A learner shown "check your connection" retries
+ * forever; one told their sign-in expired signs in again.
+ */
+export type WriteOutcome = { ok: true } | { ok: false; expired: boolean };
+
+/** True when the request has a session the server will accept. */
+export const hasLiveSession = async (): Promise<boolean> => {
+  const db = getBackend();
+  if (!db) return false;
+  try {
+    const { data } = await db.auth.getSession();
+    return Boolean(data.session?.access_token);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Classifies a failed write.
+ *
+ * Asks the client whether it still holds a session rather than trusting the
+ * error string alone, because PostgREST's 401 body and Postgres's "permission
+ * denied" say the same thing in two different vocabularies and neither is
+ * guaranteed to reach here intact.
+ */
+export const explainWriteFailure = async (error: unknown): Promise<WriteOutcome> => {
+  const text = (error instanceof Error ? error.message : String(error ?? '')).toLowerCase();
+  const looksAuth =
+    text.includes('permission denied') ||
+    text.includes('jwt') ||
+    text.includes('401') ||
+    text.includes('unauthorized');
+  if (looksAuth) return { ok: false, expired: true };
+  return { ok: false, expired: !(await hasLiveSession()) };
 };

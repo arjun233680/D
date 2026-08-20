@@ -40,6 +40,7 @@ export interface AuthError {
     | 'network'
     | 'oauth-cancelled'
     | 'oauth-unavailable'
+    | 'session-expired'
     | 'invalid-phone'
     | 'invalid-otp'
     | 'sms-unavailable'
@@ -83,6 +84,27 @@ export const toAuthError = (raw: unknown): AuthError => {
   const message = raw instanceof Error ? raw.message : String(raw ?? '');
   const lower = message.toLowerCase();
 
+  /*
+   * A write refused because the request carried no usable session.
+   *
+   * PostgREST answers 401 and Postgres logs "permission denied for function
+   * …", because with no token the request runs as `anon`, which is granted
+   * nothing. It looked like a network failure to every screen that reported it
+   * — "check your connection and try again" — so a learner whose session had
+   * gone retried forever instead of signing in again.
+   */
+  if (
+    lower.includes('permission denied') ||
+    lower.includes('jwt') ||
+    lower.includes('401') ||
+    lower.includes('unauthorized')
+  ) {
+    return {
+      kind: 'session-expired',
+      en: 'Your sign-in has expired. Sign in again to save this.',
+      hi: 'आपका साइन-इन समाप्त हो गया है। इसे सहेजने हेतु फिर से साइन इन करें।',
+    };
+  }
   if (lower.includes('invalid login') || lower.includes('invalid credentials')) {
     return {
       kind: 'invalid-credentials',

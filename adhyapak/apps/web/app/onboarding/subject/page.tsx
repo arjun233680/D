@@ -156,9 +156,15 @@ function ChooseSubjectPage() {
     if (!current || !picked) return;
     setSaving(true);
     setFailed(false);
-    const ok = await saveLearnerSubject(current.id, picked);
+    const outcome = await saveLearnerSubject(current.id, picked);
     setSaving(false);
-    if (!ok) {
+    if (!outcome.ok) {
+      // See the note on the exam step: an expired session needs the door, not
+      // a retry against a request the server will keep refusing.
+      if (outcome.expired) {
+        router.replace('/sign-in');
+        return;
+      }
       setFailed(true);
       return;
     }
