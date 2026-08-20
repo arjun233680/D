@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -100,29 +101,67 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * Google, on a phone.
+   * Google.
    *
-   * Three steps rather than the website's one, because a native app cannot just
-   * navigate itself away and come back:
+   * Two code paths, because a browser and a phone come back from a provider in
+   * genuinely different ways — and running the phone's path in a browser is
+   * what broke this for a week.
    *
-   *   1. ask Supabase for the provider URL instead of following it, which is
-   *      what `openExternally` means;
-   *   2. open it in the system's auth session — the tab that already holds the
-   *      person's Google cookies, and that closes itself the moment the redirect
-   *      fires. A plain `Linking.openURL` would leave them in a browser app with
-   *      no way back;
-   *   3. exchange the code the redirect carried for a real session.
+   * ON THE WEB
    *
-   * `Linking.createURL` builds the return address rather than a hard-coded
-   * `adhyapak://`, because Expo Go serves the app from an `exp://` URL during
-   * development and a literal scheme would break every device test before the
-   * app is ever built standalone.
+   * Supabase navigates the tab to Google itself and the browser comes back to
+   * `redirectTo` carrying `?code=`; supabase-js has `detectSessionInUrl` on by
+   * default, so it exchanges that code during the next load without anybody
+   * asking it to. Nothing here has to open a window or read a URL, which is the
+   * whole point: `WebBrowser.openAuthSessionAsync` used to run here and cost
+   * three separate failures.
+   *
+   *   - It opens a second window. Inside the phone-frame preview that window is
+   *     full desktop width, so a finished sign-in looked like the app had
+   *     "jumped to the web layout".
+   *   - It needs WebCrypto, and WebCrypto only exists in a secure context. Over
+   *     `http://<lan-ip>:8081` — how anybody tests on a real handset — there is
+   *     no `crypto.subtle`, so it threw "the current environment doesn't support
+   *     crypto" and no amount of app code could have fixed it.
+   *   - Google refuses to render inside an iframe, so the popup was the only
+   *     thing that worked there at all, and it worked badly.
+   *
+   * The return address is the page the learner is standing on, minus any query
+   * or hash. That is deliberately not `Linking.createURL('auth-callback')`:
+   * on web that helper ignores the app's `baseUrl`, so it produced
+   * `/auth-callback` for a build served from `/D/` and sent the browser
+   * somewhere the app is not. Returning to the current page needs no knowledge
+   * of the base path and is correct on localhost and on Pages alike.
+   *
+   * ON A DEVICE
+   *
+   * A native app cannot navigate itself away and come back, so it keeps the
+   * three-step dance: ask for the provider URL rather than following it, open
+   * the system auth session — the tab that already holds the person's Google
+   * cookies and closes itself when the redirect fires — then exchange the code.
+   * `Linking.createURL` is right here, where there is no base path and the
+   * scheme differs between Expo Go and a standalone build.
    *
    * A dismissed browser is not an error worth styling as one — it is somebody
    * changing their mind — but the caller still has to stop showing a spinner,
    * so it comes back as a normal failed `AuthResult` with its own kind.
    */
   const signInWithGoogle = useCallback(async (): Promise<AuthResult<AuthState>> => {
+    if (Platform.OS === 'web') {
+      const { origin, pathname } = window.location;
+      const started = await startGoogleSignIn(`${origin}${pathname}`, {
+        openExternally: false,
+      });
+      if (!started.ok) return started;
+      /*
+       * `skipBrowserRedirect` is off, so supabase-js has already begun
+       * navigating this tab away. There is no session to return — this page is
+       * being torn down — and the caller must not reset its spinner, or the
+       * button flickers back to life on the way out.
+       */
+      return { ok: false, error: OAUTH_CANCELLED };
+    }
+
     const redirectTo = Linking.createURL('auth-callback');
 
     const started = await startGoogleSignIn(redirectTo, { openExternally: true });

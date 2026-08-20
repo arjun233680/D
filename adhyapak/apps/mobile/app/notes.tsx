@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
-import { Stack } from 'expo-router';
-import { SUBJECT_BY_ID, examBrowsableSubjects, listNotes, t, theme, UI } from '@adhyapak/core';
+import { SUBJECT_BY_ID, examBrowsableSubjects, listNotes, t, theme } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { NoteCard } from '@/components/cards';
-import { AsyncSection, Chip, s } from '@/components/ui';
+import { AsyncSection, Chip } from '@/components/ui';
+import { Screen, ScreenBody } from '@/components/prep';
 
 export default function NotesScreen() {
   const { lang, user, uploadedNotes } = useStore();
@@ -29,8 +29,12 @@ export default function NotesScreen() {
   const data = subjectId === 'all' ? all : all.filter((n) => n.subjectId === subjectId);
 
   return (
-    <View style={s.screen}>
-      <Stack.Screen options={{ title: t(UI.notes, lang) }} />
+    <Screen
+      title={lang === 'hi' ? 'नोट्स' : 'Notes'}
+      subtitle={lang === 'hi' ? 'बेहतर पढ़ाई, बेहतर अंक' : 'Study Smart, Score Better'}
+      lang={lang}
+      back
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -51,7 +55,7 @@ export default function NotesScreen() {
           />
         ))}
       </ScrollView>
-      <View style={{ flex: 1, paddingHorizontal: theme.space.lg }}>
+      <ScreenBody>
         <AsyncSection
           state={{ ...state, data }}
           lang={lang}
@@ -73,7 +77,7 @@ export default function NotesScreen() {
             />
           )}
         </AsyncSection>
-      </View>
-    </View>
+      </ScreenBody>
+    </Screen>
   );
 }

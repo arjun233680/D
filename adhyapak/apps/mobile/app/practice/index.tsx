@@ -16,6 +16,7 @@ import {
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { Badge, ElectiveNotice, ProgressBar, SectionHeader, Stat, Touch, s } from '@/components/ui';
+import { Screen } from '@/components/prep';
 
 export default function PracticeScreen() {
   const { lang, user } = useStore();
@@ -49,7 +50,13 @@ export default function PracticeScreen() {
   const bySubject = useAsync(() => countQuestionsBySubject(user.goalExamId), [user.goalExamId]);
 
   return (
-    <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 32 }}>
+    <Screen
+      title={lang === 'hi' ? 'अभ्यास' : 'Practice'}
+      subtitle={lang === 'hi' ? 'रोज़ थोड़ा, लगातार' : 'A little every day'}
+      lang={lang}
+      back
+      scroll
+    >
       <View style={{ flexDirection: 'row', gap: 8, padding: theme.space.lg }}>
         <Stat
           label={lang === 'hi' ? 'श्रृंखला' : 'Streak'}
@@ -165,7 +172,7 @@ export default function PracticeScreen() {
           })}
         </View>
       </View>
-    </ScrollView>
+    </Screen>
   );
 }
 

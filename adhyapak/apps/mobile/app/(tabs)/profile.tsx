@@ -138,7 +138,7 @@ export default function ProfileScreen() {
         goal came out half-answered from the one screen meant to show it.
       */}
       <Pressable
-        onPress={() => router.push('/(auth)/goal')}
+        onPress={() => router.push('/onboarding/exams?change=1')}
         style={{
           flexDirection: 'row',
           alignItems: 'center',

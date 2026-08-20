@@ -1,630 +1,835 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import {
-  BATCHES,
-  TESTS,
   currentStreak,
-  formatDate,
-  getExam,
-  getPaper,
-  getSubject,
-  getTopic,
-  liveVideos,
-  recommendedTopics,
-  subjectsForPaperOrEmpty,
+  fetchLearnerExamIds,
+  fetchLearnerLevelIds,
+  fetchLearnerSubjects,
+  listExams,
+  listLevelSubjects,
+  listLevels,
+  nextOnboardingStep,
   t,
   theme,
-  UI,
+  type Exam,
+  type Level,
+  type LevelSubject,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { usePalette } from '@/lib/session';
 import { useResponsive } from '@/lib/responsive';
-import { Content, s } from '@/components/ui';
+import { CANVAS, FAINT, INK, LINE, MUTED, StepLoading, VIOLET, tint } from '@/components/onboarding';
 
 /**
- * Dashboard.
+ * The dashboard.
  *
- * Answers one question: what should I do right now. Anything merely browsable —
- * batches, the test catalogue, notes, videos, current affairs — lives in its own
- * tab or in the library row, so the dashboard never shows the same rail twice.
- * What stays is what a browse screen cannot give: how far away the exam is,
- * whether the streak is alive, what to practise next, and what changed in this
- * exam's cycle.
+ * Answers one question — what should I do right now — against what the learner
+ * told onboarding: the exams they sit, the levels they teach at, and the
+ * subject they chose for each. Every card here is one of those answers made
+ * actionable.
+ *
+ * Laid out from the design mockup: a white panel holding the selections, a
+ * Quick Access rail, a Continue panel, and a four-tile snapshot over the tab
+ * bar. Every box the mockup draws is drawn here.
+ *
+ * WHAT IS REAL AND WHAT IS ZERO
+ *
+ * The mockup fills those boxes with numbers — "45% Completed", "Study Time 42
+ * min", "Topics Completed 2 / 5", "60%" against a half-finished chapter. None
+ * of them can be computed: nothing in the schema records a minute spent, a
+ * chapter opened or a topic finished. So the boxes are here at the size and in
+ * the position the design gives them, and they read zero, with one line under
+ * them saying why.
+ *
+ * That is a deliberate difference from the picture and the only one. A
+ * fabricated 45% is worse than a bar at zero, because a learner who has
+ * practised nothing would be told they are nearly halfway and would plan a
+ * month of revision around it. Every tile lights up on its own the day the app
+ * starts recording what it claims to measure.
+ *
+ * The web original is apps/web/app/page.tsx and makes the same call.
  */
 
-/** Shortcuts to sections that do NOT have their own tab, so nothing is duplicated. */
-// Upload is not here. It is the admin module's, and it sat in a learner's
-// shortcut row offering an educator tool to somebody preparing for an exam.
-const SHORTCUTS = [
-  { href: '/notes', icon: '📚', label: { en: 'Notes', hi: 'नोट्स' }, color: '#F97316' },
-  { href: '/videos', icon: '🎥', label: { en: 'Videos', hi: 'वीडियो' }, color: '#DB2777' },
-  { href: '/practice/pyq', icon: '📜', label: { en: 'Previous year', hi: 'विगत वर्ष' }, color: '#0891B2' },
-  { href: '/doubts', icon: '💬', label: { en: 'Doubts', hi: 'शंका' }, color: '#7C3AED' },
-  { href: '/current-affairs', icon: '📰', label: { en: 'Affairs', hi: 'समसामयिकी' }, color: '#DC2626' },
+const QUICK = [
+  {
+    href: '/(tabs)/study',
+    icon: '📖',
+    label: { en: 'Notes', hi: 'नोट्स' },
+    sub: { en: 'Study Smart', hi: 'बेहतर पढ़ाई' },
+    tint: '#efeafe',
+    color: '#6d4aed',
+  },
+  {
+    href: '/prep/pyq',
+    icon: '📄',
+    label: { en: 'PYQ', hi: 'विगत वर्ष' },
+    sub: { en: 'Previous Year Questions', hi: 'विगत वर्ष प्रश्न' },
+    tint: '#e8f7ee',
+    color: '#16a34a',
+  },
+  {
+    href: '/prep/tests',
+    icon: '📋',
+    label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' },
+    sub: { en: 'Practice & Improve', hi: 'अभ्यास एवं सुधार' },
+    tint: '#e6f0fd',
+    color: '#2563eb',
+  },
+  {
+    href: '/prep/tests',
+    icon: '🎯',
+    label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' },
+    sub: { en: 'Real Exam Experience', hi: 'वास्तविक परीक्षा अनुभव' },
+    tint: '#fff1e6',
+    color: '#ea580c',
+  },
+  {
+    href: '/current-affairs',
+    icon: '🌐',
+    label: { en: 'Current Affairs', hi: 'समसामयिकी' },
+    sub: { en: 'Stay Updated Daily', hi: 'रोज़ अपडेट रहें' },
+    tint: '#fdeaf3',
+    color: '#db2777',
+  },
 ] as const;
 
-const daysUntil = (iso: string | undefined): number | null => {
-  if (!iso) return null;
-  const diff = new Date(iso).getTime() - Date.now();
-  return diff > 0 ? Math.ceil(diff / 86_400_000) : null;
-};
+interface Selection {
+  level: Level;
+  /** Absent at levels that have no subject to choose — primary. */
+  subject?: LevelSubject;
+  exam?: Exam;
+}
 
 export default function DashboardScreen() {
-  const { lang, user, results, toggleLang } = useStore();
-  const palette = usePalette();
-  const r = useResponsive();
+  const { lang, user, results, ready } = useStore();
   const hi = lang === 'hi';
+  const r = useResponsive();
 
-  const exam = getExam(user.goalExamId);
-  const paper = user.targetPaperId ? getPaper(user.targetPaperId)?.paper : exam?.papers[0];
-  const streak = currentStreak(user.activeDates);
-  const attempts = Object.values(results);
+  const [selections, setSelections] = useState<Selection[] | null>(null);
 
-  const countdown = daysUntil(exam?.nextExamDate);
-  const avgAccuracy = attempts.length
-    ? Math.round(attempts.reduce((sum, x) => sum + x.accuracy, 0) / attempts.length)
-    : 0;
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const [examIds, levelIds, chosen] = await Promise.all([
+        fetchLearnerExamIds(),
+        fetchLearnerLevelIds(),
+        fetchLearnerSubjects(),
+      ]);
+      if (!live) return;
 
-  // What to do next, in priority order.
-  const dailyQuiz = TESTS.find((x) => x.type === 'daily-quiz');
-  const nextMock = TESTS.find((x) => x.examId === user.goalExamId && x.type === 'mock' && !results[x.id]);
-  const weakTopicId = attempts.flatMap((x) => x.weakTopics)[0]?.topicId;
-  // Empty when the paper has an unresolved elective: the home feed then
-  // suggests nothing rather than suggesting somebody else's subject.
-  const subjectIds = subjectsForPaperOrEmpty(paper?.id, user.electiveSubjectId);
-  const suggested = weakTopicId ? getTopic(weakTopicId) : recommendedTopics(subjectIds, 1)[0];
+      const [levels, exams] = await Promise.all([listLevels(), listExams()]);
+      if (!live) return;
 
-  const live = liveVideos().filter((v) => v.examIds.includes(user.goalExamId));
-  // This exam's dashboard, so an enrolment from a previous goal does not belong
-  // on it. It is still on the batches tab, where your own enrolments live.
-  const myBatch = BATCHES.find(
-    (b) => b.examId === user.goalExamId && user.enrolledBatchIds.includes(b.id),
-  );
-  // Only updates that have not already happened, newest first.
-  const upcoming = (exam?.updates ?? []).filter((u) => new Date(u.date).getTime() >= Date.now() - 86_400_000);
-  const timeline = (upcoming.length ? upcoming : (exam?.updates ?? []).slice(-2)).slice(0, 2);
+      /*
+       * The same decision the chooser makes, from the same function.
+       *
+       * Answering it independently here is what creates a loop: a learner who
+       * chose PRT alone owns no `learner_subjects` row, so a test for "has
+       * subjects" calls them unfinished while the chooser — seeing nothing
+       * owed — calls them finished, and the two screens volley them forever.
+       */
+      if (nextOnboardingStep(examIds, levels, levelIds, chosen) !== 'done') {
+        router.replace('/onboarding/exams');
+        return;
+      }
+      const offers = await Promise.all(levelIds.map((id) => listLevelSubjects(id)));
+      if (!live) return;
 
-  // Ordered by what a candidate opens the app for. The first becomes the
-  // primary card; the rest are quieter rows. Every row used to carry the same
-  // filled accent pill, so the section that exists to answer "what should I do
-  // first" answered it four times at once.
-  const actions = [
-    dailyQuiz && {
-      key: 'quiz',
-      icon: '⚡',
-      tint: theme.color.primaryLight,
-      title: hi ? 'आज की प्रश्नोत्तरी' : "Today's quiz",
-      sub: `10 ${hi ? 'प्रश्न' : 'questions'} · 10 ${hi ? 'मिनट' : 'min'}`,
-      cta: hi ? 'शुरू करें' : 'Start',
-      accent: palette.accent,
-      go: () => router.push(`/test/${dailyQuiz.id}`),
-    },
-    suggested && {
-      key: 'topic',
-      icon: '🎯',
-      tint: theme.color.warningLight,
-      title: weakTopicId
-        ? hi ? 'कमज़ोर टॉपिक सुधारें' : 'Fix your weak topic'
-        : hi ? 'सर्वाधिक भार वाला टॉपिक' : 'Highest-weightage topic',
-      sub: `${getSubject(suggested.subjectId)?.icon ?? ''} ${t(suggested.name, lang)}`,
-      cta: hi ? 'अभ्यास करें' : 'Practise',
-      accent: palette.accent,
-      go: () => router.push(`/practice/topic/${suggested.id}`),
-    },
-    nextMock && {
-      key: 'mock',
-      icon: '📝',
-      tint: theme.color.accentLight,
-      title: hi ? 'अगला मॉक टेस्ट' : 'Next mock test',
-      sub: t(nextMock.title, lang),
-      cta: hi ? 'टेस्ट दें' : 'Attempt',
-      accent: palette.accent,
-      go: () => router.push(`/test/${nextMock.id}`),
-    },
-    myBatch && {
-      key: 'batch',
-      icon: '🎓',
-      tint: theme.color.infoLight,
-      title: hi ? 'आपका बैच' : 'Your batch',
-      sub: t(myBatch.title, lang),
-      cta: hi ? 'खोलें' : 'Open',
-      accent: palette.accent,
-      go: () => router.push(`/batch/${myBatch.id}`),
-    },
-  ].filter(Boolean) as ActionItem[];
+      const mine = exams.filter((e) => examIds.includes(e.id));
+      // One card per level the learner sits, so PRT — which has no subject —
+      // still gets a line of its own rather than vanishing from the dashboard.
+      const built = levelIds
+        .map((levelId, i): Selection | undefined => {
+          const level = levels.find((l) => l.id === levelId);
+          if (!level) return undefined;
+          const pick = chosen.find((c) => c.levelId === levelId);
+          const subject = pick
+            ? offers.flat().find((o) => o.levelId === levelId && o.subjectId === pick.subjectId)
+            : undefined;
+          /*
+           * The badge is an exam, and which one is a genuine ambiguity: the
+           * learner picked several and did not say which level belongs to
+           * which. Pairing them off in order is a presentation choice, not a
+           * claim — hence no attempt to look clever about it.
+           */
+          return { level, subject, exam: mine[i % Math.max(mine.length, 1)] };
+        })
+        .filter((sel): sel is Selection => sel !== undefined);
 
-  // A live class outranks the list while it is on air, and only while it is.
-  const liveNow = live[0];
+      setSelections(built);
+    })();
+    return () => {
+      live = false;
+    };
+  }, []);
 
-  const updates = timeline.length ? (
-    <>
-      <View style={[s.row, { justifyContent: 'space-between', marginBottom: theme.space.md }]}>
-        <Eyebrow text={hi ? `${exam?.shortName} अपडेट` : `${exam?.shortName} updates`} flush />
-        <Pressable onPress={() => (exam ? router.push(`/goal/${exam.slug}`) : undefined)}>
-          <Text style={{ color: palette.accent, fontFamily: theme.family.bodySemi, fontSize: theme.font.sm }}>
-            {hi ? 'सभी' : 'All'}
-          </Text>
-        </Pressable>
-      </View>
-      <View style={{ gap: theme.space.sm }}>
-        {timeline.map((u) => (
-          <View key={`${u.date}-${u.title.en}`} style={[s.card, { padding: theme.space.lg }]}>
-            <Text style={[s.faint, { fontFamily: theme.family.bodySemi, color: palette.accent }]}>
-              {formatDate(u.date, lang)}
-            </Text>
-            <Text style={[s.title, { marginTop: 4 }]}>{t(u.title, lang)}</Text>
-            <Text style={[s.muted, { marginTop: 4 }]}>{t(u.detail, lang)}</Text>
-          </View>
-        ))}
-      </View>
-    </>
-  ) : null;
+  const streak = useMemo(() => currentStreak(user.activeDates ?? []), [user.activeDates]);
+  const solved = Object.keys(results ?? {}).length;
 
-  const today = formatDate(new Date().toISOString().slice(0, 10), lang);
+  if (!ready || selections === null) {
+    return <StepLoading label={hi ? 'लाया जा रहा है…' : 'Loading…'} />;
+  }
+
+  // The mockup shows two selection cards side by side with the second clipped,
+  // which is what says "scrollable". Half the width plus a peek does that at
+  // any phone size, and settles once a tablet can hold two whole ones.
+  const selectionWidth = r.isPhone ? Math.min(r.width * 0.56, 260) : 300;
 
   return (
-    <SafeAreaView style={s.screen} edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: theme.space.xxxl }} showsVerticalScrollIndicator={false}>
-        <Content>
-          {/* -------------------------------------------------------- the day
-              A prep app is opened daily, so the screen names the day rather
-              than repeating the app's own name back at somebody who just
-              tapped its icon. The date runs through `formatDate`, which is
-              deterministic — the platform's own formatter disagrees between
-              runtimes and broke the website's hydration when it was trusted. */}
-          <View style={[s.row, { justifyContent: 'space-between', paddingVertical: theme.space.md }]}>
-            <View style={[s.row, { gap: 8, alignItems: 'baseline' }]}>
-              <Text style={{ fontSize: theme.font.xl, fontFamily: theme.family.displayBold }}>
-                {hi ? 'आज' : 'Today'}
-              </Text>
-              <Text style={[s.faint, { fontFamily: theme.family.bodySemi }]}>{today}</Text>
+    <View style={{ flex: 1, backgroundColor: CANVAS }}>
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+          <View
+            style={{
+              width: '100%',
+              maxWidth: r.maxWidth,
+              alignSelf: 'center',
+              paddingHorizontal: r.gutter,
+              paddingTop: 8,
+            }}
+          >
+            {/* ------------------------------------------------- top actions */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <IconButton
+                label={hi ? 'मेन्यू' : 'Menu'}
+                onPress={() => router.push('/(tabs)/profile')}
+              >
+                <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+                  <Path
+                    d="M3 6h14M3 10h14M3 14h14"
+                    stroke={INK}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+              </IconButton>
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <IconButton label={hi ? 'खोजें' : 'Search'} onPress={() => router.push('/explore')}>
+                  <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+                    <Circle cx={9} cy={9} r={6} stroke={INK} strokeWidth={1.9} />
+                    <Path
+                      d="m13.6 13.6 3.4 3.4"
+                      stroke={INK}
+                      strokeWidth={1.9}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                </IconButton>
+                <IconButton
+                  label={hi ? 'सूचनाएँ' : 'Updates'}
+                  onPress={() => router.push('/current-affairs')}
+                >
+                  <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+                    <Path
+                      d="M10 3a5 5 0 0 0-5 5v3l-1.4 2.2h12.8L15 11V8a5 5 0 0 0-5-5Z"
+                      stroke={INK}
+                      strokeWidth={1.7}
+                      strokeLinejoin="round"
+                    />
+                    <Path
+                      d="M8.2 16a2 2 0 0 0 3.6 0"
+                      stroke={INK}
+                      strokeWidth={1.7}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 9,
+                      right: 9,
+                      height: 8,
+                      width: 8,
+                      borderRadius: 4,
+                      backgroundColor: VIOLET,
+                    }}
+                  />
+                </IconButton>
+              </View>
             </View>
-            <View style={[s.row, { gap: theme.space.sm }]}>
-              {/* Changing exam had no route from this screen at all — it lived
-                  in Profile, three taps away, while the goal decides every
-                  listing in the app. */}
-              {exam ? (
+
+            {/* -------------------------------------------------- greeting */}
+            <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View
+                    style={{
+                      height: 40,
+                      width: 40,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: VIOLET,
+                    }}
+                  >
+                    <Svg width={21} height={21} viewBox="0 0 40 40" fill="none">
+                      <Path d="M20 9 31 13.6 20 18.2 9 13.6 20 9Z" fill="#fff" />
+                      <Path
+                        d="M12 21h7.4c.4 0 .6.3.6.7V31c0-.5-.3-.8-.8-.8H12V21Z"
+                        fill="#fff"
+                        opacity={0.95}
+                      />
+                      <Path
+                        d="M28 21h-7.4c-.4 0-.6.3-.6.7V31c0-.5.3-.8.8-.8H28V21Z"
+                        fill="#fff"
+                        opacity={0.78}
+                      />
+                    </Svg>
+                  </View>
+                  <Text style={{ fontSize: 26, fontFamily: theme.family.displayBold, color: INK }}>
+                    Adhyapak
+                  </Text>
+                </View>
+                <Text
+                  style={{
+                    marginTop: 12,
+                    fontSize: 17,
+                    fontFamily: theme.family.displayBold,
+                    color: INK,
+                  }}
+                >
+                  {hi ? `नमस्ते, ${user.name || 'साथी'}! 👋` : `Hello, ${user.name || 'there'}! 👋`}
+                </Text>
+                <Text
+                  style={{
+                    marginTop: 2,
+                    fontSize: 13.5,
+                    fontFamily: theme.family.body,
+                    color: MUTED,
+                  }}
+                >
+                  {hi ? 'चलिए तैयारी जारी रखें।' : "Let's continue your learning journey."}
+                </Text>
+              </View>
+              <DashboardArt width={r.isPhone ? 96 : 150} />
+            </View>
+
+            {/* ------------------------------------------------- selections */}
+            {/* The mockup boxes this section rather than letting it sit on the
+                canvas, which is what separates "what I chose" from the rails
+                below it. */}
+            <Panel style={{ marginTop: 20 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}
+              >
+                <SectionTitle icon="🔖" text={hi ? 'मेरे चुनाव' : 'My Selections'} />
                 <Pressable
-                  onPress={() => router.push('/(auth)/goal')}
+                  accessibilityRole="button"
+                  onPress={() => router.push('/onboarding/exams?change=1')}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 5,
+                    gap: 6,
+                    borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: `${palette.accent}59`,
-                    backgroundColor: `${palette.accent}14`,
-                    borderRadius: theme.radius.pill,
-                    paddingHorizontal: 11,
-                    paddingVertical: 7,
+                    borderColor: '#e2dcf7',
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
                   }}
                 >
-                  <Text style={{ fontSize: 13 }}>{exam.emoji}</Text>
                   <Text
+                    style={{ fontSize: 12.5, fontFamily: theme.family.displayBold, color: VIOLET }}
+                  >
+                    ✎ {hi ? 'बदलें' : 'Change Selections'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: 14, marginHorizontal: -14 }}
+                contentContainerStyle={{ gap: 12, paddingHorizontal: 14 }}
+              >
+                {selections.map((sel) => {
+                  const accent = sel.subject?.color ?? sel.level.color;
+                  return (
+                    <Pressable
+                      key={sel.level.id}
+                      accessibilityRole="button"
+                      onPress={() => router.push(`/prep?level=${sel.level.id}`)}
+                      style={{
+                        width: selectionWidth,
+                        borderRadius: 16,
+                        // Tinted in the selection's own colour, which is what
+                        // makes two selections legible at a glance.
+                        backgroundColor: `${accent}14`,
+                        padding: 14,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'flex-start',
+                          justifyContent: 'space-between',
+                          gap: 8,
+                        }}
+                      >
+                        <View
+                          style={{
+                            borderRadius: 8,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            backgroundColor: tint(sel.exam?.color ?? VIOLET),
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontFamily: theme.family.displayBold,
+                              color: sel.exam?.color ?? VIOLET,
+                            }}
+                          >
+                            {sel.exam?.shortName ?? '—'}
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            height: 44,
+                            width: 44,
+                            borderRadius: 14,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#ffffffcc',
+                          }}
+                        >
+                          <Text style={{ fontSize: 20 }}>
+                            {sel.subject?.icon ?? sel.level.icon}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text
+                        style={{
+                          marginTop: 10,
+                          fontSize: 22,
+                          fontFamily: theme.family.displayBold,
+                          color: INK,
+                        }}
+                      >
+                        {sel.level.name}
+                      </Text>
+                      {/* Primary has no subject line because it has no subject:
+                          the whole paper is the syllabus. */}
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          marginTop: 2,
+                          fontSize: 14,
+                          fontFamily: theme.family.bodySemi,
+                          color: accent,
+                        }}
+                      >
+                        {sel.subject ? t(sel.subject.name, lang) : t(sel.level.fullName, lang)}
+                      </Text>
+
+                      {/* The design reads "45% Completed" here. See the note at
+                          the head of this file for why this one says nothing
+                          has been started. */}
+                      <Text
+                        style={{
+                          marginTop: 12,
+                          fontSize: 12,
+                          fontFamily: theme.family.bodySemi,
+                          color: MUTED,
+                        }}
+                      >
+                        {hi ? 'अभी शुरू नहीं किया' : 'Not started yet'}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <View
+                          style={{
+                            flex: 1,
+                            marginTop: 6,
+                            height: 6,
+                            borderRadius: 999,
+                            backgroundColor: '#ffffffcc',
+                          }}
+                        />
+                        <View
+                          style={{
+                            marginTop: 6,
+                            height: 28,
+                            width: 28,
+                            borderRadius: 14,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: accent,
+                          }}
+                        >
+                          <ArrowGlyph size={13} />
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </Panel>
+
+            {/* ----------------------------------------------- quick access */}
+            <View style={{ marginTop: 24 }}>
+              <SectionTitle icon="⚡" text={hi ? 'त्वरित पहुँच' : 'Quick Access'} />
+              <Text
+                style={{ marginTop: 2, fontSize: 12.5, fontFamily: theme.family.body, color: FAINT }}
+              >
+                {hi ? 'आपकी तैयारी, आसान बनाई गई' : 'Your exam prep, simplified'}
+              </Text>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: 12, marginHorizontal: -r.gutter }}
+                contentContainerStyle={{ gap: 12, paddingHorizontal: r.gutter }}
+              >
+                {QUICK.map((q, i) => (
+                  <Pressable
+                    key={`${q.label.en}-${i}`}
+                    accessibilityRole="button"
+                    onPress={() => router.push(q.href as never)}
                     style={{
-                      fontSize: theme.font.xs,
-                      fontFamily: theme.family.bodySemi,
-                      color: palette.accent,
+                      width: 132,
+                      borderRadius: 16,
+                      backgroundColor: q.tint,
+                      padding: 14,
                     }}
                   >
-                    {exam.shortName}
-                  </Text>
-                  <Text style={{ fontSize: 8, color: palette.accent }}>▼</Text>
-                </Pressable>
-              ) : null}
-              <Pressable
-                onPress={toggleLang}
+                    <Text style={{ fontSize: 26 }}>{q.icon}</Text>
+                    <Text
+                      style={{
+                        marginTop: 10,
+                        fontSize: 14,
+                        fontFamily: theme.family.displayBold,
+                        color: INK,
+                      }}
+                    >
+                      {t(q.label, lang)}
+                    </Text>
+                    <Text
+                      style={{
+                        marginTop: 2,
+                        fontSize: 11.5,
+                        lineHeight: 15,
+                        fontFamily: theme.family.body,
+                        color: MUTED,
+                      }}
+                    >
+                      {t(q.sub, lang)}
+                    </Text>
+                    <View
+                      style={{
+                        marginTop: 12,
+                        height: 28,
+                        width: 28,
+                        borderRadius: 14,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: q.color,
+                      }}
+                    >
+                      <ArrowGlyph />
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* ------------------------------------- continue your preparation */}
+            <Panel style={{ marginTop: 24 }}>
+              <SectionTitle
+                icon="🔖"
+                text={hi ? 'तैयारी जारी रखें' : 'Continue Your Preparation'}
+              />
+              {/* The design puts a half-read chapter here with a 60% bar. There
+                  is no "last topic" recorded anywhere, so rather than pick one
+                  at random this says what is true and points at the shelf. */}
+              <View
                 style={{
+                  marginTop: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 14,
+                  borderRadius: 16,
                   borderWidth: 1,
-                  borderColor: theme.color.border,
-                  borderRadius: theme.radius.pill,
-                  paddingHorizontal: 12,
-                  paddingVertical: 7,
-                  backgroundColor: theme.color.surface,
-                }}
-              >
-                <Text style={{ fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
-                  {hi ? 'EN' : 'हिं'}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => router.push('/profile')}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: theme.color.ink,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 17 }}>{user.avatar}</Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* ---------------------------------------------------- the deadline
-              Slim: the countdown is the reason to open the app on a Tuesday,
-              and the rest of the exam's detail lives on its own screen. */}
-          <Pressable
-            onPress={() => (exam ? router.push(`/goal/${exam.slug}`) : undefined)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: theme.space.lg,
-              backgroundColor: palette.accent,
-              borderRadius: theme.radius.xl,
-              paddingHorizontal: theme.space.lg,
-              paddingVertical: theme.space.lg,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ color: '#fff', fontSize: theme.font.md, fontFamily: theme.family.displayBold }}
-                numberOfLines={1}
-              >
-                {exam ? t(exam.name, lang) : ''}
-              </Text>
-              {paper ? (
-                <Text
-                  style={{ color: 'rgba(255,255,255,0.8)', fontSize: theme.font.xs, marginTop: 2 }}
-                  numberOfLines={1}
-                >
-                  {t(paper.name, lang)}
-                </Text>
-              ) : null}
-            </View>
-            {countdown !== null ? (
-              <HeroFigure value={`${countdown}`} label={hi ? 'दिन शेष' : 'days left'} />
-            ) : paper ? (
-              <HeroFigure value={`${paper.cutoffGeneral}%`} label={hi ? 'कट-ऑफ' : 'cut-off'} />
-            ) : null}
-          </Pressable>
-
-          {/* ----------------------------------------------------- two figures
-              Both counted from the learner's own record. Deliberately no
-              "0 / 2 practice": a daily target implies a study plan this app
-              does not have, and a bar against nothing is a bar against nothing. */}
-          <View style={{ flexDirection: 'row', gap: theme.space.md, marginTop: theme.space.lg }}>
-            <Tile
-              label={hi ? 'श्रृंखला' : 'Streak'}
-              value={`${streak}`}
-              unit={hi ? 'दिन' : streak === 1 ? 'day' : 'days'}
-              foot={streak > 0 ? (hi ? 'बनाए रखिए' : 'Keep it going') : hi ? 'आज से शुरू कीजिए' : 'Start it today'}
-              color={theme.color.warning}
-            />
-            <Tile
-              label={hi ? 'बुकमार्क' : 'Bookmarks'}
-              value={`${user.bookmarkedQuestionIds.length}`}
-              unit={hi ? 'प्रश्न' : 'saved'}
-              foot={hi ? 'दोबारा हल करें →' : 'Practise them →'}
-              color={theme.color.accent}
-              onPress={() => router.push('/practice/bookmarks')}
-            />
-          </View>
-
-          {/* ------------------------------------------ the one thing to do now */}
-          <View style={{ marginTop: theme.space.lg }}>
-            {liveNow ? (
-              <FeatureRow
-                icon="🔴"
-                tint={theme.color.danger}
-                label={hi ? 'अभी लाइव' : 'Live now'}
-                title={t(liveNow.title, lang)}
-                cta={hi ? 'जुड़ें' : 'Join'}
-                accent={theme.color.danger}
-                onPress={() => router.push(`/video/${liveNow.id}`)}
-              />
-            ) : actions[0] ? (
-              <FeatureRow
-                icon={actions[0].icon}
-                tint={palette.accent}
-                label={hi ? 'आज का अभ्यास' : "Today's practice"}
-                title={actions[0].title}
-                sub={actions[0].sub}
-                cta={actions[0].cta}
-                accent={palette.accent}
-                onPress={actions[0].go}
-              />
-            ) : null}
-          </View>
-
-          {/* ------------------------------------------------------- the rest */}
-          <View style={{ gap: theme.space.sm, marginTop: theme.space.sm }}>
-            {actions.slice(liveNow ? 0 : 1).map((a) => (
-              <Row key={a.key} icon={a.icon} tint={a.tint} title={a.title} sub={a.sub} onPress={a.go} />
-            ))}
-          </View>
-
-          {/* --------------------------------------------------------- shortcuts
-              Tiles rather than the chip row, in the softer style: a tinted
-              square, one word under it. */}
-          <Text
-            style={{
-              fontSize: theme.font.md,
-              fontFamily: theme.family.displayBold,
-              marginTop: theme.space.xxl,
-              marginBottom: theme.space.md,
-            }}
-          >
-            {hi ? 'सामग्री' : 'Quick access'}
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-            {SHORTCUTS.map((item) => (
-              <Pressable
-                key={item.href}
-                onPress={() => router.push(item.href as never)}
-                style={{
-                  width: r.isPhone ? '33.333%' : '16.666%',
-                  alignItems: 'center',
-                  paddingVertical: theme.space.md,
+                  borderStyle: 'dashed',
+                  borderColor: '#ded9f3',
+                  padding: 14,
                 }}
               >
                 <View
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 18,
-                    backgroundColor: `${item.color}1f`,
+                    height: 52,
+                    width: 52,
+                    borderRadius: 14,
                     alignItems: 'center',
                     justifyContent: 'center',
+                    backgroundColor: '#f1eefc',
                   }}
                 >
-                  <Text style={{ fontSize: 24 }}>{item.icon}</Text>
+                  <Text style={{ fontSize: 24 }}>📖</Text>
                 </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 19,
+                      fontFamily: theme.family.body,
+                      color: MUTED,
+                    }}
+                  >
+                    {hi
+                      ? 'अभी कोई अध्याय शुरू नहीं हुआ। जहाँ छोड़ेंगे, वहीं से यहाँ दिखेगा।'
+                      : 'No chapter started yet. Where you leave off will appear here.'}
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/(tabs)/study')}
+                style={{
+                  marginTop: 12,
+                  minHeight: 44,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  borderRadius: 12,
+                  backgroundColor: VIOLET,
+                }}
+              >
                 <Text
-                  style={{
-                    fontSize: theme.font.xs,
-                    fontFamily: theme.family.bodySemi,
-                    color: theme.color.text,
-                    marginTop: 8,
-                    textAlign: 'center',
-                  }}
-                  numberOfLines={1}
+                  style={{ fontSize: 14, fontFamily: theme.family.displayBold, color: '#fff' }}
                 >
-                  {t(item.label, lang)}
+                  ▶ {hi ? 'पढ़ना शुरू करें' : 'Start studying'}
                 </Text>
               </Pressable>
-            ))}
+            </Panel>
+
+            {/* --------------------------------------------- today's snapshot */}
+            <View style={{ marginTop: 24 }}>
+              <SectionTitle icon="📊" text={hi ? 'आज का सारांश' : "Today's Snapshot"} />
+
+              {/* Four tiles, as the design lays them out. Two of them have a
+                  source and two do not; all four are here so the row is the row
+                  from the picture, and the two without one read zero. */}
+              <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                <StatTile
+                  icon="⏱️"
+                  tintColor="#e8f7ee"
+                  label={hi ? 'अध्ययन समय' : 'Study Time'}
+                  value={hi ? '0 मिनट' : '0 min'}
+                  measured={false}
+                />
+                <StatTile
+                  icon="🎯"
+                  tintColor="#fdeaf3"
+                  label={hi ? 'हल किए प्रश्न' : 'Questions Solved'}
+                  value={String(solved)}
+                  measured
+                />
+                <StatTile
+                  icon="📖"
+                  tintColor="#efeafe"
+                  label={hi ? 'पूर्ण विषय' : 'Topics Completed'}
+                  value="0"
+                  measured={false}
+                />
+                <StatTile
+                  icon="🔥"
+                  tintColor="#fff1e6"
+                  label={hi ? 'दैनिक श्रृंखला' : 'Daily Streak'}
+                  value={hi ? `${streak} दिन` : `${streak} day${streak === 1 ? '' : 's'}`}
+                  measured
+                />
+              </View>
+
+              <Text
+                style={{
+                  marginTop: 10,
+                  fontSize: 11.5,
+                  lineHeight: 17,
+                  fontFamily: theme.family.body,
+                  color: '#a8a3bd',
+                }}
+              >
+                {hi
+                  ? 'अध्ययन समय और पूर्ण विषय तब दिखेंगे जब उनका रिकॉर्ड रखा जाने लगेगा।'
+                  : 'Study time and topics completed appear once the app starts recording them.'}
+              </Text>
+            </View>
           </View>
-
-          {updates ? <View style={{ marginTop: theme.space.xxl }}>{updates}</View> : null}
-        </Content>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-/** One counted figure, in the soft-tile style. */
-function Tile({
-  label,
-  value,
-  unit,
-  foot,
-  color,
-  onPress,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  foot: string;
-  color: string;
-  onPress?: () => void;
-}) {
-  const Wrap = onPress ? Pressable : View;
-  return (
-    <Wrap
-      onPress={onPress}
-      style={[s.card, { flex: 1, padding: theme.space.lg }]}
-    >
-      <Text
-        style={{
-          fontSize: theme.font.xs,
-          fontFamily: theme.family.bodySemi,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          color,
-        }}
-      >
-        {label}
-      </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 6 }}>
-        <Text style={[s.numeric, { fontSize: 26 }]}>{value}</Text>
-        <Text style={s.muted}>{unit}</Text>
-      </View>
-      <Text style={[s.faint, { marginTop: 6, color: onPress ? color : theme.color.textMuted }]}>
-        {foot}
-      </Text>
-    </Wrap>
-  );
-}
-
-/** The single most important thing to do, with its own button. */
-function FeatureRow({
-  icon,
-  tint,
-  label,
-  title,
-  sub,
-  cta,
-  accent,
-  onPress,
-}: {
-  icon: string;
-  tint: string;
-  label: string;
-  title: string;
-  sub?: string;
-  cta: string;
-  accent: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        s.card,
-        s.row,
-        { padding: theme.space.lg, gap: theme.space.md, borderColor: `${accent}59` },
-      ]}
-    >
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: theme.radius.md,
-          backgroundColor: `${tint}1f`,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={{ fontSize: 21 }}>{icon}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            fontSize: theme.font.xs,
-            fontFamily: theme.family.bodySemi,
-            letterSpacing: 1,
-            textTransform: 'uppercase',
-            color: accent,
-          }}
-        >
-          {label}
-        </Text>
-        <Text style={[s.title, { marginTop: 2 }]} numberOfLines={1}>
-          {title}
-        </Text>
-        {/* On its own line: joined with the title it truncated the part that
-            says what the thing costs you — "10 questions · 10 min". */}
-        {sub ? (
-          <Text style={s.muted} numberOfLines={1}>
-            {sub}
-          </Text>
-        ) : null}
-      </View>
-      <View
-        style={{
-          backgroundColor: accent,
-          borderRadius: theme.radius.pill,
-          paddingHorizontal: 15,
-          paddingVertical: 9,
-        }}
-      >
-        <Text style={{ color: '#fff', fontSize: theme.font.xs, fontFamily: theme.family.bodySemi }}>
-          {cta}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-/** A quieter row: icon, two lines, a chevron. */
-function Row({
-  icon,
-  tint,
-  title,
-  sub,
-  onPress,
-}: {
-  icon: string;
-  tint: string;
-  title: string;
-  sub: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[s.card, s.row, { padding: theme.space.md, gap: theme.space.md }]}
-    >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: theme.radius.md,
-          backgroundColor: `${tint}1f`,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={{ fontSize: 18 }}>{icon}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={s.title} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text style={s.muted} numberOfLines={1}>
-          {sub}
-        </Text>
-      </View>
-      <Text style={{ color: theme.color.border, fontSize: 20 }}>›</Text>
-    </Pressable>
-  );
-}
-
-interface ActionItem {
-  key: string;
-  icon: string;
-  tint: string;
-  title: string;
-  sub: string;
-  cta: string;
-  accent: string;
-  go: () => void;
-}
-
-/**
- * A section label.
- *
- * A small tracked-out uppercase line rather than another `s.h2`: with four
- * headings at that weight down one screen, the labels competed with the content
- * they were labelling.
- */
-function Eyebrow({ text, flush }: { text: string; flush?: boolean }) {
-  return (
-    <Text
-      style={{
-        fontSize: theme.font.xs,
-        fontFamily: theme.family.bodySemi,
-        color: theme.color.textFaint,
-        letterSpacing: 1.3,
-        textTransform: 'uppercase',
-        marginBottom: flush ? 0 : theme.space.md,
-      }}
-    >
-      {text}
-    </Text>
-  );
-}
-
-/** One figure in the goal card — the number first, what it means underneath. */
-function HeroFigure({ value, label }: { value: string; label: string }) {
-  return (
-    <View>
-      <Text
-        style={{
-          color: '#fff',
-          fontSize: 32,
-          lineHeight: 34,
-          fontFamily: theme.family.displayBold,
-        }}
-      >
-        {value}
-      </Text>
-      <Text
-        style={{
-          color: 'rgba(255,255,255,0.75)',
-          fontSize: theme.font.xs,
-          fontFamily: theme.family.bodySemi,
-          letterSpacing: 0.8,
-          textTransform: 'uppercase',
-          marginTop: 5,
-        }}
-      >
-        {label}
-      </Text>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
 
+/* --------------------------------------------------------------- fragments */
+
+/** The white box the design groups a section inside. */
+function Panel({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: React.ComponentProps<typeof View>['style'];
+}) {
+  return (
+    <View
+      style={[
+        {
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: LINE,
+          backgroundColor: '#fff',
+          padding: 14,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+function IconButton({
+  label,
+  onPress,
+  children,
+}: {
+  label: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={{
+        height: 44,
+        width: 44,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: LINE,
+        backgroundColor: '#fff',
+      }}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
+function SectionTitle({ icon, text }: { icon: string; text: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Text style={{ fontSize: 16 }}>{icon}</Text>
+      <Text style={{ fontSize: 16, fontFamily: theme.family.displayBold, color: INK }}>{text}</Text>
+    </View>
+  );
+}
+
+/**
+ * One snapshot tile.
+ *
+ * `measured` is not decoration. A tile whose number nothing counts is drawn at
+ * the same size and in the same place as the others — the design's row stays
+ * the design's row — but its value is greyed, so the eye can tell a real zero
+ * from a zero that only means "not recorded yet" without reading the footnote.
+ */
+function StatTile({
+  icon,
+  tintColor,
+  label,
+  value,
+  measured,
+}: {
+  icon: string;
+  tintColor: string;
+  label: string;
+  value: string;
+  measured: boolean;
+}) {
+  return (
+    <View
+      style={{
+        width: '47.5%',
+        flexGrow: 1,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: LINE,
+        backgroundColor: '#fff',
+        padding: 14,
+      }}
+    >
+      <View
+        style={{
+          height: 36,
+          width: 36,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: tintColor,
+        }}
+      >
+        <Text style={{ fontSize: 17 }}>{icon}</Text>
+      </View>
+      <Text
+        style={{
+          marginTop: 8,
+          fontSize: 19,
+          fontFamily: theme.family.displayBold,
+          color: measured ? INK : '#b8b3c9',
+        }}
+      >
+        {value}
+      </Text>
+      <Text style={{ fontSize: 11.5, fontFamily: theme.family.body, color: MUTED }}>{label}</Text>
+    </View>
+  );
+}
+
+function ArrowGlyph({ size = 14 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M4 10h11m0 0-4-4m4 4-4 4"
+        stroke="#fff"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** The cap-and-books mark in the dashboard header's corner. Decoration only. */
+function DashboardArt({ width }: { width: number }) {
+  const height = (width / 180) * 130;
+  return (
+    <Svg width={width} height={height} viewBox="0 0 180 130" fill="none">
+      <Circle cx={140} cy={34} r={32} fill="#efecfd" />
+      <Path d="M60 76c-9-3-14-11-12-19 9-1 17 4 19 12" fill="#34c77b" opacity={0.8} />
+      <Rect x={66} y={86} width={96} height={14} rx={4} fill="#7c5cf7" />
+      <Rect x={72} y={100} width={88} height={14} rx={4} fill="#fbc02d" />
+      <Rect x={62} y={114} width={102} height={13} rx={4} fill="#eef1fb" />
+      <Path d="M113 40 158 56l-45 16-45-16 45-16Z" fill="#5b46d6" />
+      <Path d="M88 64v13c0 5 11 9 25 9s25-4 25-9V64l-25 9-25-9Z" fill={VIOLET} />
+    </Svg>
+  );
+}

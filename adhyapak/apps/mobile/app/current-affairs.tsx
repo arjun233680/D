@@ -1,25 +1,25 @@
 import { FlatList, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
 import { formatDate, listCurrentAffairs, t, theme } from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { Badge, s } from '@/components/ui';
+import { Screen } from '@/components/prep';
 
 export default function CurrentAffairsScreen() {
   const affairs = useAsync(() => listCurrentAffairs(), []);
   const { lang } = useStore();
 
   return (
+    <Screen
+      title={lang === 'hi' ? 'समसामयिकी' : 'Current Affairs'}
+      subtitle={lang === 'hi' ? 'रोज़ अपडेट रहें' : 'Stay Updated Daily'}
+      lang={lang}
+      back
+    >
     <FlatList
-      style={s.screen}
       data={affairs.data ?? []}
       keyExtractor={(ca) => ca.id}
       contentContainerStyle={{ padding: theme.space.lg, gap: theme.space.md }}
-      ListHeaderComponent={
-        <Stack.Screen
-          options={{ title: lang === 'hi' ? 'समसामयिकी' : 'Current affairs' }}
-        />
-      }
       renderItem={({ item }) => (
         <View style={[s.card, { padding: theme.space.lg }]}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
@@ -37,5 +37,6 @@ export default function CurrentAffairsScreen() {
         </View>
       )}
     />
+    </Screen>
   );
 }

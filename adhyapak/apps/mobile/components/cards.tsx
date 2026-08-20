@@ -25,8 +25,8 @@ function Thumb({ color, emoji, height = 128 }: { color: string; emoji: string; h
       style={{
         height,
         backgroundColor: color,
-        borderTopLeftRadius: theme.radius.lg,
-        borderTopRightRadius: theme.radius.lg,
+        borderTopLeftRadius: theme.radius.card,
+        borderTopRightRadius: theme.radius.card,
         justifyContent: 'flex-end',
         alignItems: 'flex-end',
         padding: theme.space.md,

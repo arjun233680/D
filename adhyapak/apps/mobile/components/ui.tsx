@@ -32,9 +32,10 @@ export function Touch({
 
 export const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.color.bg },
+  /** The website's `.card` in globals.css: white, one hairline, 16px corners. */
   card: {
     backgroundColor: theme.color.surface,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.card,
     borderWidth: 1,
     borderColor: theme.color.border,
   },
@@ -155,8 +156,10 @@ export function Badge({
         {
           backgroundColor: c.bg,
           borderRadius: theme.radius.pill,
+          borderWidth: 1,
+          borderColor: tone === 'neutral' ? theme.color.border : 'transparent',
           paddingHorizontal: 10,
-          paddingVertical: 5,
+          paddingVertical: 4,
         },
         style,
       ]}
@@ -274,13 +277,18 @@ export function Chip({
     <Pressable
       onPress={onPress}
       style={{
-        backgroundColor: active ? theme.color.ink : theme.color.surface,
+        // Violet when on — the same chip the onboarding filters and the
+        // performance rails use. It was ink, which read as a different control
+        // from the ones beside it on screens that carry both.
+        backgroundColor: active ? theme.color.primary : theme.color.surface,
         borderColor: active ? 'transparent' : theme.color.border,
         borderWidth: 1,
         borderRadius: theme.radius.pill,
         paddingHorizontal: 16,
         paddingVertical: 10,
         marginRight: theme.space.sm,
+        minHeight: 40,
+        justifyContent: 'center',
       }}
     >
       <Text
@@ -336,7 +344,7 @@ export function ElectiveNotice({ error, lang }: { error: ElectiveError; lang: 'e
       {error.kind !== 'unknown-group' ? (
         <Button
           label={hi ? 'विषय चुनें' : 'Choose subject'}
-          onPress={() => router.push('/(auth)/goal')}
+          onPress={() => router.push('/onboarding/subject?change=1')}
         />
       ) : null}
     </View>
@@ -409,7 +417,7 @@ export function Skeleton({ height = 88 }: { height?: number }) {
     <View
       style={{
         height,
-        borderRadius: theme.radius.lg,
+        borderRadius: theme.radius.card,
         backgroundColor: theme.color.surfaceAlt,
       }}
     />

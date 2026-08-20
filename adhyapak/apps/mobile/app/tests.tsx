@@ -4,7 +4,8 @@ import { listTests, theme, type Test } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { useAsync } from '@/lib/useAsync';
 import { TestCard } from '@/components/cards';
-import { AsyncSection, Chip, s } from '@/components/ui';
+import { AsyncSection, Chip } from '@/components/ui';
+import { Screen } from '@/components/prep';
 import { useResponsive } from '@/lib/responsive';
 
 const TYPES: { id: Test['type'] | 'all'; label: { en: string; hi: string } }[] = [
@@ -27,7 +28,12 @@ export default function TestsScreen() {
   const data = (state.data ?? []).filter((x) => type === 'all' || x.type === type);
 
   return (
-    <View style={s.screen}>
+    <Screen
+      title={lang === 'hi' ? 'टेस्ट सीरीज़' : 'Test Series'}
+      subtitle={lang === 'hi' ? 'अधिक अभ्यास, बेहतर अंक' : 'Practice More, Score Higher'}
+      lang={lang}
+      back
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -79,6 +85,6 @@ export default function TestsScreen() {
           )}
         </AsyncSection>
       </View>
-    </View>
+    </Screen>
   );
 }

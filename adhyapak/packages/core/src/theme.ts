@@ -32,14 +32,24 @@ export const theme = {
     info: '#0284C7',
     infoLight: '#E4F2FB',
 
-    /* Neutrals */
-    bg: '#F4F6FA',
+    /* Neutrals.
+
+       These are the same values apps/web/app/globals.css declares as
+       --color-canvas, --color-surface-alt and --color-muted. Three of them had
+       drifted — bg was #F4F6FA against the website's #FAF9FF, surfaceAlt
+       #F7F9FC against #F9FAFC, textMuted a slate #59637A against the website's
+       grey #6B7280 — which is most of why the phone read as a different
+       product on screens whose code already matched. The header of this file
+       and of globals.css both claimed the two mirrored one another; neither
+       noticed, because the website never imports this object. If you change a
+       neutral here, change it there too. */
+    bg: '#FAF9FF',
     surface: '#FFFFFF',
-    surfaceAlt: '#F7F9FC',
+    surfaceAlt: '#F9FAFC',
     border: '#ECEAF6',
     borderStrong: '#D8D3EE',
     text: '#1E1B4B',
-    textMuted: '#59637A',
+    textMuted: '#6B7280',
     textFaint: '#8B869E',
     white: '#FFFFFF',
 
@@ -50,7 +60,10 @@ export const theme = {
     marked: '#7C3AED',
     answeredMarked: '#7C3AED',
   },
-  radius: { sm: 10, md: 14, lg: 18, xl: 24, pill: 999 },
+  /* `card` is the website's --radius-card. It sits between md and lg rather
+     than replacing either, because 14 and 18 are both still in use elsewhere
+     and rounding every one of them to 16 would move more than the cards. */
+  radius: { sm: 10, md: 14, card: 16, lg: 18, xl: 24, pill: 999 },
   /* 4pt grid. Screens use these rather than ad-hoc numbers so rhythm holds. */
   space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 },
 

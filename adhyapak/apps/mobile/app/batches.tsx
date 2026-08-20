@@ -4,7 +4,8 @@ import { listBatches, theme } from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { BatchCard } from '@/components/cards';
-import { Chip, EmptyState, s } from '@/components/ui';
+import { EmptyState } from '@/components/ui';
+import { Screen } from '@/components/prep';
 import { useResponsive } from '@/lib/responsive';
 
 export default function BatchesScreen() {
@@ -15,8 +16,12 @@ export default function BatchesScreen() {
   const data = batches.data ?? [];
 
   return (
-    <View style={s.screen}>
-
+    <Screen
+      title={lang === 'hi' ? 'बैच' : 'Batches'}
+      subtitle={lang === 'hi' ? 'लाइव कक्षाएँ और कोर्स' : 'Live classes and courses'}
+      lang={lang}
+      back
+    >
       <FlatList
         key={'cols-' + r.columns}
         numColumns={r.columns}
@@ -47,6 +52,6 @@ export default function BatchesScreen() {
           />
         }
       />
-    </View>
+    </Screen>
   );
 }

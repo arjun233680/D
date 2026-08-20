@@ -13,3 +13,7 @@ web-build/
 *.tsbuildinfo
 .DS_Store
 .env*.local
+# Expo reads apps/mobile/.env, which .env*.local does not match — the key in it
+# is the public anon key, but a credentials file still has no business in git.
+.env
+apps/*/.env

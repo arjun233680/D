@@ -18,24 +18,30 @@ import { StoreProvider, useStore } from '@/lib/store';
 import { SessionProvider, useSession } from '@/lib/session';
 
 /**
- * Sends the learner to the right place on launch:
- *   not signed in            -> login
- *   signed in, no goal yet   -> goal picker
- *   both done                -> the app
- * Runs after the persisted store has hydrated, so a returning learner never
- * sees the login screen flash before landing on home.
- */
-/**
  * Nothing is reachable without an account.
  *
- * `signedIn` means a real profile row now, not "past the door" — the guest path
+ * `signedIn` means a real profile row, not "past the door" — the guest path
  * that used to satisfy this gate has been removed. Everything behind it is
- * scoped to a learner: the goal reshapes every subject list, bookmarks and
+ * scoped to a learner: the selection reshapes every subject list, bookmarks and
  * progress have to survive a reinstall, and an attempt is only worth submitting
  * if there is somewhere to record it.
+ *
+ * WHAT THE GATE NO LONGER DOES
+ *
+ * It used to also decide whether onboarding was finished, from `user.onboarded`
+ * — a flag the old single-exam goal picker set. That picker is gone, and the
+ * question it answered ("which one exam?") is not the question the app asks any
+ * more; onboarding is now three answers held in `learner_exams`,
+ * `learner_levels` and `learner_subjects`.
+ *
+ * So the gate stops at "is there an account", and the dashboard decides where
+ * an incomplete learner belongs, using `nextOnboardingStep` against those three
+ * tables. That is exactly what apps/web does, and it is the only way the two
+ * can agree: a local flag and three server rows drift the moment somebody
+ * finishes onboarding on the website and opens the phone.
  */
 function AuthGate() {
-  const { signedIn, onboarded } = useSession();
+  const { signedIn } = useSession();
   const { ready } = useStore();
   const segments = useSegments();
   const router = useRouter();
@@ -44,16 +50,21 @@ function AuthGate() {
     if (!ready) return;
     const path = segments.join('/');
     const inAuth = path.startsWith('(auth)');
-    const onGoal = path.includes('goal');
+    /*
+     * The OAuth landing pad is neither signed in nor signed out — it is the
+     * moment in between, holding the code that decides which. Bouncing it to
+     * the login screen throws that code away, which is how a completed Google
+     * sign-in ended up back at the door.
+     */
+    const isCallback = path.startsWith('auth-callback');
+    if (isCallback) return;
 
     if (!signedIn && !inAuth) {
       router.replace('/(auth)/login');
-    } else if (signedIn && !onboarded && !onGoal) {
-      router.replace('/(auth)/goal');
-    } else if (signedIn && onboarded && inAuth) {
+    } else if (signedIn && inAuth) {
       router.replace('/(tabs)');
     }
-  }, [ready, signedIn, onboarded, segments, router]);
+  }, [ready, signedIn, segments, router]);
 
   return null;
 }
@@ -92,12 +103,27 @@ function Shell() {
           },
           headerTintColor: theme.color.text,
           headerShadowVisible: false,
-          contentStyle: { backgroundColor: theme.color.bg },
+          // The canvas the website paints, so a screen pushed over the tabs
+          // does not flash a different grey on its way in.
+          contentStyle: { backgroundColor: '#faf9ff' },
         }}
       >
         <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)/goal" options={{ headerShown: false }} />
+        <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+        {/* Onboarding draws its own back arrow and step rail, so it takes the
+            whole screen exactly as it does on the website. */}
+        <Stack.Screen name="onboarding/exams" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding/level" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding/subject" options={{ headerShown: false }} />
+
+        {/* Preparation screens carry PrepHeader — their own menu, back arrow,
+            title and actions — so a native header would be a second one. */}
+        <Stack.Screen name="prep/index" options={{ headerShown: false }} />
+        <Stack.Screen name="prep/pyq" options={{ headerShown: false }} />
+        <Stack.Screen name="prep/tests" options={{ headerShown: false }} />
+
         {/* Every exam window owns the whole screen, exactly like the web app —
             a mock, a previous-year paper, and any practice set. */}
         <Stack.Screen name="test/[id]/attempt" options={{ headerShown: false }} />
@@ -109,7 +135,6 @@ function Shell() {
     </>
   );
 }
-
 
 export default function RootLayout() {
   return (

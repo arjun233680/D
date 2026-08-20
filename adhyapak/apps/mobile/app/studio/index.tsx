@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { Stack } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import {
   signOut as signOutRemote,
@@ -17,6 +16,7 @@ import { useStore } from '@/lib/store';
 import { useStudioAccess } from '@/lib/useStudioAccess';
 import { StudioGate } from '@/components/StudioGate';
 import { Badge, Button, s } from '@/components/ui';
+import { CANVAS, PrepHeader, PrepShell } from '@/components/prep';
 
 type Mode = 'video' | 'note';
 
@@ -116,8 +116,17 @@ export default function StudioScreen() {
   // reached it and the refusal arrived only after it was filled in.
   return (
     <StudioGate access={studioAccess} loading={checkingAccess} lang={lang}>
-    <ScrollView style={s.screen} contentContainerStyle={{ padding: theme.space.lg, paddingBottom: 40 }}>
-      <Stack.Screen options={{ title: t(UI.studio, lang) }} />
+    <PrepShell lang={lang}>
+    {(openMenu) => (
+    <View style={{ flex: 1, backgroundColor: CANVAS }}>
+    <PrepHeader
+      title={t(UI.studio, lang)}
+      subtitle={lang === 'hi' ? 'सामग्री जोड़ें और प्रकाशित करें' : 'Add and publish content'}
+      onMenu={openMenu}
+      back
+      lang={lang}
+    />
+    <ScrollView contentContainerStyle={{ padding: theme.space.lg, paddingBottom: 40 }}>
 
       {/* Staff land here after signing in, so leaving has to be possible from
           here too — sending an educator to the learner's profile tab to sign
@@ -358,6 +367,9 @@ export default function StudioScreen() {
         </View>
       ) : null}
     </ScrollView>
+    </View>
+    )}
+    </PrepShell>
     </StudioGate>
   );
 }

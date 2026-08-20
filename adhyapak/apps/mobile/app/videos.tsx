@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { FlatList, ScrollView, View } from 'react-native';
-import { Stack } from 'expo-router';
-import { SUBJECT_BY_ID, examBrowsableSubjects, listVideos, t, theme, UI } from '@adhyapak/core';
+import { FlatList, ScrollView } from 'react-native';
+import { SUBJECT_BY_ID, examBrowsableSubjects, listVideos, t, theme } from '@adhyapak/core';
 import { useAsync } from '@/lib/useAsync';
 import { useStore } from '@/lib/store';
 import { VideoCard } from '@/components/cards';
-import { Chip, EmptyState, s } from '@/components/ui';
+import { Chip, EmptyState } from '@/components/ui';
+import { Screen } from '@/components/prep';
 
 export default function VideosScreen() {
   const { lang, user, uploadedVideos } = useStore();
@@ -19,8 +19,12 @@ export default function VideosScreen() {
   const data = subjectId === 'all' ? all : all.filter((v) => v.subjectId === subjectId);
 
   return (
-    <View style={s.screen}>
-      <Stack.Screen options={{ title: t(UI.videos, lang) }} />
+    <Screen
+      title={lang === 'hi' ? 'वीडियो' : 'Videos'}
+      subtitle={lang === 'hi' ? 'पढ़िए, देखिए, समझिए' : 'Watch, learn, revise'}
+      lang={lang}
+      back
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -64,6 +68,6 @@ export default function VideosScreen() {
           />
         }
       />
-    </View>
+    </Screen>
   );
 }

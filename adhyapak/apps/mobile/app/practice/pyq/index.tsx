@@ -18,6 +18,7 @@ import {
   type PyqSelection,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { Screen } from '@/components/prep';
 import { useAsync } from '@/lib/useAsync';
 import { Button, Chip, s } from '@/components/ui';
 
@@ -97,8 +98,12 @@ export default function PyqScreen() {
   };
 
   return (
-    <View style={s.screen}>
-      <Stack.Screen options={{ title: hi ? 'विगत वर्ष प्रश्न' : 'Previous year questions' }} />
+    <Screen
+      title="PYQ"
+      subtitle={hi ? 'विगत वर्ष प्रश्न' : 'Previous Year Questions'}
+      lang={lang}
+      back
+    >
 
       {/* Which paper this is about, and a way back to change it. Shown only
           once the question below it has an owner. */}
@@ -408,7 +413,7 @@ export default function PyqScreen() {
           />
         </View>
       )}
-    </View>
+    </Screen>
   );
 }
 

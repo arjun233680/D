@@ -3,6 +3,12 @@
 /*
  * Tokens mirror packages/core/src/theme.ts one-for-one. The mobile app reads
  * the same object directly, which is what keeps the two products identical.
+ *
+ * "Mirror" is a promise nothing enforces: this file is a hand-kept copy, and
+ * three neutrals had quietly drifted out of step with it — canvas, surface-alt
+ * and muted — which is most of why the phone looked like a different product.
+ * They match again. Change one here and change it in theme.ts in the same
+ * commit, because no build step will tell you that you forgot.
  */
 @theme {
   --color-ink: #1e1b4b;

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Text, TextInput, View } from 'react-native';
-import { Stack } from 'expo-router';
 import {
   SUBJECT_BY_ID,
   examBrowsableSubjects,
@@ -12,6 +11,7 @@ import {
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 import { EmptyState, s, Touch } from '@/components/ui';
+import { Screen } from '@/components/prep';
 
 /**
  * Search within the exam the learner is sitting.
@@ -44,8 +44,12 @@ export default function ExploreScreen() {
   }, [q, query, user.goalExamId]);
 
   return (
-    <View style={s.screen}>
-      <Stack.Screen options={{ title: lang === 'hi' ? 'खोजें' : 'Explore' }} />
+    <Screen
+      title={lang === 'hi' ? 'खोजें' : 'Explore'}
+      subtitle={lang === 'hi' ? 'विषय और टॉपिक ढूँढ़िए' : 'Find a subject or a topic'}
+      lang={lang}
+      back
+    >
       <View style={{ padding: theme.space.lg, gap: theme.space.sm }}>
         <TextInput
           value={query}
@@ -117,6 +121,6 @@ export default function ExploreScreen() {
           />
         }
       />
-    </View>
+    </Screen>
   );
 }

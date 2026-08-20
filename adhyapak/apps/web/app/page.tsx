@@ -132,7 +132,12 @@ export default function HomePage() {
   }, [router]);
 
   const streak = useMemo(() => currentStreak(user.activeDates ?? []), [user.activeDates]);
-  const solved = results?.length ?? 0;
+  /*
+   * `results` is a Record keyed by test id, not an array — `.length` on it is
+   * always `undefined`, so this tile read a flat zero no matter how much the
+   * learner had done. Counting the keys is what it always meant to say.
+   */
+  const solved = Object.keys(results ?? {}).length;
 
   if (!ready || selections === null) {
     return (
