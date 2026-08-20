@@ -7,13 +7,16 @@
  */
 export const theme = {
   color: {
-    /* Brand: deep ink surfaces with a confident green call to action, the
-       visual language Indian exam-prep learners already recognise. */
-    ink: '#0B1120',
-    inkSoft: '#111C31',
-    primary: '#0F9D58',
-    primaryDark: '#0B7C45',
-    primaryLight: '#E7F6EE',
+    /* Brand: deep indigo ink with a violet call to action — the palette the
+       login, onboarding and preparation screens are drawn in. It was green
+       until those screens landed; leaving it green meant every older screen
+       stayed a different product from the one a learner had just walked
+       through. Both apps read these, so the phone moves with the website. */
+    ink: '#1E1B4B',
+    inkSoft: '#2A2560',
+    primary: '#6D4AED',
+    primaryDark: '#5B3CE0',
+    primaryLight: '#F1EEFC',
     accent: '#4F46E5',
     accentLight: '#EEF0FE',
     saffron: '#F97316',
@@ -33,17 +36,17 @@ export const theme = {
     bg: '#F4F6FA',
     surface: '#FFFFFF',
     surfaceAlt: '#F7F9FC',
-    border: '#E4E7EF',
-    borderStrong: '#CBD2E1',
-    text: '#0F172A',
+    border: '#ECEAF6',
+    borderStrong: '#D8D3EE',
+    text: '#1E1B4B',
     textMuted: '#59637A',
-    textFaint: '#8A93A6',
+    textFaint: '#8B869E',
     white: '#FFFFFF',
 
     /* Test-player palette — fixed meanings, never re-themed */
     answered: '#16A34A',
     notAnswered: '#DC2626',
-    notVisited: '#CBD2E1',
+    notVisited: '#D8D3EE',
     marked: '#7C3AED',
     answeredMarked: '#7C3AED',
   },

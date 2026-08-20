@@ -10,15 +10,15 @@ const NAV = [
   { href: '/', label: UI.home, icon: '🏠' },
   { href: '/batches', label: UI.batches, icon: '🎥' },
   { href: '/practice', label: UI.practice, icon: '✍️' },
-  { href: '/tests', label: UI.tests, icon: '🎯' },
-  { href: '/notes', label: UI.notes, icon: '📚' },
+  { href: '/prep/tests', label: UI.tests, icon: '🎯' },
+  { href: '/prep/notes', label: UI.notes, icon: '📚' },
 ] as const;
 
 const MOBILE_NAV = [
   { href: '/', label: UI.home, icon: '🏠' },
   { href: '/batches', label: UI.batches, icon: '🎥' },
   { href: '/practice', label: UI.practice, icon: '✍️' },
-  { href: '/tests', label: UI.tests, icon: '🎯' },
+  { href: '/prep/tests', label: UI.tests, icon: '🎯' },
   { href: '/profile', label: UI.profile, icon: '👤' },
 ] as const;
 
