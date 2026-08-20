@@ -678,8 +678,7 @@ export const saveLearnerExamIds = async (
 ): Promise<WriteOutcome> => {
   const db = getBackend();
   if (!db) return { ok: false, expired: false };
-  const { error } = await db.rpc('set_learner_exams', { p_exam_ids: [...examIds] });
-  return error ? explainWriteFailure(error) : { ok: true };
+  return writeWithSession(async () => ({ error: (await db.rpc('set_learner_exams', { p_exam_ids: [...examIds] })).error }));
 };
 
 /**
@@ -1459,8 +1458,7 @@ export const saveLearnerLevelIds = async (
 ): Promise<WriteOutcome> => {
   const db = getBackend();
   if (!db) return { ok: false, expired: false };
-  const { error } = await db.rpc('set_learner_levels', { p_level_ids: [...levelIds] });
-  return error ? explainWriteFailure(error) : { ok: true };
+  return writeWithSession(async () => ({ error: (await db.rpc('set_learner_levels', { p_level_ids: [...levelIds] })).error }));
 };
 
 /** The subject chosen for each level the learner sits. */
@@ -1488,11 +1486,14 @@ export const saveLearnerSubject = async (
 ): Promise<WriteOutcome> => {
   const db = getBackend();
   if (!db) return { ok: false, expired: false };
-  const { error } = await db.rpc('set_learner_subject', {
-    p_level_id: levelId,
-    p_subject_id: subjectId,
-  });
-  return error ? explainWriteFailure(error) : { ok: true };
+  return writeWithSession(async () => ({
+    error: (
+      await db.rpc('set_learner_subject', {
+        p_level_id: levelId,
+        p_subject_id: subjectId,
+      })
+    ).error,
+  }));
 };
 
 /* --------------------------------------------------- one learner's paper */
@@ -1851,6 +1852,38 @@ export const listElectiveChoices = async (
  * forever; one told their sign-in expired signs in again.
  */
 export type WriteOutcome = { ok: true } | { ok: false; expired: boolean };
+
+/**
+ * Runs a learner-owned write, once more if the first attempt raced the session.
+ *
+ * supabase-js restores the session from storage asynchronously. A learner who
+ * taps Continue quickly — which is most of them on a phone, where the tap comes
+ * a moment after the screen paints — can fire the request before the token is
+ * attached, and PostgREST answers 401. The auth logs show exactly this: the
+ * RPC refused at 12:01 while `/auth/v1/user` answered 200 either side of it, so
+ * the session existed and the request simply went out without it.
+ *
+ * `getSession()` resolves once the restore has finished, so asking it is both
+ * the test and the wait. If a session turns up, the write is retried and
+ * succeeds; if none does, the learner really is signed out and the caller sends
+ * them to the door.
+ */
+const writeWithSession = async (
+  attempt: () => Promise<{ error: unknown }>,
+): Promise<WriteOutcome> => {
+  const first = await attempt();
+  if (!first.error) return { ok: true };
+
+  const outcome = await explainWriteFailure(first.error);
+  if (outcome.ok || !outcome.expired) return outcome;
+
+  // `explainWriteFailure` already awaited `getSession()`, so by now the restore
+  // has settled. A session here means the first try raced it.
+  if (!(await hasLiveSession())) return { ok: false, expired: true };
+
+  const second = await attempt();
+  return second.error ? { ok: false, expired: false } : { ok: true };
+};
 
 /** True when the request has a session the server will accept. */
 export const hasLiveSession = async (): Promise<boolean> => {
