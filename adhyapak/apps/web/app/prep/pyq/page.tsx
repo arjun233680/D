@@ -1,12 +1,14 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   listPrepSections,
   listPyqSessions,
   listSubjectParts,
   listTopicsForSubject,
   listTopicsForSubjectTree,
+  pyqSelectionToParams,
   t,
   type Bilingual,
   type PrepSection,
@@ -14,8 +16,9 @@ import {
   type SubjectPart,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
-import { EmptyNote, INK, MUTED, PrepHeader, PrepNav, PrepShell, VIOLET } from '../ui';
+import { EmptyNote, INK, MUTED, PrepHeader, PrepNav, PrepShell, SelectionPicker, VIOLET } from '../ui';
 import { selectionTitle, useSelection } from '../useSelection';
+import { useSearchParams } from 'next/navigation';
 
 /**
  * Previous year questions, three ways.
@@ -47,13 +50,36 @@ const TABS: { id: Tab; icon: string; label: Bilingual }[] = [
   { id: 'topic', icon: '☰', label: { en: 'Topic Wise', hi: 'टॉपिक अनुसार' } },
 ];
 
+/**
+ * Where a card opens.
+ *
+ * The player already exists at /practice/pyq/attempt — the exam window, the
+ * grader, the solutions and the "nothing matched" message are all there and
+ * are what a mock test uses. These cards were the only thing not wired to it.
+ *
+ * The selection travels as query parameters through the same encoder the older
+ * PYQ screen uses, so a link from here and a link from there mean the same
+ * thing, and either can be shared or reloaded.
+ */
+const playerHref = (sel: {
+  examId?: string;
+  year?: number;
+  subjectId?: string;
+  topicId?: string;
+  electiveSubjectId?: string;
+}): string => {
+  const params = new URLSearchParams(pyqSelectionToParams(sel));
+  return `/practice/pyq/attempt?${params.toString()}`;
+};
+
 /** Card tints, cycled so a column of years does not read as one grey block. */
 const TINTS = ['#f1eefc', '#e8f7ee', '#fff3e6', '#fdeaf3', '#e6f0fd', '#f6efff', '#e9f7f3'];
 
 function PyqBrowser() {
   const { lang } = useStore();
   const hi = lang === 'hi';
-  const { selection, loading } = useSelection();
+  const { selection, selections, loading } = useSelection();
+  const askedFor = useSearchParams().get('level');
 
   const [tab, setTab] = useState<Tab>('full');
   const [sections, setSections] = useState<PrepSection[]>([]);
@@ -140,6 +166,48 @@ function PyqBrowser() {
 
   const subjectName = selection.subject ? t(selection.subject.name, lang) : undefined;
 
+  /*
+   * Landing on PYQ without naming a level, while sitting more than one, means
+   * the screen has no way to know which half of the learner's preparation they
+   * came for. Ask, rather than opening the first one and looking broken.
+   */
+  if (!askedFor && selections.length > 1) {
+    return (
+      <PrepShell lang={lang}>
+        {(openMenu) => (
+          <div className="min-h-dvh bg-[#faf9ff] pb-24">
+            <div className="fluid mx-auto w-full max-w-[760px] lg:max-w-[1040px]">
+              <PrepHeader
+                title="PYQ"
+                subtitle={hi ? 'विगत वर्ष प्रश्न' : 'Previous Year Questions'}
+                onMenu={openMenu}
+                lang={lang}
+              />
+              <SelectionPicker
+                title={hi ? 'PYQ देखने हेतु परीक्षा चुनें' : 'Select an Exam to View PYQs'}
+                subtitle={
+                  hi
+                    ? 'PYQ केवल उन्हीं परीक्षाओं के दिखेंगे जो आपने चुनी हैं।'
+                    : 'PYQs will be shown only for the exams you selected.'
+                }
+                items={selections.map((s) => ({
+                  key: s.level.id,
+                  examShort: s.exam?.shortName ?? '',
+                  levelName: s.level.name,
+                  subjectName: s.subject ? t(s.subject.name, lang) : undefined,
+                  icon: s.subject?.icon ?? s.level.icon,
+                  color: s.subject?.color ?? s.level.color,
+                }))}
+                hrefFor={(key) => `/prep/pyq?level=${key}`}
+              />
+            </div>
+            <PrepNav active="/" lang={lang} />
+          </div>
+        )}
+      </PrepShell>
+    );
+  }
+
   return (
     <PrepShell lang={lang}>
       {(openMenu) => (
@@ -177,7 +245,7 @@ function PyqBrowser() {
 
             <div className="px-5 pt-5">
               {tab === 'full' ? (
-                <FullTest years={paperYears} busy={busy} hi={hi} />
+                <FullTest years={paperYears} busy={busy} hi={hi} examId={examId} electiveId={electiveId} />
               ) : (
                 <>
                   <SectionChips sections={sections} active={active} onPick={setActive} lang={lang} />
@@ -242,9 +310,9 @@ function PyqBrowser() {
                   ) : null}
 
                   {tab === 'section' ? (
-                    <SectionWise years={sectionYears} hi={hi} />
+                    <SectionWise years={sectionYears} hi={hi} examId={examId} subjectId={active} electiveId={electiveId} />
                   ) : (
-                    <TopicWise topics={topics} lang={lang} hi={hi} />
+                    <TopicWise topics={topics} lang={lang} hi={hi} examId={examId} electiveId={electiveId} />
                   )}
                 </>
               )}
@@ -260,7 +328,19 @@ function PyqBrowser() {
 
 /* ------------------------------------------------------------------ tabs */
 
-function FullTest({ years, busy, hi }: { years: PyqSession[]; busy: boolean; hi: boolean }) {
+function FullTest({
+  years,
+  busy,
+  hi,
+  examId,
+  electiveId,
+}: {
+  years: PyqSession[];
+  busy: boolean;
+  hi: boolean;
+  examId?: string;
+  electiveId?: string;
+}) {
   return (
     <>
       <div className="flex items-start gap-3 rounded-2xl bg-white p-4">
@@ -295,8 +375,9 @@ function FullTest({ years, busy, hi }: { years: PyqSession[]; busy: boolean; hi:
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {years.map((y, i) => (
-              <article
+              <Link
                 key={y.year}
+                href={playerHref({ examId, year: y.year, electiveSubjectId: electiveId })}
                 className="rounded-2xl p-4"
                 style={{ backgroundColor: TINTS[i % TINTS.length] }}
               >
@@ -320,7 +401,7 @@ function FullTest({ years, busy, hi }: { years: PyqSession[]; busy: boolean; hi:
                     </span>
                   ) : null}
                 </p>
-              </article>
+              </Link>
             ))}
           </div>
         )}
@@ -329,7 +410,19 @@ function FullTest({ years, busy, hi }: { years: PyqSession[]; busy: boolean; hi:
   );
 }
 
-function SectionWise({ years, hi }: { years: PyqSession[]; hi: boolean }) {
+function SectionWise({
+  years,
+  hi,
+  examId,
+  subjectId,
+  electiveId,
+}: {
+  years: PyqSession[];
+  hi: boolean;
+  examId?: string;
+  subjectId?: string | null;
+  electiveId?: string;
+}) {
   const total = years.reduce((sum, y) => sum + y.collected, 0);
   if (years.length === 0) {
     return (
@@ -345,6 +438,11 @@ function SectionWise({ years, hi }: { years: PyqSession[]; hi: boolean }) {
   return (
     <div className="mt-4 space-y-2.5">
       <Row
+        href={playerHref({
+          examId,
+          subjectId: subjectId ?? undefined,
+          electiveSubjectId: electiveId,
+        })}
         title={
           hi
             ? `सभी वर्ष (${first}-${last}) एक साथ`
@@ -356,6 +454,12 @@ function SectionWise({ years, hi }: { years: PyqSession[]; hi: boolean }) {
       {years.map((y) => (
         <Row
           key={y.year}
+          href={playerHref({
+            examId,
+            subjectId: subjectId ?? undefined,
+            year: y.year,
+            electiveSubjectId: electiveId,
+          })}
           title={String(y.year)}
           note={hi ? `कुल प्रश्न: ${y.collected}` : `Total questions: ${y.collected}`}
         />
@@ -368,10 +472,14 @@ function TopicWise({
   topics,
   lang,
   hi,
+  examId,
+  electiveId,
 }: {
   topics: { id: string; name: Bilingual }[];
   lang: 'en' | 'hi';
   hi: boolean;
+  examId?: string;
+  electiveId?: string;
 }) {
   const [all, setAll] = useState(false);
   if (topics.length === 0) {
@@ -388,7 +496,11 @@ function TopicWise({
     <div className="mt-4">
       <div className="divide-y divide-[#f4f1fd] rounded-2xl bg-white">
         {shown.map((topic, i) => (
-          <div key={topic.id} className="flex items-center gap-3 px-4 py-3.5">
+          <Link
+            key={topic.id}
+            href={playerHref({ examId, topicId: topic.id, electiveSubjectId: electiveId })}
+            className="flex items-center gap-3 px-4 py-3.5"
+          >
             <span aria-hidden className="text-[15px]">
               📖
             </span>
@@ -401,7 +513,7 @@ function TopicWise({
             <span aria-hidden style={{ color: '#c4bfda' }}>
               ›
             </span>
-          </div>
+          </Link>
         ))}
       </div>
       {topics.length > 16 ? (
@@ -502,9 +614,19 @@ function PartTab({
   );
 }
 
-function Row({ title, note, sub }: { title: string; note: string; sub?: string }) {
+function Row({
+  title,
+  note,
+  sub,
+  href,
+}: {
+  title: string;
+  note: string;
+  sub?: string;
+  href: string;
+}) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5">
+    <Link href={href} className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5">
       <span
         aria-hidden
         className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#f1eefc] text-[16px]"
@@ -527,7 +649,7 @@ function Row({ title, note, sub }: { title: string; note: string; sub?: string }
       <span aria-hidden style={{ color: '#c4bfda' }}>
         ›
       </span>
-    </div>
+    </Link>
   );
 }
 

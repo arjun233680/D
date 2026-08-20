@@ -21,13 +21,13 @@ import { selectionTitle, useSelection } from './useSelection';
 
 const TILES = [
   { href: '/prep/pyq', icon: '📄', tint: '#e6f0fd', dot: '#2563eb', label: { en: 'PYQ', hi: 'विगत वर्ष' }, sub: { en: 'Previous Year Questions', hi: 'विगत वर्ष प्रश्न' } },
-  { href: '/notes', icon: '📗', tint: '#e8f7ee', dot: '#16a34a', label: { en: 'Notes', hi: 'नोट्स' }, sub: { en: 'Study Smart', hi: 'बेहतर पढ़ाई' } },
-  { href: '/tests', icon: '📋', tint: '#fff3e6', dot: '#ea580c', label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' }, sub: { en: 'Practice & Improve', hi: 'अभ्यास एवं सुधार' } },
-  { href: '/tests', icon: '🎯', tint: '#f6efff', dot: '#9333ea', label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' }, sub: { en: 'Real Exam Experience', hi: 'वास्तविक परीक्षा अनुभव' } },
+  { href: '/prep/notes', icon: '📗', tint: '#e8f7ee', dot: '#16a34a', label: { en: 'Notes', hi: 'नोट्स' }, sub: { en: 'Study Smart', hi: 'बेहतर पढ़ाई' } },
+  { href: '/prep/tests', icon: '📋', tint: '#fff3e6', dot: '#ea580c', label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' }, sub: { en: 'Practice & Improve', hi: 'अभ्यास एवं सुधार' } },
+  { href: '/prep/tests', icon: '🎯', tint: '#f6efff', dot: '#9333ea', label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' }, sub: { en: 'Real Exam Experience', hi: 'वास्तविक परीक्षा अनुभव' } },
   { href: '/current-affairs', icon: '📰', tint: '#fdeaf3', dot: '#db2777', label: { en: 'Current Affairs', hi: 'समसामयिकी' }, sub: { en: 'Stay Updated Daily', hi: 'रोज़ अपडेट रहें' } },
   { href: '/practice', icon: '📅', tint: '#e8f7ee', dot: '#16a34a', label: { en: 'DPP', hi: 'DPP' }, sub: { en: 'Daily Practice Papers', hi: 'दैनिक अभ्यास पत्र' } },
   { href: '/practice', icon: '❓', tint: '#fff8e6', dot: '#eab308', label: { en: 'Quick Quiz', hi: 'त्वरित क्विज़' }, sub: { en: 'Test Your Knowledge', hi: 'अपना ज्ञान परखें' } },
-  { href: '/notes', icon: '📘', tint: '#f1eefc', dot: '#6d4aed', label: { en: 'Revision Notes', hi: 'रिवीज़न नोट्स' }, sub: { en: 'High Yield Notes', hi: 'महत्वपूर्ण नोट्स' } },
+  { href: '/prep/notes', icon: '📘', tint: '#f1eefc', dot: '#6d4aed', label: { en: 'Revision Notes', hi: 'रिवीज़न नोट्स' }, sub: { en: 'High Yield Notes', hi: 'महत्वपूर्ण नोट्स' } },
 ] as const;
 
 function PrepDashboard() {

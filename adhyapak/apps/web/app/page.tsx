@@ -54,16 +54,16 @@ interface Selection {
 }
 
 const QUICK = [
-  { href: '/notes', icon: '📖', label: { en: 'Notes', hi: 'नोट्स' }, sub: { en: 'Study Smart', hi: 'बेहतर पढ़ाई' }, tint: '#efeafe', color: '#6d4aed' },
-  { href: '/practice/pyq', icon: '📄', label: { en: 'PYQ', hi: 'विगत वर्ष' }, sub: { en: 'Previous Year Questions', hi: 'विगत वर्ष प्रश्न' }, tint: '#e8f7ee', color: '#16a34a' },
-  { href: '/tests', icon: '📋', label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' }, sub: { en: 'Practice & Improve', hi: 'अभ्यास एवं सुधार' }, tint: '#e6f0fd', color: '#2563eb' },
-  { href: '/tests', icon: '🎯', label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' }, sub: { en: 'Real Exam Experience', hi: 'वास्तविक परीक्षा अनुभव' }, tint: '#fff1e6', color: '#ea580c' },
+  { href: '/prep/notes', icon: '📖', label: { en: 'Notes', hi: 'नोट्स' }, sub: { en: 'Study Smart', hi: 'बेहतर पढ़ाई' }, tint: '#efeafe', color: '#6d4aed' },
+  { href: '/prep/pyq', icon: '📄', label: { en: 'PYQ', hi: 'विगत वर्ष' }, sub: { en: 'Previous Year Questions', hi: 'विगत वर्ष प्रश्न' }, tint: '#e8f7ee', color: '#16a34a' },
+  { href: '/prep/tests', icon: '📋', label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' }, sub: { en: 'Practice & Improve', hi: 'अभ्यास एवं सुधार' }, tint: '#e6f0fd', color: '#2563eb' },
+  { href: '/prep/tests', icon: '🎯', label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' }, sub: { en: 'Real Exam Experience', hi: 'वास्तविक परीक्षा अनुभव' }, tint: '#fff1e6', color: '#ea580c' },
   { href: '/current-affairs', icon: '🌐', label: { en: 'Current Affairs', hi: 'समसामयिकी' }, sub: { en: 'Stay Updated Daily', hi: 'रोज़ अपडेट रहें' }, tint: '#fdeaf3', color: '#db2777' },
 ] as const;
 
 const NAV = [
   { href: '/', icon: '🏠', label: { en: 'Home', hi: 'होम' } },
-  { href: '/notes', icon: '📖', label: { en: 'Study', hi: 'अध्ययन' } },
+  { href: '/prep/notes', icon: '📖', label: { en: 'Study', hi: 'अध्ययन' } },
   { href: '/analytics/pyq', icon: '📊', label: { en: 'Performance', hi: 'प्रदर्शन' } },
   { href: '/profile', icon: '👤', label: { en: 'Profile', hi: 'प्रोफ़ाइल' } },
 ] as const;

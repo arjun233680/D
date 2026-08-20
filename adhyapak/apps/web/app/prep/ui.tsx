@@ -20,8 +20,8 @@ export const MUTED = '#6b7280';
 
 const NAV = [
   { href: '/', icon: '🏠', label: { en: 'Home', hi: 'होम' } },
-  { href: '/notes', icon: '📖', label: { en: 'Study', hi: 'अध्ययन' } },
-  { href: '/tests', icon: '📋', label: { en: 'Tests', hi: 'टेस्ट' } },
+  { href: '/prep/notes', icon: '📖', label: { en: 'Study', hi: 'अध्ययन' } },
+  { href: '/prep/tests', icon: '📋', label: { en: 'Tests', hi: 'टेस्ट' } },
   { href: '/analytics/pyq', icon: '📊', label: { en: 'Performance', hi: 'प्रदर्शन' } },
   { href: '/profile', icon: '👤', label: { en: 'Profile', hi: 'प्रोफ़ाइल' } },
 ] as const;
@@ -261,6 +261,94 @@ export function EmptyNote({ children }: { children: ReactNode }) {
       <p className="text-[13px] leading-relaxed" style={{ color: MUTED }}>
         {children}
       </p>
+    </div>
+  );
+}
+
+/**
+ * The big "which of your selections?" cards.
+ *
+ * A learner who sits TGT Science *and* PGT Chemistry has two different sets of
+ * papers, notes and tests behind them. Screens that used to pick the first one
+ * silently were opening the wrong half of somebody's preparation without
+ * saying so; this asks, and only when there is genuinely more than one.
+ */
+export function SelectionPicker({
+  title,
+  subtitle,
+  items,
+  hrefFor,
+}: {
+  title: string;
+  subtitle: string;
+  items: {
+    key: string;
+    examShort: string;
+    levelName: string;
+    subjectName?: string;
+    icon: string;
+    color: string;
+  }[];
+  hrefFor: (key: string) => string;
+}) {
+  return (
+    <div className="px-5 pt-4">
+      <h2 className="flex items-center gap-2 text-[16px] font-extrabold" style={{ color: INK }}>
+        <span aria-hidden>🔖</span>
+        {title}
+      </h2>
+      <p className="mt-0.5 text-[13px]" style={{ color: MUTED }}>
+        {subtitle}
+      </p>
+
+      <div className="mt-4 space-y-3">
+        {items.map((s) => (
+          <Link
+            key={s.key}
+            href={hrefFor(s.key)}
+            className="flex items-center gap-4 rounded-2xl p-4"
+            style={{ backgroundColor: `${s.color}14` }}
+          >
+            <span
+              className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white text-[30px]"
+              aria-hidden
+            >
+              {s.icon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold" style={{ color: INK }}>
+                {s.examShort} {s.levelName}
+              </span>
+              {s.subjectName ? (
+                <span
+                  className="block text-[26px] leading-tight font-extrabold"
+                  style={{ color: s.color }}
+                >
+                  {s.subjectName}
+                </span>
+              ) : null}
+              <span className="mt-0.5 block text-[15px] font-bold" style={{ color: INK }}>
+                {s.levelName}
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full"
+              style={{ background: s.color }}
+            >
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M4 10h11m0 0-4-4m4 4-4 4"
+                  stroke="#fff"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

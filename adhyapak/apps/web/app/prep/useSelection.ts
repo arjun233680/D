@@ -32,12 +32,18 @@ export interface Selection {
   subject?: LevelSubject;
 }
 
-export const useSelection = (): { selection: Selection | null; loading: boolean } => {
+export const useSelection = (): {
+  selection: Selection | null;
+  /** Every selection the learner has, for screens that let them pick one. */
+  selections: Selection[];
+  loading: boolean;
+} => {
   const router = useRouter();
   const params = useSearchParams();
   const wanted = params.get('level');
 
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [selections, setSelections] = useState<Selection[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,19 +71,33 @@ export const useSelection = (): { selection: Selection | null; loading: boolean 
         return;
       }
 
-      const pick = subjects.find((s) => s.levelId === level.id);
-      let subject: LevelSubject | undefined;
-      if (pick) {
-        const offers = await listLevelSubjects(level.id);
-        if (!live) return;
-        subject = offers.find((o) => o.subjectId === pick.subjectId);
-      }
+      /*
+       * Every level the learner sits, each with its own subject — the PYQ
+       * screen offers these as a choice when there is more than one, because
+       * "HTET TGT Science" and "HTET PGT Chemistry" are two different sets of
+       * papers and picking silently for them would open the wrong one.
+       */
+      const offersByLevel = await Promise.all(
+        mine.map(async (l) => {
+          const pick = subjects.find((s) => s.levelId === l.id);
+          if (!pick) return { level: l, subject: undefined as LevelSubject | undefined };
+          const offers = await listLevelSubjects(l.id);
+          return { level: l, subject: offers.find((o) => o.subjectId === pick.subjectId) };
+        }),
+      );
+      if (!live) return;
 
-      setSelection({
-        exam: exams.find((e) => examIds.includes(e.id)),
-        level,
-        subject,
-      });
+      const mineExams = exams.filter((e) => examIds.includes(e.id));
+      const all: Selection[] = offersByLevel.map((o, i) => ({
+        // Pairing an exam to a level in order is a presentation choice, not a
+        // claim — see the same note on the dashboard.
+        exam: mineExams[i % Math.max(mineExams.length, 1)],
+        level: o.level,
+        subject: o.subject,
+      }));
+
+      setSelections(all);
+      setSelection(all.find((s) => s.level.id === level.id) ?? all[0] ?? null);
       setLoading(false);
     })();
     return () => {
@@ -85,7 +105,7 @@ export const useSelection = (): { selection: Selection | null; loading: boolean 
     };
   }, [router, wanted]);
 
-  return { selection, loading };
+  return { selection, selections, loading };
 };
 
 /** "HTET TGT Science" — the line every preparation screen is titled with. */
