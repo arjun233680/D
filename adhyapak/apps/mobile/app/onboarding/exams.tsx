@@ -419,7 +419,7 @@ function ExamCard({
       accessibilityState={{ checked: selected }}
       onPress={onToggle}
       style={{
-        minHeight: 108,
+        minHeight: 128,
         borderRadius: theme.radius.card,
         borderWidth: 1,
         padding: 8,
@@ -427,12 +427,18 @@ function ExamCard({
         backgroundColor: selected ? PICKED_BG : '#fff',
       }}
     >
-      <View
-        style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}
-      >
-        <ExamMark exam={exam} size={44} />
+      {/*
+        At 66pt the mark takes nearly the card's whole width — 75pt of it, once
+        the padding is off — so the tick can no longer sit beside it on a row.
+        It moves to the card's own top-right corner and is drawn over the mark,
+        which is where a selection badge belongs anyway. `zIndex` because the
+        mark is painted after it in source order.
+      */}
+      <View style={{ position: 'absolute', top: 6, right: 6, zIndex: 2 }}>
         <CheckDot on={selected} size={18} />
       </View>
+
+      <ExamMark exam={exam} size={66} />
 
       <Text
         numberOfLines={2}
