@@ -71,7 +71,12 @@ export type IconName =
   | 'scroll'
   | 'medal'
   | 'scales'
-  | 'paw';
+  | 'paw'
+  | 'palette'
+  | 'music'
+  | 'run'
+  | 'rupee'
+  | 'monitor';
 
 /**
  * Each icon as the elements it is made of.
@@ -238,6 +243,21 @@ const PATHS: Record<IconName, { d?: string; c?: [number, number, number]; r?: nu
     { d: 'M9 16h3' },
   ],
   medal: [{ c: [12, 15, 5] }, { d: 'M8.3 10.9 6 3h12l-2.3 7.9' }],
+  palette: [
+    { d: 'M12 3.2a8.8 8.8 0 0 0 0 17.6c1.7 0 2.6-1 2.6-2.1 0-.6-.3-1.1-.7-1.5-.4-.4-.6-.8-.6-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4-4-7.2-9-7.2Z' },
+    { c: [7.6, 11, 1] },
+    { c: [11, 7.6, 1] },
+    { c: [15.3, 8.6, 1] },
+  ],
+  music: [{ d: 'M9 18V5.2L20 3v12.8' }, { c: [6.5, 18, 2.6] }, { c: [17.4, 15.8, 2.6] }],
+  run: [
+    { c: [14.5, 4.4, 2] },
+    { d: 'm6.5 21 3.2-6 3.8-2.2' },
+    { d: 'm9.8 14.6-1.4-4.2 4.4-2.6 2.6 3.1 3.6.9' },
+    { d: 'm13.5 12.8 1.7 3.2V21' },
+  ],
+  rupee: [{ d: 'M6 4h12' }, { d: 'M6 8.5h12' }, { d: 'M12.5 4c2.8 0 4.5 1.9 4.5 4.5S15.3 13 12.5 13H6l9 7' }],
+  monitor: [{ r: [3, 4, 18, 12, 2] }, { d: 'M9 20h6' }, { d: 'M12 16v4' }],
   scales: [
     { d: 'M12 4v16' },
     { d: 'M7 20h10' },
@@ -326,24 +346,68 @@ export function Icon({
  * The prototype pairs each one with a colour too, but colour already comes from
  * the database — `subjects.color` — so only the drawing is decided here. A
  * subject with no entry falls back to a book rather than to nothing.
+ *
+ * Every subject in the table has a line, and the ids are the table's own:
+ * Social Studies is `sst`, not `social-science`, which is why it drew a book
+ * for a while. Regional languages share the book on purpose — nine different
+ * scripts cannot each have a legible glyph at 42pt, and the name underneath is
+ * what tells them apart.
  */
 const SUBJECT_ICONS: Record<string, IconName> = {
-  cdp: 'users',
-  hindi: 'hindi',
-  english: 'letter',
-  math: 'calculator',
-  'numerical-aptitude': 'calculator',
-  reasoning: 'brain',
-  'haryana-gk': 'globe',
-  gk: 'globe',
-  evs: 'leaf',
+  /* --------------------------------------------------------- the sciences */
   science: 'atom',
   physics: 'atom',
   chemistry: 'flask',
   biology: 'leaf',
+  evs: 'leaf',
+  'maths-science': 'flask',
+  'home-science': 'home',
+
+  /* ------------------------------------------------------------- counting */
+  math: 'calculator',
+  'numerical-aptitude': 'calculator',
+  'quantitative-aptitude': 'calculator',
+
+  /* -------------------------------------------------------------- minds */
+  cdp: 'users',
+  psychology: 'brain',
+  reasoning: 'brain',
+  sociology: 'users',
+
+  /* ------------------------------------------------------------ languages */
+  english: 'letter',
+  hindi: 'hindi',
+  sanskrit: 'lotus',
+  urdu: 'scroll',
+  punjabi: 'book',
+  gujarati: 'book',
+  kannada: 'book',
+  malayalam: 'book',
+  marathi: 'book',
+  nepali: 'book',
+  odia: 'book',
+  tamil: 'book',
+  telugu: 'book',
+
+  /* --------------------------------------------------------- the world */
+  sst: 'globe',
   'social-science': 'globe',
-  sanskrit: 'letter',
-  'computer-science': 'calculator',
+  geography: 'globe',
+  gk: 'globe',
+  'haryana-gk': 'wheat',
+  history: 'pillars',
+  'political-science': 'scales',
+  economics: 'chart',
+  commerce: 'rupee',
+
+  /* ------------------------------------------------------------- the rest */
+  computer: 'monitor',
+  'computer-science': 'monitor',
+  art: 'palette',
+  'fine-arts': 'palette',
+  music: 'music',
+  'physical-education': 'run',
+  'other-subject': 'help',
 };
 
 export const subjectIcon = (subjectId: string | undefined): IconName =>

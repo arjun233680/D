@@ -538,7 +538,7 @@ export function TestPlayer({
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{c.value}</Text>
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{c.value}</Text>
                 </View>
                 <Text style={s.faint}>{c.label}</Text>
               </View>

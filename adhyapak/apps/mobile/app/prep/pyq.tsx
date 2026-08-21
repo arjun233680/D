@@ -581,7 +581,7 @@ function FullTest({
                   <Text
                     style={{
                       marginTop: 12,
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontFamily: theme.family.body,
                       color: MUTED,
                     }}
@@ -800,7 +800,7 @@ function SectionChips({
             <Text
               style={{
                 textAlign: 'center',
-                fontSize: 11,
+                fontSize: 12,
                 lineHeight: 14,
                 fontFamily: theme.family.bodySemi,
                 color: on ? sec.color : MUTED,
@@ -905,7 +905,7 @@ function Row({
           {title}
         </Text>
         {sub ? (
-          <Text style={{ fontSize: 11.5, fontFamily: theme.family.body, color: MUTED }}>
+          <Text style={{ fontSize: 12, fontFamily: theme.family.body, color: MUTED }}>
             {sub}
           </Text>
         ) : null}

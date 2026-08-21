@@ -22,9 +22,9 @@ import {
 } from '@/lib/learner';
 import { useStore } from '@/lib/store';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
+import { Icon, subjectIcon } from '@/components/icons';
 import {
   BAR_CLEARANCE,
-  BackButton,
   CANVAS,
   CheckDot,
   ChosenExams,
@@ -36,7 +36,7 @@ import {
   PICKED_BG,
   StepHeader,
   StepLoading,
-  StepRail,
+  StepHeaderRow,
   Tip,
   VIOLET,
   tint,
@@ -195,7 +195,8 @@ export default function ChooseSubjectScreen() {
     return <StepLoading label={hi ? 'लाया जा रहा है…' : 'Loading…'} />;
   }
 
-  const columns = r.isPhone ? 2 : 3;
+  const columns = 3;
+  const gap = 10;
 
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
@@ -211,12 +212,10 @@ export default function ChooseSubjectScreen() {
               paddingTop: 8,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              <BackButton fallback="/onboarding/level" />
-              <StepRail step={3} />
-            </View>
+            <StepHeaderRow step={3} fallback="/onboarding/level" />
 
             <StepHeader
+              art={false}
               title={hi ? `अपना ${current.name} विषय चुनें` : `Choose Your ${current.name} Subject`}
               subtitle={
                 hi
@@ -230,22 +229,12 @@ export default function ChooseSubjectScreen() {
               title={hi ? 'आपकी चुनी परीक्षाएँ' : 'Your Selected Exams'}
             />
 
-            <Text
-              style={{
-                marginTop: 24,
-                fontSize: 15,
-                fontFamily: theme.family.displayBold,
-                color: VIOLET,
-              }}
-            >
-              {hi ? `${current.name} विषय चुनें` : `Select ${current.name} Subject`}
-            </Text>
-
-            <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {/* No second heading: the title already asks for the subject. */}
+            <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap }}>
               {offers.map((offer) => {
                 const on = picked === offer.subjectId;
                 return (
-                  <View key={offer.subjectId} style={{ width: gridItemWidth(r, columns) }}>
+                  <View key={offer.subjectId} style={{ width: gridItemWidth(r, columns, gap) }}>
                     <Pressable
                       accessibilityRole="radio"
                       accessibilityState={{ checked: on }}
@@ -253,59 +242,42 @@ export default function ChooseSubjectScreen() {
                       style={{
                         borderRadius: 16,
                         borderWidth: 1,
-                        padding: 14,
+                        padding: 8,
+                        minHeight: 112,
+                        alignItems: 'center',
                         borderColor: on ? VIOLET : LINE,
                         backgroundColor: on ? PICKED_BG : '#fff',
                       }}
                     >
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <View
-                          style={{
-                            height: 44,
-                            width: 44,
-                            borderRadius: 16,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: tint(offer.color),
-                          }}
-                        >
-                          <Text style={{ fontSize: 20 }}>{offer.icon}</Text>
-                        </View>
-                        <View style={{ marginTop: 4 }}>
-                          <CheckDot on={on} size={20} />
-                        </View>
+                      {/* The tick rides the card's own corner, as on step 1:
+                          at this size there is no room for it beside the
+                          icon. */}
+                      <View style={{ position: 'absolute', top: 5, right: 5, zIndex: 2 }}>
+                        <CheckDot on={on} size={18} />
                       </View>
+                      {/*
+                        Drawn, not typed. `offer.icon` is an emoji out of the
+                        database — a different picture on every phone, and one
+                        that cannot take the subject's colour. `subjectIcon`
+                        maps the subject to a stroke from the same set the rest
+                        of the app uses: a flask for Chemistry, an atom for
+                        Physics, a leaf for Biology, a calculator for Maths.
+                      */}
+                      <Icon name={subjectIcon(offer.subjectId)} size={42} color={offer.color} />
                       <Text
+                        numberOfLines={2}
                         style={{
-                          marginTop: 10,
-                          fontSize: 14.5,
-                          lineHeight: 18,
-                          fontFamily: theme.family.displayBold,
+                          marginTop: 8,
+                          alignSelf: 'stretch',
+                          textAlign: 'center',
+                          fontSize: 16,
+                          lineHeight: 19,
+                          fontFamily: theme.family.display,
                           color: INK,
                         }}
                       >
                         {t(offer.name, lang)}
                       </Text>
-                      {offer.hint ? (
-                        <Text
-                          numberOfLines={3}
-                          style={{
-                            marginTop: 4,
-                            fontSize: 12,
-                            lineHeight: 15,
-                            fontFamily: theme.family.body,
-                            color: MUTED,
-                          }}
-                        >
-                          {t(offer.hint, lang)}
-                        </Text>
-                      ) : null}
                     </Pressable>
                   </View>
                 );

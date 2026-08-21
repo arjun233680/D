@@ -425,7 +425,7 @@ export default function StudioImportScreen() {
             ) : null}
 
             <Text
-              style={{ fontSize: 11.5, lineHeight: 17, fontFamily: theme.family.body, color: MUTED }}
+              style={{ fontSize: 12, lineHeight: 17, fontFamily: theme.family.body, color: MUTED }}
             >
               {hi
                 ? 'यहाँ से कुछ भी सीधे शिक्षार्थी तक नहीं पहुँचता — हर पंक्ति ड्राफ़्ट बनती है और प्रकाशन समीक्षा कतार से होता है।'
@@ -483,7 +483,7 @@ function Figure({ label, value }: { label: string; value: number }) {
       >
         {value}
       </Text>
-      <Text style={{ fontSize: 11, fontFamily: theme.family.body, color: MUTED }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontFamily: theme.family.body, color: MUTED }}>{label}</Text>
     </View>
   );
 }

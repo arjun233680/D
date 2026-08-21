@@ -161,7 +161,7 @@ export default function LoginScreen() {
             backgroundColor: '#ffffffb3',
           }}
         >
-          <Text style={{ fontSize: 11, fontFamily: theme.family.displayBold, color: '#6b6785' }}>
+          <Text style={{ fontSize: 12, fontFamily: theme.family.displayBold, color: '#6b6785' }}>
             {hi ? 'EN' : 'हि'}
           </Text>
         </Pressable>

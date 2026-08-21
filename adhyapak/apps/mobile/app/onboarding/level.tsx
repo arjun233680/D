@@ -18,10 +18,9 @@ import {
   fetchLearnerLevelIds,
 } from '@/lib/learner';
 import { useStore } from '@/lib/store';
-import { useResponsive } from '@/lib/responsive';
+import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import {
   BAR_CLEARANCE,
-  BackButton,
   CANVAS,
   CheckDot,
   ChosenExams,
@@ -33,7 +32,7 @@ import {
   PICKED_BG,
   StepHeader,
   StepLoading,
-  StepRail,
+  StepHeaderRow,
   Tip,
   VIOLET,
   tint,
@@ -181,12 +180,10 @@ export default function ChooseLevelScreen() {
               paddingTop: 8,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              <BackButton fallback="/onboarding/exams" />
-              <StepRail step={2} />
-            </View>
+            <StepHeaderRow step={2} fallback="/onboarding/exams" />
 
             <StepHeader
+              art={false}
               eyebrow={
                 hi
                   ? `बढ़िया! ${exams.length} परीक्षाएँ चुनी गईं 🎉`
@@ -202,59 +199,63 @@ export default function ChooseLevelScreen() {
 
             <ChosenExams items={strip} />
 
-            <Text
-              style={{
-                marginTop: 24,
-                fontSize: 15,
-                fontFamily: theme.family.displayBold,
-                color: VIOLET,
-              }}
-            >
-              {hi ? 'स्तर चुनें' : 'Select Level / Target'}
-            </Text>
-
-            <View style={{ marginTop: 12, gap: 12 }}>
+            {/* The heading above the list said "Select Level / Target" under a
+                title that already said "Select Your Level / Target". One
+                question, asked once. */}
+            <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
               {levels.map((level) => {
                 const on = chosen.has(level.id);
                 return (
-                  <Pressable
-                    key={level.id}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: on }}
-                    onPress={() => toggle(level.id)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 14,
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      padding: 16,
-                      borderColor: on ? VIOLET : LINE,
-                      backgroundColor: on ? PICKED_BG : '#fff',
-                    }}
-                  >
-                    <View
+                  <View key={level.id} style={{ width: gridItemWidth(r, 2, 12) }}>
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: on }}
+                      onPress={() => toggle(level.id)}
                       style={{
-                        height: 48,
-                        width: 48,
                         borderRadius: 16,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: tint(level.color),
+                        borderWidth: 1,
+                        padding: 14,
+                        minHeight: 148,
+                        borderColor: on ? VIOLET : LINE,
+                        backgroundColor: on ? PICKED_BG : '#fff',
                       }}
                     >
-                      <Text style={{ fontSize: 21 }}>{level.icon}</Text>
-                    </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'flex-start',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <View
+                          style={{
+                            height: 46,
+                            width: 46,
+                            borderRadius: 15,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: tint(level.color),
+                          }}
+                        >
+                          <Text style={{ fontSize: 22 }}>{level.icon}</Text>
+                        </View>
+                        <CheckDot on={on} size={20} />
+                      </View>
                       <Text
-                        style={{ fontSize: 16, fontFamily: theme.family.displayBold, color: INK }}
+                        style={{
+                          marginTop: 10,
+                          fontSize: 16,
+                          fontFamily: theme.family.display,
+                          color: INK,
+                        }}
                       >
                         {level.name}
                       </Text>
                       <Text
                         style={{
-                          fontSize: 13,
-                          lineHeight: 18,
+                          marginTop: 2,
+                          fontSize: 12,
+                          lineHeight: 16,
                           fontFamily: theme.family.body,
                           color: MUTED,
                         }}
@@ -262,9 +263,8 @@ export default function ChooseLevelScreen() {
                         {t(level.fullName, lang)}
                         {level.classes ? `\n(${t(level.classes, lang)})` : ''}
                       </Text>
-                    </View>
-                    <CheckDot on={on} />
-                  </Pressable>
+                    </Pressable>
+                  </View>
                 );
               })}
             </View>

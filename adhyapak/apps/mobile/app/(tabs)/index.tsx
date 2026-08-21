@@ -396,7 +396,7 @@ export default function DashboardScreen() {
                         >
                           <Text
                             style={{
-                              fontSize: 11,
+                              fontSize: 12,
                               fontFamily: theme.family.displayBold,
                               color: sel.exam?.color ?? VIOLET,
                             }}
@@ -539,7 +539,7 @@ export default function DashboardScreen() {
                     <Text
                       style={{
                         marginTop: 2,
-                        fontSize: 11.5,
+                        fontSize: 12,
                         lineHeight: 15,
                         fontFamily: theme.family.body,
                         color: MUTED,
@@ -681,7 +681,7 @@ export default function DashboardScreen() {
               <Text
                 style={{
                   marginTop: 10,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   lineHeight: 17,
                   fontFamily: theme.family.body,
                   color: '#a8a3bd',
@@ -834,7 +834,7 @@ function StatTile({
       >
         {value}
       </Text>
-      <Text style={{ fontSize: 11.5, fontFamily: theme.family.body, color: MUTED }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontFamily: theme.family.body, color: MUTED }}>{label}</Text>
     </View>
   );
 }

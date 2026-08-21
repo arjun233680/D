@@ -218,7 +218,7 @@ export default function PrepDashboardScreen() {
                             style={{
                               marginTop: 4,
                               textAlign: 'center',
-                              fontSize: 11.5,
+                              fontSize: 12,
                               lineHeight: 15,
                               fontFamily: theme.family.body,
                               color: MUTED,

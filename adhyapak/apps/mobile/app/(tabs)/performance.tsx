@@ -256,7 +256,7 @@ export default function PerformanceScreen() {
                     <Text
                       style={{
                         marginTop: 16,
-                        fontSize: 11,
+                        fontSize: 12,
                         lineHeight: 16,
                         fontFamily: theme.family.body,
                         color: MUTED,
@@ -373,7 +373,7 @@ export default function PerformanceScreen() {
                       <Text
                         style={{
                           marginTop: 4,
-                          fontSize: 11,
+                          fontSize: 12,
                           lineHeight: 16,
                           fontFamily: theme.family.body,
                           color: MUTED,
@@ -475,7 +475,7 @@ function Metric({ label, value }: { label: string; value: number }) {
     <View>
       <Text
         style={{
-          fontSize: 10.5,
+          fontSize: 12,
           letterSpacing: 0.4,
           fontFamily: theme.family.bodySemi,
           color: MUTED,
@@ -526,7 +526,7 @@ function BandPill({ band, hi }: { band: 'high' | 'medium' | 'low'; hi: boolean }
         backgroundColor: look.bg,
       }}
     >
-      <Text style={{ fontSize: 11, fontFamily: theme.family.displayBold, color: look.fg }}>
+      <Text style={{ fontSize: 12, fontFamily: theme.family.displayBold, color: look.fg }}>
         {label}
       </Text>
     </View>

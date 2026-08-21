@@ -153,6 +153,31 @@ export function BooksArt({ width = 86 }: { width?: number }) {
 /* ------------------------------------------------------------- step chrome */
 
 /** The three dots at the top. Filled behind you, ringed ahead. */
+/**
+ * Back arrow, the three steps, and the books on the end of the row.
+ *
+ * The art used to sit beside the heading, which pushed the title into a narrow
+ * column and wrapped it. Up here it fills the space the rail leaves and the
+ * heading gets the page's whole width.
+ */
+export function StepHeaderRow({
+  step,
+  fallback,
+}: {
+  step: 1 | 2 | 3;
+  fallback: string;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      <BackButton fallback={fallback} />
+      <StepRail step={step} />
+      <View style={{ flex: 1, alignItems: 'flex-end' }}>
+        <BooksArt width={64} />
+      </View>
+    </View>
+  );
+}
+
 export function StepRail({ step }: { step: 1 | 2 | 3 }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -537,10 +562,13 @@ export function StepHeader({
   eyebrow,
   title,
   subtitle,
+  art = true,
 }: {
   eyebrow?: string;
   title: string;
   subtitle?: string;
+  /** The books, tucked into the corner. Off where the step rail carries them. */
+  art?: boolean;
 }) {
   const r = useResponsive();
   const artWidth = r.isPhone ? 86 : 160;
@@ -577,7 +605,7 @@ export function StepHeader({
           </Text>
         ) : null}
       </View>
-      <BooksArt width={artWidth} />
+      {art ? <BooksArt width={artWidth} /> : null}
     </View>
   );
 }

@@ -256,7 +256,7 @@ export default function TestSeriesScreen() {
                         <Text
                           style={{
                             textAlign: 'center',
-                            fontSize: 11,
+                            fontSize: 12,
                             lineHeight: 14,
                             fontFamily: theme.family.bodySemi,
                             color: on ? sec.color : MUTED,
@@ -352,7 +352,7 @@ function TestCard({ test, lang, hi }: { test: Test; lang: Lang; hi: boolean }) {
               }}
             >
               <Text
-                style={{ fontSize: 11, fontFamily: theme.family.displayBold, color: badge.color }}
+                style={{ fontSize: 12, fontFamily: theme.family.displayBold, color: badge.color }}
               >
                 {hi ? badge.hi : badge.en}
               </Text>

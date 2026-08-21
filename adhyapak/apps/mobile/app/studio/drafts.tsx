@@ -336,7 +336,7 @@ const pillText = (primary: boolean) => ({
 function Meta({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ flexDirection: 'row', gap: 4, alignItems: 'baseline' }}>
-      <Text style={{ fontSize: 10.5, fontFamily: theme.family.bodySemi, color: MUTED }}>
+      <Text style={{ fontSize: 12, fontFamily: theme.family.bodySemi, color: MUTED }}>
         {label.toUpperCase()}
       </Text>
       <Text style={{ fontSize: 12, fontFamily: theme.family.bodySemi, color: INK }}>{value}</Text>

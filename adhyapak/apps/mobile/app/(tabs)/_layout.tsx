@@ -48,14 +48,29 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#6d4aed',
         tabBarInactiveTintColor: '#9b96b0',
         tabBarLabelStyle: {
-          fontSize: 10.5,
+          fontSize: 12,
+          // Devanagari carries marks above and below the line — the ि of
+          // प्रोफ़ाइल and the ्ष of अध्ययन — so a label needs more room than
+          // its point size. At 10.5 the default height held; at 12 the
+          // descenders were cut off level with the bar's floor.
+          lineHeight: 16,
+          // The label's own box, not the bar's. The bar had room — it measured
+          // 64pt with the label sitting 15pt clear of the floor — but the box
+          // around the text was 7pt tall and cut 12pt Devanagari in half. It
+          // gets flex-shrunk otherwise.
+          height: 18,
+          flexShrink: 0,
           fontFamily: theme.family.bodySemi,
         },
         tabBarStyle: {
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
           borderTopColor: '#eeebf8',
+          height: 64,
+          paddingTop: 6,
+          paddingBottom: 8,
         },
+        tabBarItemStyle: { paddingVertical: 2 },
         sceneStyle: { backgroundColor: '#faf9ff' },
       }}
     >

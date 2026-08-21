@@ -106,7 +106,7 @@ function Reader({ note }: { note: Note }) {
                   paddingVertical: 3,
                 }}
               >
-                <Text style={{ color: '#fff', fontSize: 10, fontFamily: theme.family.bodySemi }}>
+                <Text style={{ color: '#fff', fontSize: 12, fontFamily: theme.family.bodySemi }}>
                   PDF
                 </Text>
               </View>

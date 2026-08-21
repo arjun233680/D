@@ -232,7 +232,7 @@ export default function StudyScreen() {
                 >
                   <Text
                     style={{
-                      fontSize: 11,
+                      fontSize: 12,
                       fontFamily: theme.family.displayBold,
                       color: theme.color.primary,
                     }}
@@ -279,7 +279,7 @@ export default function StudyScreen() {
                         <Text
                           style={{
                             textAlign: 'center',
-                            fontSize: 11,
+                            fontSize: 12,
                             lineHeight: 14,
                             fontFamily: theme.family.bodySemi,
                             color: on ? sec.color : MUTED,

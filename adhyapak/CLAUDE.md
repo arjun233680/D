@@ -52,6 +52,15 @@ cannot reach the live build.
 - Shared behavior used by web and mobile belongs in `packages/core` when platform APIs are not required.
 - Preserve bilingual strings as `{ en: string; hi: string }`; do not add English-only user-facing copy.
 - Keep design tokens in `packages/core/src/theme.ts` as the source of truth.
+- Nothing renders below 12pt. Not a caption, not a chip, not a hint — the
+  smallest type in the app is 12, and 11.5 is not a rounding of it. Aspirants
+  read this on cheap 5-inch phones, often outdoors. Half-point sizes crept in
+  three times and each had to be found by reading every `fontSize` in the
+  screen; `grep -rn "fontSize: 1[01]" apps/mobile` finds them.
+- A name on a card is 16pt in `theme.family.display`, and its supporting line
+  is 12pt in `theme.family.body`. The exam chooser sets the pattern; the level
+  and subject steps follow it, and a new chooser should look like their
+  sibling rather than invent its own scale.
 - Do not edit applied Supabase migrations; add a new migration for schema changes.
 - Before finishing, run the narrowest relevant check, then `npm run typecheck` when shared code or types change.
 - Do not commit changes unless explicitly requested.
