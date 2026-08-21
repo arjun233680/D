@@ -1,7 +1,6 @@
 import { Image, View } from 'react-native';
 import type { Exam } from '@adhyapak/core';
 import { Icon, examIcon } from '@/components/icons';
-import { tint } from '@/components/onboarding';
 
 /**
  * The mark on an exam card: the conducting body's own logo.
@@ -76,34 +75,27 @@ export function ExamMark({ exam, size = 36 }: { exam: Exam; size?: number }) {
   const logo = EXAM_LOGOS[exam.id];
 
   /*
-   * A logo is a picture with its own margins and its own palette, so it is
-   * given nearly the whole tile and left the colour it came with. A drawn
-   * motif is a stroke, so it is inset and takes the exam's colour from the
-   * database. Same tile, two different jobs.
+   * No tile behind it.
+   *
+   * The mark used to sit on a white rounded square with its own border. At
+   * 36pt that read as a favicon; at 80 it read as a second card nested inside
+   * the exam card, and the card the learner is meant to tap was the outer one.
+   * The card is the card. The mark is just the picture in it.
+   *
+   * Both logos and motifs are drawn straight onto it: a logo keeps the colour
+   * it came with, a motif takes the exam's `color` from the database.
    */
   return (
-    <View
-      style={{
-        height: size,
-        width: size,
-        borderRadius: Math.round(size * 0.32),
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: logo ? '#fff' : tint(exam.color),
-        borderWidth: logo ? 1 : 0,
-        borderColor: '#efecf9',
-        overflow: 'hidden',
-      }}
-    >
+    <View style={{ height: size, width: size, alignItems: 'center', justifyContent: 'center' }}>
       {logo ? (
         <Image
           source={logo}
           accessibilityIgnoresInvertColors
           resizeMode="contain"
-          style={{ height: size - 8, width: size - 8 }}
+          style={{ height: size, width: size }}
         />
       ) : (
-        <Icon name={examIcon(exam.id)} size={Math.round(size * 0.55)} color={exam.color} />
+        <Icon name={examIcon(exam.id)} size={Math.round(size * 0.72)} color={exam.color} />
       )}
     </View>
   );
