@@ -593,3 +593,65 @@ export const resolveStudioAccess = async (
     ? { kind: 'staff', userId: session.userId, email: session.email }
     : { kind: 'not-staff', email: session.email };
 };
+
+/* ------------------------------------------------------------- demo phone */
+
+/**
+ * Signs a phone number in without verifying it. DEMO ONLY.
+ *
+ * Real phone OTP is written and waiting in `sendPhoneOtp`/`verifyPhoneOtp`;
+ * what it lacks is an SMS provider, which costs money per message. Until that
+ * is switched on, the product still opens with a mobile number — so the number
+ * becomes a synthetic account, `p<digits>@demo.adhyapak.app`, created on first
+ * use and signed into after that. The password is derived from the number,
+ * which is to say there is none: anyone typing the same digits gets the same
+ * account. That is the requested behaviour for a demo and would be a hole in a
+ * launch, which is why the name says demo and the migration that enables it
+ * (0027) documents its own removal.
+ *
+ * The confirmation RPC exists because the project requires email confirmation
+ * and a synthetic address has no inbox. It stamps only `@demo.adhyapak.app`
+ * addresses, so this path cannot be used to skip confirming a real email.
+ */
+export const signInWithPhoneDemo = async (phone: string): Promise<AuthResult<AuthState>> => {
+  const db = getBackend();
+  if (!db) return { ok: false, error: NO_BACKEND };
+
+  const e164 = toE164India(phone);
+  if (!e164) {
+    return {
+      ok: false,
+      error: {
+        kind: 'invalid-phone',
+        en: 'Enter a ten-digit mobile number.',
+        hi: 'दस अंकों का मोबाइल नंबर डालें।',
+      },
+    };
+  }
+
+  // The account is made in SQL by `demo_phone_login` (migration 0028), which
+  // sidesteps the two walls the client hit: GoTrue rejects the synthetic email
+  // domain at sign-up, and every sign-up queues a confirmation mail the built-in
+  // SMTP rate-limits after a couple an hour. The RPC creates the row directly,
+  // already confirmed, and hands back the email to sign in with. The password
+  // is the same derivation the migration uses.
+  const password = `demo-${e164}-adhyapak`;
+
+  try {
+    const { data: email, error: rpcError } = await db.rpc('demo_phone_login', {
+      p_phone: e164,
+    });
+    if (rpcError || !email) {
+      return { ok: false, error: toAuthError(rpcError ?? 'demo login unavailable') };
+    }
+
+    const { data, error } = await db.auth.signInWithPassword({
+      email: email as string,
+      password,
+    });
+    if (error) return { ok: false, error: toAuthError(error) };
+    return { ok: true, value: stateFrom(data.session) };
+  } catch (thrown) {
+    return { ok: false, error: toAuthError(thrown) };
+  }
+};

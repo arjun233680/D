@@ -4,9 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   isBackendConfigured,
-  sendPhoneOtp,
   signInWithGoogle,
-  verifyPhoneOtp,
+  signInWithPhoneDemo,
   type AuthError,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
@@ -74,26 +73,20 @@ export default function SignInPage() {
     if (ready && signedIn) router.replace('/onboarding/exams');
   }, [ready, signedIn, router]);
 
+  /*
+   * DEMO LOGIN — the OTP step is skipped, not removed.
+   *
+   * `sendPhoneOtp`/`verifyPhoneOtp` and the whole code screen below still
+   * exist; the SMS provider they need is switched off because it costs per
+   * message. Until it is on, any valid-looking number signs straight in
+   * through `signInWithPhoneDemo`. Restoring real OTP is: call `send` here
+   * again and delete nothing.
+   */
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await sendPhoneOtp(phone);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    setSentTo(result.value.phone);
-    setCode('');
-    setStep('code');
-  };
-
-  const verify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    const result = await verifyPhoneOtp(sentTo, code);
+    const result = await signInWithPhoneDemo(phone);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
@@ -117,6 +110,11 @@ export default function SignInPage() {
    * here, which is why nothing resets `busy` on the happy path — doing so would
    * flicker the button back to life as the page is torn down.
    */
+  /** Unreachable while demo login is on — nothing sets `step` to 'code'. */
+  const verify = async (e: React.FormEvent) => {
+    e.preventDefault();
+  };
+
   const withGoogle = async () => {
     setBusy(true);
     setError(null);
