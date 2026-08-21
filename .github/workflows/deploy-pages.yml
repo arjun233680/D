@@ -68,13 +68,15 @@ jobs:
       # The website is a separate Next.js app and carries the Studio — bulk
       # import, draft review and PYQ analytics. It is published under /web/ so
       # both halves of the product are reachable from one Pages site.
-      - name: Export the website
-        working-directory: adhyapak/apps/web
-        env:
-          NEXT_PUBLIC_BASE_PATH: /D/web
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: npx next build
+      # --- WEB PAUSED: apps/web renamed to apps/_web-paused. This step and
+      # the copy below are disabled until the website is resumed. ---
+      # - name: Export the website
+      # working-directory: adhyapak/apps/web
+      # env:
+      # NEXT_PUBLIC_BASE_PATH: /D/web
+      # NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      # NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      # run: npx next build
 
       - name: Prepare the site
         working-directory: adhyapak/apps/mobile
@@ -82,7 +84,7 @@ jobs:
           # Client-side routes must survive a refresh, and Jekyll would eat _expo/.
           cp dist/index.html dist/404.html
           touch dist/.nojekyll
-          cp -r ../web/out dist/web
+          # WEB PAUSED: cp -r ../web/out dist/web
 
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
