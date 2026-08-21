@@ -6,14 +6,6 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { EXAMS, getExam, t, UI } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
 
-const NAV = [
-  { href: '/', label: UI.home, icon: '🏠' },
-  { href: '/batches', label: UI.batches, icon: '🎥' },
-  { href: '/practice', label: UI.practice, icon: '✍️' },
-  { href: '/prep/tests', label: UI.tests, icon: '🎯' },
-  { href: '/prep/notes', label: UI.notes, icon: '📚' },
-] as const;
-
 const MOBILE_NAV = [
   { href: '/', label: UI.home, icon: '🏠' },
   { href: '/batches', label: UI.batches, icon: '🎥' },
@@ -155,43 +147,19 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <RequireAccount>
-    <div className="min-h-dvh">
+    <div className="mx-auto min-h-dvh w-full max-w-[480px] border-x border-[var(--color-line)] bg-[var(--color-canvas)]">
       <header className="no-print sticky top-0 z-30 border-b border-[var(--color-line)] bg-[var(--color-surface)]/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+        <div className="flex h-14 items-center gap-3 px-4">
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-brand)] text-base font-black text-white">
               अ
             </span>
-            <span className="hidden text-[17px] font-extrabold tracking-tight sm:block">
+            <span className="text-[16px] font-extrabold tracking-tight">
               {t(UI.appName, lang)}
             </span>
           </Link>
 
-          <nav className="ml-2 hidden items-center gap-1 lg:flex">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
-                  isActive(pathname, item.href)
-                    ? 'bg-[var(--color-brand-light)] text-[var(--color-brand-dark)]'
-                    : 'text-[var(--color-muted)] hover:bg-[var(--color-surface-alt)]'
-                }`}
-              >
-                {t(item.label, lang)}
-              </Link>
-            ))}
-          </nav>
-
           <div className="flex-1" />
-
-          <Link
-            href="/explore"
-            className="hidden h-9 items-center gap-2 rounded-full border border-[var(--color-line)] px-3 text-[13px] text-[var(--color-faint)] transition-colors hover:border-[var(--color-line-strong)] md:flex"
-          >
-            <span>🔍</span>
-            <span className="hidden lg:block">{t(UI.search, lang)}</span>
-          </Link>
 
           <LangToggle />
           <GoalSwitcher />
@@ -218,9 +186,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl pb-24 lg:pb-10">{children}</main>
+      <main className="pb-24">{children}</main>
 
-      <nav className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-[var(--color-line)] bg-[var(--color-surface)] lg:hidden">
+      <nav className="no-print fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[480px] border-t border-[var(--color-line)] bg-[var(--color-surface)]">
         <div className="mx-auto grid max-w-md grid-cols-5">
           {MOBILE_NAV.map((item) => {
             const active = isActive(pathname, item.href);
