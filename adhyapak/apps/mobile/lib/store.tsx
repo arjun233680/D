@@ -12,6 +12,8 @@ import {
 import {
   GUEST_USER,
   getCurrentUser,
+  hasLiveSession,
+  isBackendConfigured,
   markActiveTodayRemote,
   onAuthStateChange,
   setGoalRemote,
@@ -95,6 +97,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    */
   const remote = useRef(false);
 
+  /*
+   * The current state, readable from callbacks that must not re-subscribe.
+   * The auth subscription is registered once and has to see today's state,
+   * not the state it closed over on mount.
+   */
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem(STORAGE_KEY)
@@ -123,7 +133,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         // Signing out clears the cache as well as the state. A shared phone is
         // the normal case here, not the edge case: leaving the learner in
         // storage would hand the next person the previous one's progress.
-        if (remote.current) {
+        //
+        // `remote.current` alone was too narrow: it is false on every fresh
+        // page load, so a stored "signed in" that the server no longer honours
+        // survived the very event that should have ended it. A stale claim
+        // counts as much as a loaded account.
+        if (remote.current || stateRef.current.user.signedIn) {
           remote.current = false;
           void AsyncStorage.removeItem(STORAGE_KEY).catch(() => undefined);
           setState((s) => ({ ...s, user: GUEST_USER }));
@@ -152,6 +167,43 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       unsubscribe();
     };
   }, []);
+
+  /**
+   * Checks the stored claim against the server before the app believes it.
+   *
+   * "Signed in" was written to AsyncStorage and read back on the next launch,
+   * and nothing asked Supabase whether it agreed. Once a refresh token stopped
+   * being honoured the two drifted apart, and the app went on saying signed in
+   * for a browser that held no session at all: the gate opened, every screen
+   * behind it rendered, and every write came back 401 with no JWT on it. The
+   * exam chooser was where it showed — save refused, learner returned to the
+   * same question.
+   *
+   * The auth subscription below cannot catch this on a cold start. It only
+   * clears when `remote.current` says an account was loaded during this run of
+   * the app, and on a fresh page load that is false — so the sign-out that
+   * fires with no session does nothing, and the stale claim survives.
+   *
+   * `getSession()` reads storage rather than the network, so a signed-in
+   * learner opening the app on a bad connection is not thrown out; only a
+   * browser with no session at all is. Skipped entirely when there is no
+   * backend, where nobody is signed in to anything.
+   */
+  const claimsSignedIn = state.user.signedIn;
+  useEffect(() => {
+    if (!ready || !claimsSignedIn || !isBackendConfigured()) return;
+    let live = true;
+    void (async () => {
+      if (await hasLiveSession()) return;
+      if (!live) return;
+      remote.current = false;
+      await AsyncStorage.removeItem(STORAGE_KEY).catch(() => undefined);
+      setState((s) => ({ ...s, user: GUEST_USER }));
+    })();
+    return () => {
+      live = false;
+    };
+  }, [ready, claimsSignedIn]);
 
   useEffect(() => {
     if (!ready) return;
