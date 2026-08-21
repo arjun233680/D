@@ -514,13 +514,13 @@ export function ChosenExams({
         {items.map((e) => (
           <View
             key={e.id}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 190 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, width: 230 }}
           >
-            <ExamMark exam={{ id: e.id, color: e.color }} size={52} />
+            <ExamMark exam={{ id: e.id, color: e.color }} size={68} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text
-                  style={{ fontSize: 16, fontFamily: theme.family.displayBold, color: e.color }}
+                  style={{ fontSize: 18, fontFamily: theme.family.displayBold, color: e.color }}
                 >
                   {e.shortName}
                 </Text>
@@ -540,9 +540,9 @@ export function ChosenExams({
               <Text
                 numberOfLines={2}
                 style={{
-                  marginTop: 2,
-                  fontSize: 12,
-                  lineHeight: 16,
+                  marginTop: 3,
+                  fontSize: 14,
+                  lineHeight: 19,
                   fontFamily: theme.family.body,
                   color: MUTED,
                 }}

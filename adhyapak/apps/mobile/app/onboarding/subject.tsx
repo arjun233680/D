@@ -22,7 +22,7 @@ import {
 } from '@/lib/learner';
 import { useStore } from '@/lib/store';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
-import { Icon, subjectIcon } from '@/components/icons';
+import { SubjectMark } from '@/components/art';
 import {
   BAR_CLEARANCE,
   CANVAS,
@@ -263,7 +263,7 @@ export default function ChooseSubjectScreen() {
                         of the app uses: a flask for Chemistry, an atom for
                         Physics, a leaf for Biology, a calculator for Maths.
                       */}
-                      <Icon name={subjectIcon(offer.subjectId)} size={42} color={offer.color} />
+                      <SubjectMark subjectId={offer.subjectId} color={offer.color} size={46} />
                       <Text
                         numberOfLines={2}
                         style={{

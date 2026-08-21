@@ -19,6 +19,7 @@ import {
 } from '@/lib/learner';
 import { useStore } from '@/lib/store';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
+import { LevelMark } from '@/components/art';
 import {
   BAR_CLEARANCE,
   CANVAS,
@@ -215,7 +216,7 @@ export default function ChooseLevelScreen() {
                         borderRadius: 16,
                         borderWidth: 1,
                         padding: 14,
-                        minHeight: 148,
+                        minHeight: 176,
                         borderColor: on ? VIOLET : LINE,
                         backgroundColor: on ? PICKED_BG : '#fff',
                       }}
@@ -227,24 +228,13 @@ export default function ChooseLevelScreen() {
                           justifyContent: 'space-between',
                         }}
                       >
-                        <View
-                          style={{
-                            height: 46,
-                            width: 46,
-                            borderRadius: 15,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: tint(level.color),
-                          }}
-                        >
-                          <Text style={{ fontSize: 22 }}>{level.icon}</Text>
-                        </View>
+                        <LevelMark levelId={level.id} color={level.color} size={54} />
                         <CheckDot on={on} size={20} />
                       </View>
                       <Text
                         style={{
                           marginTop: 10,
-                          fontSize: 16,
+                          fontSize: 18,
                           fontFamily: theme.family.display,
                           color: INK,
                         }}
@@ -253,9 +243,9 @@ export default function ChooseLevelScreen() {
                       </Text>
                       <Text
                         style={{
-                          marginTop: 2,
-                          fontSize: 12,
-                          lineHeight: 16,
+                          marginTop: 3,
+                          fontSize: 14,
+                          lineHeight: 19,
                           fontFamily: theme.family.body,
                           color: MUTED,
                         }}
