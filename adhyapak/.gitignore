@@ -17,3 +17,4 @@ web-build/
 # is the public anon key, but a credentials file still has no business in git.
 .env
 apps/*/.env
+.screens/

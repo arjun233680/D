@@ -17,6 +17,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "seed:generate": "npm run seed:generate --workspace=@adhyapak/backend",
     "test": "npm run test --workspaces --if-present",
+    "preview": "node -e \"const{createServer}=require('http'),{readFileSync}=require('fs');createServer((q,r)=>{try{r.writeHead(200,{'content-type':'text/html'});r.end(readFileSync('scripts/preview.html'))}catch(e){r.writeHead(500);r.end(String(e))}}).listen(8090,()=>console.log('phone preview: http://localhost:8090'))\"",
+    "screens": "node scripts/screens.mjs",
     "content:map": "tsx scripts/generate-topic-map.mts",
     "content:verify": "tsx scripts/content-verify.mts"
   },
