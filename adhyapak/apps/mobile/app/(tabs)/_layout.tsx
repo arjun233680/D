@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import type { ColorValue } from 'react-native';
 import { t, theme } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { Icon, type IconName } from '@/components/icons';
 
 /**
  * The four destinations, and the same four the web app pins to the bottom of
@@ -25,10 +26,17 @@ const NAV = {
   profile: { en: 'Profile', hi: 'प्रोफ़ाइल' },
 } as const;
 
-/** Emoji glyphs, dimmed rather than recoloured — exactly what the web bar does. */
-const icon = (glyph: string) => ({ focused }: { focused: boolean }) => (
-  <Text style={{ fontSize: 19, opacity: focused ? 1 : 0.45 }}>{glyph}</Text>
-);
+/**
+ * Drawn glyphs that take the bar's own tint.
+ *
+ * These were emoji, dimmed to 45% when inactive. An emoji cannot be
+ * recoloured — it carries its own palette — so the inactive state had to be
+ * faked with opacity, and the active tab could never actually turn violet. A
+ * stroke icon just takes `color`, so the bar tints the way the design says.
+ */
+const icon =
+  (name: IconName) =>
+  ({ color }: { color: ColorValue }) => <Icon name={name} size={22} color={String(color)} />;
 
 export default function TabsLayout() {
   const { lang } = useStore();
@@ -53,19 +61,19 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: t(NAV.home, lang), tabBarIcon: icon('🏠') }}
+        options={{ title: t(NAV.home, lang), tabBarIcon: icon('home') }}
       />
       <Tabs.Screen
         name="study"
-        options={{ title: t(NAV.study, lang), tabBarIcon: icon('📖') }}
+        options={{ title: t(NAV.study, lang), tabBarIcon: icon('book') }}
       />
       <Tabs.Screen
         name="performance"
-        options={{ title: t(NAV.performance, lang), tabBarIcon: icon('📊') }}
+        options={{ title: t(NAV.performance, lang), tabBarIcon: icon('chart') }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: t(NAV.profile, lang), tabBarIcon: icon('👤') }}
+        options={{ title: t(NAV.profile, lang), tabBarIcon: icon('user') }}
       />
     </Tabs>
   );

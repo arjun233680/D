@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
-  fetchLearnerExamIds,
-  fetchLearnerLevelIds,
-  fetchLearnerSubjects,
   listExams,
   listLevelSubjects,
   listLevels,
@@ -11,6 +8,11 @@ import {
   type Level,
   type LevelSubject,
 } from '@adhyapak/core';
+import {
+  fetchLearnerExamIds,
+  fetchLearnerLevelIds,
+  fetchLearnerSubjects,
+} from './learner';
 
 /**
  * The one selection a preparation screen is about — "HTET TGT Science".

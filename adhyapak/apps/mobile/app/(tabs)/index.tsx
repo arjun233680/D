@@ -5,9 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import {
   currentStreak,
-  fetchLearnerExamIds,
-  fetchLearnerLevelIds,
-  fetchLearnerSubjects,
   listExams,
   listLevelSubjects,
   listLevels,
@@ -18,6 +15,11 @@ import {
   type Level,
   type LevelSubject,
 } from '@adhyapak/core';
+import {
+  fetchLearnerExamIds,
+  fetchLearnerLevelIds,
+  fetchLearnerSubjects,
+} from '@/lib/learner';
 import { useStore } from '@/lib/store';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import { CANVAS, FAINT, INK, LINE, MUTED, StepLoading, VIOLET, tint } from '@/components/onboarding';
@@ -341,7 +343,9 @@ export default function DashboardScreen() {
                     borderWidth: 1,
                     borderColor: '#e2dcf7',
                     paddingHorizontal: 12,
-                    paddingVertical: 8,
+                    // 40pt is the floor for anything a thumb has to hit; the
+                    // padding alone left this at 36.
+                    minHeight: 40,
                   }}
                 >
                   <Text

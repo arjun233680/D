@@ -5,9 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   EXAM_CHOOSER_FILTERS,
   examSubtitle,
-  fetchLearnerExamIds,
-  fetchLearnerLevelIds,
-  fetchLearnerSubjects,
   filterExamsForChooser,
   isBackendConfigured,
   listExams,
@@ -19,6 +16,11 @@ import {
   type ExamChooserFilter,
   type Lang,
 } from '@adhyapak/core';
+import {
+  fetchLearnerExamIds,
+  fetchLearnerLevelIds,
+  fetchLearnerSubjects,
+} from '@/lib/learner';
 import { useStore } from '@/lib/store';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import {

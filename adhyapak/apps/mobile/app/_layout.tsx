@@ -16,6 +16,7 @@ import { theme } from '@adhyapak/core';
 import '@/lib/backend';
 import { StoreProvider, useStore } from '@/lib/store';
 import { SessionProvider, useSession } from '@/lib/session';
+import { isDevPreview } from '@/lib/learner';
 
 /**
  * Nothing is reachable without an account.
@@ -58,6 +59,22 @@ function AuthGate() {
      */
     const isCallback = path.startsWith('auth-callback');
     if (isCallback) return;
+
+    /*
+     * The preview flag opens the door.
+     *
+     * Everything past this gate is scoped to a signed-in learner, so with
+     * sign-in unavailable not one screen behind it could be opened — not to
+     * review a layout, not to screenshot one. `EXPO_PUBLIC_DEV_PREVIEW=1` in
+     * apps/mobile/.env lets the app be walked while the door is being fixed,
+     * and lib/learner.ts stands in the three onboarding answers that RLS would
+     * otherwise refuse.
+     *
+     * A flag rather than a commented-out gate, because .env is git-ignored and
+     * a comment is one careless commit away from shipping an app with no lock
+     * on it — and this repository deploys on every push to main.
+     */
+    if (isDevPreview()) return;
 
     if (!signedIn && !inAuth) {
       router.replace('/(auth)/login');

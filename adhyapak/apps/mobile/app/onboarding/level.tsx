@@ -4,8 +4,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   examSubtitle,
-  fetchLearnerExamIds,
-  fetchLearnerLevelIds,
   listExams,
   listLevels,
   listPaperLevelsForExams,
@@ -15,6 +13,10 @@ import {
   type Exam,
   type Level,
 } from '@adhyapak/core';
+import {
+  fetchLearnerExamIds,
+  fetchLearnerLevelIds,
+} from '@/lib/learner';
 import { useStore } from '@/lib/store';
 import { useResponsive } from '@/lib/responsive';
 import {
