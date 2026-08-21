@@ -4,7 +4,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   EXAM_CHOOSER_FILTERS,
-  examSubtitle,
   filterExamsForChooser,
   isBackendConfigured,
   listExams,
@@ -14,8 +13,8 @@ import {
   theme,
   type Exam,
   type ExamChooserFilter,
-  type Lang,
 } from '@adhyapak/core';
+import { ExamMark } from '@/components/exam-mark';
 import {
   fetchLearnerExamIds,
   fetchLearnerLevelIds,
@@ -40,16 +39,15 @@ import {
   StepLoading,
   Tick,
   VIOLET,
-  tint,
 } from '@/components/onboarding';
 
 /**
  * Step 1: which exams are you for?
  *
- * Every card comes from the `exams` table — the emoji, the accent colour, the
- * authority line, the order of the grid and which exams the "Important" tab
- * shows. Nothing about the list is written in this file, which is the point:
- * adding a state's TET is an insert, not a release.
+ * Every card comes from the `exams` table — the accent colour, the order of
+ * the grid and which exams the "Important" tab shows. Nothing about the list
+ * is written in this file, which is the point: adding a state's TET is an
+ * insert, not a release.
  *
  * More than one answer is allowed, because more than one answer is the truth.
  * An aspirant sits CTET *and* their own state's TET, and a single-choice
@@ -57,8 +55,8 @@ import {
  *
  * The web original is apps/web/app/onboarding/exams/page.tsx and this follows
  * it line for line, including which redirect happens when. What changes is the
- * shape of the input, not the logic: a two-column grid that keeps its cards
- * thumb-sized, and a filter rail that scrolls rather than wrapping.
+ * shape of the input, not the logic: a three-column grid of acronym-only cards
+ * that stay thumb-sized, and a filter rail that scrolls rather than wrapping.
  */
 
 const FILTER_LABEL: Record<ExamChooserFilter, { en: string; hi: string; icon: string }> = {
@@ -185,11 +183,12 @@ export default function ChooseExamScreen() {
    * Below 340pt a third column would leave under 90pt of card, which is
    * narrower than the icon plus its padding, so the smallest handsets keep two.
    */
-  // Two columns on a phone: three at 390px squeezed each card to ~120px and
-  // wrapped the authority line tight. Wider layouts (tablet / web frame) keep
-  // three, where the room exists.
-  // Three per row on a phone; only the very narrowest handsets drop to two.
-  const columns = r.width < 340 ? 2 : 3;
+  // Three across at every width. The old `width < 340 ? 2 : 3` guard existed
+  // because the card carried the authority line — at 90pt "Delhi Subordinate
+  // Services Selection Board" wrapped to four ragged lines. The card is the
+  // acronym alone now, so 90pt is comfortable and the guard has nothing left
+  // to protect against. Anything narrower than 340 was silently getting two.
+  const columns = 3;
   const gap = 10;
 
   return (
@@ -346,7 +345,6 @@ export default function ChooseExamScreen() {
                   <View key={exam.id} style={{ width: gridItemWidth(r, columns, gap) }}>
                     <ExamCard
                       exam={exam}
-                      lang={lang}
                       selected={chosen.has(exam.id)}
                       onToggle={() => toggle(exam.id)}
                     />
@@ -418,38 +416,34 @@ export default function ChooseExamScreen() {
 /**
  * One exam.
  *
- * The tile behind the emoji is the exam's own `color` at low opacity, so the
- * grid is coloured by the database rather than by a palette in this file. That
+ * The mark is `ExamMark`: the board's own logo where we have one, otherwise a
+ * motif drawn in the exam's `color` from the database. Either way the card
+ * takes its look from the data rather than from a palette in this file, which
  * is what keeps a newly inserted exam looking like it belongs.
  */
 function ExamCard({
   exam,
-  lang,
   selected,
   onToggle,
 }: {
   exam: Exam;
-  lang: Lang;
   selected: boolean;
   onToggle: () => void;
 }) {
-  // The acronym spelled out — see `examSubtitle` for why that is not always in
-  // the same column.
-  const subtitle = examSubtitle(exam, lang);
-
   /*
-   * Stacked, which is the arrangement in the design and the same one the
-   * subject chooser uses: the icon and the tick share the top row, then the
-   * name, then the authority line beneath it.
+   * Icon and tick on the top row, acronym beneath. Nothing else.
    *
-   * Putting the name beside the icon — which this did for a while — leaves it
-   * about 70pt on a phone, and 70pt is not enough for "SuperTET". Below the
-   * icon it has the whole card, so a long name simply takes a second line the
-   * way "Political Science" does in the mockup, and three columns fit.
+   * The authority line used to sit under the name — "Central Board of
+   * Secondary Education (CBSE)" and so on. It was the longest thing on a card
+   * that is 90pt wide, it wrapped to three or four lines, and it pushed the
+   * grid down to two columns to survive. It also said nothing a candidate
+   * choosing their own exam does not already know.
    *
-   * `minHeight` keeps a row of cards level when one name wraps and its
-   * neighbour's does not; without it the grid looks ragged rather than
-   * deliberate.
+   * `examSubtitle` still exists and still spells the acronym out; it belongs
+   * on a screen with room for it, not on a thumbnail.
+   *
+   * `minHeight` keeps a row level when one name wraps ("SuperTET") and its
+   * neighbours do not.
    */
   return (
     <Pressable
@@ -457,7 +451,7 @@ function ExamCard({
       accessibilityState={{ checked: selected }}
       onPress={onToggle}
       style={{
-        minHeight: 118,
+        minHeight: 92,
         borderRadius: theme.radius.card,
         borderWidth: 1,
         padding: 9,
@@ -468,25 +462,14 @@ function ExamCard({
       <View
         style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}
       >
-        <View
-          style={{
-            height: 32,
-            width: 32,
-            borderRadius: 10,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: tint(exam.color),
-          }}
-        >
-          <Text style={{ fontSize: 16 }}>{exam.emoji}</Text>
-        </View>
+        <ExamMark exam={exam} size={36} />
         <CheckDot on={selected} size={18} />
       </View>
 
       <Text
         numberOfLines={2}
         style={{
-          marginTop: 7,
+          marginTop: 8,
           fontSize: 13,
           lineHeight: 16,
           fontFamily: theme.family.displayBold,
@@ -494,18 +477,6 @@ function ExamCard({
         }}
       >
         {exam.shortName}
-      </Text>
-      <Text
-        numberOfLines={2}
-        style={{
-          marginTop: 2,
-          fontSize: 12,
-          lineHeight: 15,
-          fontFamily: theme.family.body,
-          color: MUTED,
-        }}
-      >
-        {subtitle}
       </Text>
     </Pressable>
   );
