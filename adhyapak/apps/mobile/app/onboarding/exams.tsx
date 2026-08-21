@@ -189,6 +189,21 @@ export default function ChooseExamScreen() {
   const columns = 3;
   const gap = 8;
 
+  /*
+   * How big the mark can be, rather than how big we wish it were.
+   *
+   * The card is 91pt across on a 330pt phone and 8pt of that was padding a
+   * side, which left 75 — less than the 80 the mark wants. The padding gives
+   * up three points a side so the mark fits, and the card's width does not
+   * change: same three columns, same gap, same outer size.
+   *
+   * Still a `min`, because 80 does not fit everywhere. A 320pt handset leaves
+   * 78, and a hardcoded 80 would push the mark past the card's own edge there.
+   */
+  const cardWidth = gridItemWidth(r, columns, gap);
+  const cardPadding = 5;
+  const markSize = Math.min(80, cardWidth - cardPadding * 2);
+
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
@@ -347,11 +362,13 @@ export default function ChooseExamScreen() {
                 }}
               >
                 {visible.map((exam) => (
-                  <View key={exam.id} style={{ width: gridItemWidth(r, columns, gap) }}>
+                  <View key={exam.id} style={{ width: cardWidth }}>
                     <ExamCard
                       exam={exam}
                       selected={chosen.has(exam.id)}
                       onToggle={() => toggle(exam.id)}
+                      markSize={markSize}
+                      padding={cardPadding}
                     />
                   </View>
                 ))}
@@ -393,10 +410,14 @@ function ExamCard({
   exam,
   selected,
   onToggle,
+  markSize,
+  padding,
 }: {
   exam: Exam;
   selected: boolean;
   onToggle: () => void;
+  markSize: number;
+  padding: number;
 }) {
   /*
    * Icon and tick on the top row, acronym beneath. Nothing else.
@@ -419,10 +440,11 @@ function ExamCard({
       accessibilityState={{ checked: selected }}
       onPress={onToggle}
       style={{
-        minHeight: 128,
+        minHeight: markSize + 58,
         borderRadius: theme.radius.card,
         borderWidth: 1,
-        padding: 8,
+        padding,
+        alignItems: 'center',
         borderColor: selected ? VIOLET : LINE,
         backgroundColor: selected ? PICKED_BG : '#fff',
       }}
@@ -434,16 +456,18 @@ function ExamCard({
         which is where a selection badge belongs anyway. `zIndex` because the
         mark is painted after it in source order.
       */}
-      <View style={{ position: 'absolute', top: 6, right: 6, zIndex: 2 }}>
+      <View style={{ position: 'absolute', top: 5, right: 5, zIndex: 2 }}>
         <CheckDot on={selected} size={18} />
       </View>
 
-      <ExamMark exam={exam} size={66} />
+      <ExamMark exam={exam} size={markSize} />
 
       <Text
         numberOfLines={2}
         style={{
           marginTop: 8,
+          alignSelf: 'stretch',
+          textAlign: 'center',
           fontSize: 16,
           lineHeight: 19,
           fontFamily: theme.family.display,
