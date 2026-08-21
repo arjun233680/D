@@ -32,12 +32,10 @@ import {
   GradientFill,
   INK,
   LINE,
-  MUTED,
   PICKED_BG,
   SearchIcon,
   StepHeader,
   StepLoading,
-  Tick,
   VIOLET,
 } from '@/components/onboarding';
 
@@ -189,14 +187,14 @@ export default function ChooseExamScreen() {
   // acronym alone now, so 90pt is comfortable and the guard has nothing left
   // to protect against. Anything narrower than 340 was silently getting two.
   const columns = 3;
-  const gap = 10;
+  const gap = 8;
 
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: BAR_CLEARANCE + 40 }}
+          contentContainerStyle={{ paddingBottom: BAR_CLEARANCE }}
         >
           <View
             style={{
@@ -212,10 +210,17 @@ export default function ChooseExamScreen() {
               </View>
             ) : null}
             <StepHeader
-              eyebrow={hi ? 'स्वागत है! 👋' : 'Welcome! 👋'}
+              eyebrow={hi ? 'स्वागत है!' : 'Welcome!'}
               title={hi ? 'अपनी परीक्षा चुनें' : 'Choose Your Exam'}
+              /* This used to read "Select your exam to get started" while a
+                 box above the button said "Select one or more exams to
+                 continue" — the same sentence twice, and only the lower one
+                 mentioned that more than one answer is allowed. The box is
+                 gone; the line that carried the useful half is here. */
               subtitle={
-                hi ? 'शुरू करने के लिए अपनी परीक्षा चुनें' : 'Select your exam to get started'
+                hi
+                  ? 'जारी रखने के लिए एक या अधिक परीक्षाएँ चुनें'
+                  : 'Select one or more exams to continue'
               }
             />
 
@@ -369,43 +374,6 @@ export default function ChooseExamScreen() {
               : 'Could not save your choice. Check your connection and try again.'}
           </ErrorNote>
         ) : null}
-
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            borderRadius: 16,
-            backgroundColor: '#f1eefc',
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-          }}
-        >
-          <View
-            style={{
-              height: 28,
-              width: 28,
-              borderRadius: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: chosen.size > 0 ? VIOLET : '#cfc8ee',
-            }}
-          >
-            <Tick />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontFamily: theme.family.displayBold, color: INK }}>
-              {hi
-                ? `${chosen.size} ${chosen.size === 1 ? 'परीक्षा चुनी गई' : 'परीक्षाएँ चुनी गईं'}`
-                : `${chosen.size} exam${chosen.size === 1 ? '' : 's'} selected`}
-            </Text>
-            <Text style={{ fontSize: 12.5, fontFamily: theme.family.body, color: MUTED }}>
-              {hi
-                ? 'जारी रखने के लिए एक या अधिक परीक्षाएँ चुनें'
-                : 'Select one or more exams to continue'}
-            </Text>
-          </View>
-        </View>
       </ContinueBar>
     </View>
   );
@@ -451,10 +419,10 @@ function ExamCard({
       accessibilityState={{ checked: selected }}
       onPress={onToggle}
       style={{
-        minHeight: 92,
+        minHeight: 100,
         borderRadius: theme.radius.card,
         borderWidth: 1,
-        padding: 9,
+        padding: 8,
         borderColor: selected ? VIOLET : LINE,
         backgroundColor: selected ? PICKED_BG : '#fff',
       }}
@@ -470,8 +438,8 @@ function ExamCard({
         numberOfLines={2}
         style={{
           marginTop: 8,
-          fontSize: 13,
-          lineHeight: 16,
+          fontSize: 16,
+          lineHeight: 19,
           fontFamily: theme.family.displayBold,
           color: INK,
         }}

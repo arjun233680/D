@@ -404,10 +404,16 @@ export function ContinueBar({
 
 /**
  * How much room a screen must leave at the foot of its scroll for
- * `ContinueBar`. Generous rather than measured: the bar grows when it carries
- * an error line, and content hidden behind it is content nobody can reach.
+ * `ContinueBar`. Measured, now that the bar is a button and nothing else:
+ * 16pt of padding, a 56pt button, 12pt above it and 16pt below, then room for
+ * a home indicator. 190 was sized for the selection summary the exam chooser
+ * used to stack on top, and left a hand's width of blank canvas under the last
+ * row on every step.
+ *
+ * Still generous by 40pt, because the bar grows when it carries an error line
+ * and content hidden behind it is content nobody can reach.
  */
-export const BAR_CLEARANCE = 190;
+export const BAR_CLEARANCE = 148;
 
 /**
  * The strip of already-chosen exams that steps 2 and 3 carry at the top.
