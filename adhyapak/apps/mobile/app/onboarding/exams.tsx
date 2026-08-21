@@ -27,6 +27,7 @@ import {
   BAR_CLEARANCE,
   CANVAS,
   CheckDot,
+  BackButton,
   ContinueBar,
   ErrorNote,
   GradientFill,
@@ -184,6 +185,10 @@ export default function ChooseExamScreen() {
    * Below 340pt a third column would leave under 90pt of card, which is
    * narrower than the icon plus its padding, so the smallest handsets keep two.
    */
+  // Two columns on a phone: three at 390px squeezed each card to ~120px and
+  // wrapped the authority line tight. Wider layouts (tablet / web frame) keep
+  // three, where the room exists.
+  // Three per row on a phone; only the very narrowest handsets drop to two.
   const columns = r.width < 340 ? 2 : 3;
   const gap = 10;
 
@@ -202,6 +207,11 @@ export default function ChooseExamScreen() {
               paddingHorizontal: r.gutter,
             }}
           >
+            {changing ? (
+              <View style={{ marginTop: 4 }}>
+                <BackButton fallback="/" />
+              </View>
+            ) : null}
             <StepHeader
               eyebrow={hi ? 'स्वागत है! 👋' : 'Welcome! 👋'}
               title={hi ? 'अपनी परीक्षा चुनें' : 'Choose Your Exam'}
@@ -388,7 +398,7 @@ export default function ChooseExamScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontFamily: theme.family.displayBold, color: INK }}>
               {hi
-                ? `${chosen.size} परीक्षा चुनी गई`
+                ? `${chosen.size} ${chosen.size === 1 ? 'परीक्षा चुनी गई' : 'परीक्षाएँ चुनी गईं'}`
                 : `${chosen.size} exam${chosen.size === 1 ? '' : 's'} selected`}
             </Text>
             <Text style={{ fontSize: 12.5, fontFamily: theme.family.body, color: MUTED }}>
@@ -447,10 +457,10 @@ function ExamCard({
       accessibilityState={{ checked: selected }}
       onPress={onToggle}
       style={{
-        minHeight: 132,
+        minHeight: 118,
         borderRadius: theme.radius.card,
         borderWidth: 1,
-        padding: 11,
+        padding: 9,
         borderColor: selected ? VIOLET : LINE,
         backgroundColor: selected ? PICKED_BG : '#fff',
       }}
@@ -460,25 +470,25 @@ function ExamCard({
       >
         <View
           style={{
-            height: 38,
-            width: 38,
-            borderRadius: 12,
+            height: 32,
+            width: 32,
+            borderRadius: 10,
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: tint(exam.color),
           }}
         >
-          <Text style={{ fontSize: 18 }}>{exam.emoji}</Text>
+          <Text style={{ fontSize: 16 }}>{exam.emoji}</Text>
         </View>
-        <CheckDot on={selected} size={19} />
+        <CheckDot on={selected} size={18} />
       </View>
 
       <Text
         numberOfLines={2}
         style={{
-          marginTop: 9,
-          fontSize: 14,
-          lineHeight: 17,
+          marginTop: 7,
+          fontSize: 13,
+          lineHeight: 16,
           fontFamily: theme.family.displayBold,
           color: INK,
         }}
@@ -486,11 +496,11 @@ function ExamCard({
         {exam.shortName}
       </Text>
       <Text
-        numberOfLines={3}
+        numberOfLines={2}
         style={{
-          marginTop: 3,
-          fontSize: 10.5,
-          lineHeight: 14,
+          marginTop: 2,
+          fontSize: 12,
+          lineHeight: 15,
           fontFamily: theme.family.body,
           color: MUTED,
         }}
