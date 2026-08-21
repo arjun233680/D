@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import type { ViewStyle } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
@@ -348,15 +349,30 @@ export function ContinueBar({
   return (
     <View
       style={{
-        position: 'absolute',
+        /*
+         * `fixed` on web, and it has to be.
+         *
+         * A phone browser hides its address bar as you scroll down and shows
+         * it again as you scroll up, and the page's height changes each time.
+         * An absolutely-positioned bar is pinned to the bottom of that
+         * changing box, so it slid up and down by the height of the address
+         * bar while the list scrolled underneath it, and cards showed below
+         * it in the gap. `fixed` pins to the visual viewport instead, which
+         * is the part the reader can actually see, and it stops moving.
+         *
+         * React Native has no `fixed`, react-native-web does — hence the cast.
+         * On a device this stays `absolute`, where it was never wrong.
+         */
+        ...(Platform.OS === 'web'
+          ? ({ position: 'fixed' } as unknown as ViewStyle)
+          : ({ position: 'absolute' } as const)),
         left: 0,
         right: 0,
         bottom: 0,
-        borderTopWidth: 1,
-        borderTopColor: '#eeebf8',
-        backgroundColor: CANVAS,
-        paddingBottom: insets.bottom,
       }}
+      /* The bar spans the window so nothing shows past its edges, but its
+         surface is drawn on the column inside — otherwise a desktop browser
+         gets a full-width strip under a 420pt app. */
     >
       <View
         style={{
@@ -364,7 +380,11 @@ export function ContinueBar({
           maxWidth: r.maxWidth,
           alignSelf: 'center',
           paddingHorizontal: r.gutter,
-          paddingVertical: 16,
+          paddingTop: 16,
+          paddingBottom: 16 + insets.bottom,
+          borderTopWidth: 1,
+          borderTopColor: '#eeebf8',
+          backgroundColor: CANVAS,
         }}
       >
         {children}

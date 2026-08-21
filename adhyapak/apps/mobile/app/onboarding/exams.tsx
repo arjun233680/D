@@ -284,7 +284,7 @@ export default function ChooseExamScreen() {
                     <Text style={{ fontSize: 15 }}>{FILTER_LABEL[f].icon}</Text>
                     <Text
                       style={{
-                        fontSize: 13,
+                        fontSize: 12,
                         fontFamily: theme.family.bodySemi,
                         color: on ? '#fff' : '#4b5563',
                       }}
@@ -419,7 +419,7 @@ function ExamCard({
       accessibilityState={{ checked: selected }}
       onPress={onToggle}
       style={{
-        minHeight: 100,
+        minHeight: 108,
         borderRadius: theme.radius.card,
         borderWidth: 1,
         padding: 8,
@@ -430,7 +430,7 @@ function ExamCard({
       <View
         style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}
       >
-        <ExamMark exam={exam} size={36} />
+        <ExamMark exam={exam} size={44} />
         <CheckDot on={selected} size={18} />
       </View>
 
@@ -440,7 +440,7 @@ function ExamCard({
           marginTop: 8,
           fontSize: 16,
           lineHeight: 19,
-          fontFamily: theme.family.displayBold,
+          fontFamily: theme.family.display,
           color: INK,
         }}
       >
