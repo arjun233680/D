@@ -171,16 +171,19 @@ export default function ChooseExamScreen() {
   }
 
   /*
-   * Two columns on a phone, three once there is room.
+   * Three across, which is what the design draws.
    *
-   * The design draws three across, and three 100px cards on a 360px phone
-   * leaves "Central Teacher Eligibility Test" wrapping to five lines under a
-   * name it no longer fits beside. Two keeps the card's proportions and the
-   * card is what the design is; the count is what has to give on a narrow
-   * screen. A tablet gets the three from the picture.
+   * Two was a workaround for the wrong card. While the name sat *beside* the
+   * icon it had about 70pt to live in, so a third column broke "SuperTET"
+   * mid-word and the count was the only thing left to give. The card stacks
+   * now — icon row, then name, then the authority line — so the name has the
+   * card's whole width and three fit honestly, exactly as in the mockup.
+   *
+   * Below 340pt a third column would leave under 90pt of card, which is
+   * narrower than the icon plus its padding, so the smallest handsets keep two.
    */
-  const columns = r.isPhone ? 2 : 3;
-  const gap = 12;
+  const columns = r.width < 340 ? 2 : 3;
+  const gap = 10;
 
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
@@ -423,9 +426,18 @@ function ExamCard({
   const subtitle = examSubtitle(exam, lang);
 
   /*
-   * Icon beside the name, not above it — the arrangement in the design. The
-   * tile behind the emoji is the exam's own `color` at low opacity, so the grid
-   * is coloured by the database rather than by a palette in this file.
+   * Stacked, which is the arrangement in the design and the same one the
+   * subject chooser uses: the icon and the tick share the top row, then the
+   * name, then the authority line beneath it.
+   *
+   * Putting the name beside the icon — which this did for a while — leaves it
+   * about 70pt on a phone, and 70pt is not enough for "SuperTET". Below the
+   * icon it has the whole card, so a long name simply takes a second line the
+   * way "Political Science" does in the mockup, and three columns fit.
+   *
+   * `minHeight` keeps a row of cards level when one name wraps and its
+   * neighbour's does not; without it the grid looks ragged rather than
+   * deliberate.
    */
   return (
     <Pressable
@@ -433,58 +445,50 @@ function ExamCard({
       accessibilityState={{ checked: selected }}
       onPress={onToggle}
       style={{
-        borderRadius: 16,
+        minHeight: 132,
+        borderRadius: theme.radius.card,
         borderWidth: 1,
-        padding: 12,
+        padding: 11,
         borderColor: selected ? VIOLET : LINE,
         backgroundColor: selected ? PICKED_BG : '#fff',
       }}
     >
-      {/* The tick sits in the corner rather than in the row, because in the row
-          it took 26pt off a name column that is only about 80pt wide on a
-          360pt phone — enough to break "SuperTET" across two lines mid-word. */}
-      <View style={{ position: 'absolute', top: 12, right: 12 }}>
-        <CheckDot on={selected} size={20} />
-      </View>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <View
+        style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}
+      >
         <View
           style={{
-            height: 40,
-            width: 40,
+            height: 38,
+            width: 38,
             borderRadius: 12,
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: tint(exam.color),
           }}
         >
-          <Text style={{ fontSize: 19 }}>{exam.emoji}</Text>
+          <Text style={{ fontSize: 18 }}>{exam.emoji}</Text>
         </View>
-        <View style={{ flex: 1, minWidth: 0, paddingRight: 24 }}>
-          {/* A step down for the long ones. `shortName` runs from "KVS" to
-              "SUPERTET", and at 15pt the longest of them does not fit the
-              ~70pt this column has on a 360pt phone — it broke mid-word, which
-              reads as a rendering fault rather than a long name. One line
-              always, and the size is what gives way. */}
-          <Text
-            numberOfLines={1}
-            style={{
-              fontSize: exam.shortName.length > 6 ? 13 : 15,
-              lineHeight: 19,
-              fontFamily: theme.family.displayBold,
-              color: INK,
-            }}
-          >
-            {exam.shortName}
-          </Text>
-        </View>
+        <CheckDot on={selected} size={19} />
       </View>
+
+      <Text
+        numberOfLines={2}
+        style={{
+          marginTop: 9,
+          fontSize: 14,
+          lineHeight: 17,
+          fontFamily: theme.family.displayBold,
+          color: INK,
+        }}
+      >
+        {exam.shortName}
+      </Text>
       <Text
         numberOfLines={3}
         style={{
-          marginTop: 8,
-          fontSize: 11.5,
-          lineHeight: 15,
+          marginTop: 3,
+          fontSize: 10.5,
+          lineHeight: 14,
           fontFamily: theme.family.body,
           color: MUTED,
         }}
