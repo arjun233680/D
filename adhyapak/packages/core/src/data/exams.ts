@@ -1081,53 +1081,6 @@ export const EXAMS: Exam[] = [
     ],
   },
   {
-    id: 'bihar-stet',
-    slug: 'bihar-stet',
-    name: { en: 'Bihar STET', hi: 'बिहार STET' },
-    shortName: 'STET',
-    authority: { en: 'Bihar School Examination Board', hi: 'बिहार विद्यालय परीक्षा समिति' },
-    scope: 'state',
-    state: { en: 'Bihar', hi: 'बिहार' },
-    about: {
-      en: 'Secondary Teacher Eligibility Test for Classes 9-10 (Paper 1) and 11-12 (Paper 2) in Bihar.',
-      hi: 'बिहार में कक्षा 9-10 (पेपर 1) एवं 11-12 (पेपर 2) हेतु माध्यमिक शिक्षक पात्रता परीक्षा।',
-    },
-    frequency: { en: 'As notified by BSEB', hi: 'BSEB द्वारा अधिसूचित' },
-    color: '#7E22CE',
-    emoji: '📜',
-    eligibility: [
-      { en: 'Paper 1: Graduation with 50% + B.Ed', hi: 'पेपर 1: स्नातक 50% + B.Ed' },
-      { en: 'Paper 2: Post Graduation with 50% + B.Ed', hi: 'पेपर 2: स्नातकोत्तर 50% + B.Ed' },
-    ],
-    highlights: [
-      { en: '100 subject + 50 teaching aptitude marks', hi: '100 विषय + 50 शिक्षण अभिरुचि अंक' },
-      { en: 'Gateway to BPSC TRE secondary posts', hi: 'BPSC TRE माध्यमिक पदों का प्रवेश द्वार' },
-    ],
-    officialSite: 'https://secondary.biharboardonline.com',
-    updates: [],
-    sources: [
-      { label: 'Official Bihar School Examination Board portal', url: 'https://secondary.biharboardonline.com', checkedOn: '2026-08-13' },
-    ],
-    papers: [
-      {
-        id: 'stet-p1',
-        name: { en: 'Paper 1 — Classes 9 to 10', hi: 'पेपर 1 — कक्षा 9 से 10' },
-        level: 'secondary',
-        post: 'Paper 1',
-        marksPerQuestion: 1,
-        negativeMarking: 0,
-        durationMinutes: 150,
-        totalQuestions: 150,
-        cutoffGeneral: 50,
-        cutoffReserved: 45,
-        sections: [
-          { subjectId: 'science', questions: 100, marks: 100 },
-          { subjectId: 'cdp', questions: 50, marks: 50 },
-        ],
-      },
-    ],
-  },
-  {
     id: 'wbtet',
     slug: 'wb-tet',
     name: { en: 'WB TET (Primary & Upper Primary)', hi: 'WB TET (प्राथमिक एवं उच्च प्राथमिक)' },
@@ -2341,7 +2294,7 @@ export const EXAM_GROUPS: ExamGroup[] = [
       hi: 'उस राज्य के शिक्षक पदों हेतु आवश्यक',
     },
     examIds: [
-      'uptet', 'htet', 'reet', 'bihartet', 'mptet', 'bihar-stet', 'wbtet',
+      'uptet', 'htet', 'reet', 'bihartet', 'mptet', 'wbtet',
       'hptet', 'pstet', 'utet', 'jtet', 'otet', 'sktet', 'gtet',
       'tstet', 'aptet', 'tntet', 'ktet', 'kartet', 'mahatet',
     ],

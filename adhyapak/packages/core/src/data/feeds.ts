@@ -69,7 +69,7 @@ export const CURRENT_AFFAIRS: CurrentAffair[] = [
     },
     date: '2026-08-04',
     tags: [{ en: 'Recruitment', hi: 'भर्ती' }, { en: 'Bihar', hi: 'बिहार' }],
-    examIds: ['bihartet', 'bihar-stet'],
+    examIds: ['bihartet'],
   },
   {
     id: 'ca-haryana-drive',
