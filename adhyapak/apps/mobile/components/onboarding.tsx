@@ -350,25 +350,25 @@ export function ContinueBar({
     <View
       style={{
         /*
-         * Absolute, against a viewport the app itself bounds — see WebFrame.
+         * Laid out, not positioned.
          *
-         * This was `fixed` for a day, to stop the bar drifting while a phone
-         * browser hid and showed its address bar. It stopped the drift and
-         * cost the button: expo-router animates a pushed screen with a
-         * transform, and a transformed ancestor makes `fixed` resolve against
-         * that ancestor rather than the viewport, so the bar left the screen
-         * entirely on step 2. The first screen was fine, which is why it took
-         * a second pair of eyes on the level step to find.
+         * This bar has now been wrong three ways. `absolute` drifted while a
+         * phone browser hid its address bar, because the box it was pinned to
+         * kept changing height. `fixed` stopped the drift and lost the button
+         * altogether on step 2, because expo-router animates a pushed screen
+         * with a transform and a transformed ancestor captures `fixed`. Back
+         * to `absolute` with the app bounded to `100dvh`, it measured
+         * correctly in an emulator and was still missing on a real handset.
          *
-         * The drift was never the bar's fault anyway. The page was scrolling,
-         * so the viewport kept changing height under it. WebFrame bounds the
-         * app to the visual viewport now, the ScrollView scrolls inside that,
-         * and the address bar has no reason to move at all.
+         * So it is not positioned at all any more. The screen is a flex
+         * column, the list takes the space that is left, and the bar is the
+         * last child — which is the bottom by construction. There is no
+         * viewport to resolve against, nothing to be captured by a transform,
+         * and no unit for a browser to disagree about.
+         *
+         * The screens no longer pad their lists to clear it either; nothing is
+         * underneath it to clear.
          */
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
       }}
       /* The bar spans the window so nothing shows past its edges, but its
          surface is drawn on the column inside — otherwise a desktop browser
@@ -424,16 +424,11 @@ export function ContinueBar({
 
 /**
  * How much room a screen must leave at the foot of its scroll for
- * `ContinueBar`. Measured, now that the bar is a button and nothing else:
- * 16pt of padding, a 56pt button, 12pt above it and 16pt below, then room for
- * a home indicator. 190 was sized for the selection summary the exam chooser
- * used to stack on top, and left a hand's width of blank canvas under the last
- * row on every step.
- *
- * Still generous by 40pt, because the bar grows when it carries an error line
- * and content hidden behind it is content nobody can reach.
+ * `ContinueBar`, which is no longer underneath anything — the bar is the last
+ * child of a flex column now, not a layer over the list. What is left is
+ * breathing room so the final card does not sit flush against the bar's rule.
  */
-export const BAR_CLEARANCE = 148;
+export const BAR_CLEARANCE = 24;
 
 /**
  * The strip of already-chosen exams that steps 2 and 3 carry at the top.

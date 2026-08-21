@@ -210,6 +210,7 @@ export default function ChooseExamScreen() {
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
+          style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: BAR_CLEARANCE }}
         >
           <View

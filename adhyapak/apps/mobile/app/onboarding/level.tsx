@@ -170,7 +170,8 @@ export default function ChooseLevelScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ paddingBottom: BAR_CLEARANCE }}>
+        <ScrollView style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: BAR_CLEARANCE }}>
           <View
             style={{
               width: '100%',
