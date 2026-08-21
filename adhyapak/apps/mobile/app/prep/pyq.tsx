@@ -18,6 +18,7 @@ import {
   type SubjectPart,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { Icon, subjectIcon, type IconName } from '@/components/icons';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import { selectionTitle, useSelection } from '@/lib/useSelection';
 import {
@@ -58,10 +59,10 @@ import {
 
 type Tab = 'full' | 'section' | 'topic';
 
-const TABS: { id: Tab; icon: string; label: Bilingual }[] = [
-  { id: 'full', icon: '📄', label: { en: 'Full Test', hi: 'पूर्ण टेस्ट' } },
-  { id: 'section', icon: '🥧', label: { en: 'Section Wise', hi: 'अनुभाग अनुसार' } },
-  { id: 'topic', icon: '☰', label: { en: 'Topic Wise', hi: 'टॉपिक अनुसार' } },
+const TABS: { id: Tab; icon: IconName; label: Bilingual }[] = [
+  { id: 'full', icon: 'test', label: { en: 'Full Test', hi: 'पूर्ण टेस्ट' } },
+  { id: 'section', icon: 'chart', label: { en: 'Section Wise', hi: 'अनुभाग अनुसार' } },
+  { id: 'topic', icon: 'bookmark', label: { en: 'Topic Wise', hi: 'टॉपिक अनुसार' } },
 ];
 
 /**
@@ -272,7 +273,11 @@ export default function PyqBrowserScreen() {
                         borderBottomColor: on ? VIOLET : 'transparent',
                       }}
                     >
-                      <Text style={{ fontSize: 13.5 }}>{item.icon}</Text>
+                      <Icon
+                        name={item.icon}
+                        size={16}
+                        color={on ? VIOLET : MUTED}
+                      />
                       <Text
                         style={{
                           fontSize: 13.5,
@@ -342,7 +347,11 @@ export default function PyqBrowserScreen() {
                               backgroundColor: `${chosen.color}1a`,
                             }}
                           >
-                            <Text style={{ fontSize: 21 }}>{chosen.icon}</Text>
+                            <Icon
+                              name={subjectIcon(chosen.subjectId)}
+                              size={23}
+                              color={chosen.color}
+                            />
                           </View>
                           <View style={{ flex: 1, minWidth: 0 }}>
                             <Text
@@ -475,7 +484,18 @@ function FullTest({
           padding: 16,
         }}
       >
-        <Text style={{ fontSize: 22 }}>📄</Text>
+        <View
+          style={{
+            height: 40,
+            width: 40,
+            borderRadius: 13,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.color.primaryLight,
+          }}
+        >
+          <Icon name="test" size={20} color={theme.color.primary} />
+        </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={{ fontSize: 15, fontFamily: theme.family.displayBold, color: INK }}>
             {hi ? 'पूर्ण टेस्ट (वर्ष अनुसार)' : 'Full Test (Year Wise)'}
@@ -527,10 +547,30 @@ function FullTest({
                     backgroundColor: TINTS[i % TINTS.length],
                   }}
                 >
-                  <Text style={{ fontSize: 22 }}>🗓️</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <View
+                      style={{
+                        height: 36,
+                        width: 36,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#ffffffbd',
+                      }}
+                    >
+                      <Icon name="calendar" size={19} color={theme.color.primary} />
+                    </View>
+                    <Icon name="arrow" size={17} color="#c4bfda" />
+                  </View>
                   <Text
                     style={{
-                      marginTop: 4,
+                      marginTop: 8,
                       fontSize: 23,
                       fontFamily: theme.family.displayBold,
                       color: INK,
@@ -745,15 +785,17 @@ function SectionChips({
           >
             <View
               style={{
-                height: 48,
-                width: 48,
-                borderRadius: 24,
+                height: 46,
+                width: 46,
+                borderRadius: 23,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: `${sec.color}1a`,
               }}
             >
-              <Text style={{ fontSize: 20 }}>{sec.icon}</Text>
+              {/* From the subject id rather than `sec.icon` — see the note in
+                  the Study rail. */}
+              <Icon name={subjectIcon(sec.subjectId)} size={22} color={sec.color} />
             </View>
             <Text
               style={{

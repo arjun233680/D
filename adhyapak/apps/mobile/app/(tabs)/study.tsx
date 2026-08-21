@@ -15,6 +15,7 @@ import {
   type SubjectPart,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { Icon, subjectIcon } from '@/components/icons';
 import { useResponsive } from '@/lib/responsive';
 import { selectionTitle, useSelection } from '@/lib/useSelection';
 import {
@@ -67,6 +68,16 @@ export default function StudyScreen() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [parts, setParts] = useState<SubjectPart[]>([]);
   const [all, setAll] = useState(false);
+  /*
+   * Which order the chapters are in.
+   *
+   * The design puts a Sort control beside the heading. Syllabus order is the
+   * default because that is the order a candidate is taught in; the other
+   * choice is by how much the bank actually holds, which is what somebody
+   * deciding where to start next wants. Both orders come from data already on
+   * screen, so neither invents a ranking.
+   */
+  const [sort, setSort] = useState<'syllabus' | 'questions'>('syllabus');
 
   const examId = selection?.exam?.id;
   const level = selection?.level;
@@ -164,7 +175,11 @@ export default function StudyScreen() {
     );
   }
 
-  const shown = all ? topics : topics.slice(0, 12);
+  const ordered =
+    sort === 'questions'
+      ? [...topics].sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0))
+      : topics;
+  const shown = all ? ordered : ordered.slice(0, 12);
 
   return (
     <PrepShell lang={lang}>
@@ -178,6 +193,54 @@ export default function StudyScreen() {
                 onMenu={openMenu}
                 lang={lang}
               />
+
+              {/* The selection, restated. The header says it too, but the
+                  design repeats it here as a row because this screen's whole
+                  content depends on it and the header truncates. */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  marginTop: 12,
+                  marginHorizontal: r.gutter,
+                  borderRadius: theme.radius.card,
+                  backgroundColor: theme.color.primaryLight,
+                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                }}
+              >
+                <Icon name="bookmark" size={18} color={theme.color.primary} />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flex: 1,
+                    fontSize: 13.5,
+                    fontFamily: theme.family.displayBold,
+                    color: INK,
+                  }}
+                >
+                  {selectionTitle(selection, subjectName)}
+                </Text>
+                <View
+                  style={{
+                    borderRadius: 7,
+                    backgroundColor: '#ffffffcc',
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontFamily: theme.family.displayBold,
+                      color: theme.color.primary,
+                    }}
+                  >
+                    {selection.level.name}
+                  </Text>
+                </View>
+              </View>
 
               {/* --------------------------------------------- section rail */}
               <View style={{ borderBottomWidth: 1, borderBottomColor: '#eeebf8', paddingBottom: 12 }}>
@@ -199,15 +262,19 @@ export default function StudyScreen() {
                       >
                         <View
                           style={{
-                            height: 48,
-                            width: 48,
-                            borderRadius: 24,
+                            height: 46,
+                            width: 46,
+                            borderRadius: 23,
                             alignItems: 'center',
                             justifyContent: 'center',
                             backgroundColor: `${sec.color}1a`,
                           }}
                         >
-                          <Text style={{ fontSize: 20 }}>{sec.icon}</Text>
+                          {/* The drawing comes from the subject id, not from
+                              `sec.icon`: that column holds an emoji, which
+                              cannot take the subject's colour and renders as a
+                              different picture on every platform. */}
+                          <Icon name={subjectIcon(sec.subjectId)} size={22} color={sec.color} />
                         </View>
                         <Text
                           style={{
@@ -244,21 +311,74 @@ export default function StudyScreen() {
                   paddingTop: 16,
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 16 }}>📖</Text>
-                  <Text
-                    style={{ fontSize: 16, fontFamily: theme.family.displayBold, color: INK }}
-                  >
-                    {chosen ? `${chosen.shortName} — ` : ''}
-                    {hi ? 'अध्याय' : 'Chapters'}
-                  </Text>
-                  {parts.length > 0 ? (
-                    <Text
-                      style={{ fontSize: 12, fontFamily: theme.family.bodySemi, color: MUTED }}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                  }}
+                >
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+                    <View
+                      style={{
+                        height: 30,
+                        width: 30,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: theme.color.primaryLight,
+                      }}
                     >
-                      ({parts.length} {hi ? 'विषय' : 'subjects'})
+                      <Icon name="book" size={18} color={theme.color.primary} />
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        flex: 1,
+                        fontSize: 17,
+                        fontFamily: theme.family.displayBold,
+                        color: INK,
+                      }}
+                    >
+                      {chosen ? `${chosen.shortName} — ` : ''}
+                      {hi ? 'अध्याय' : 'Chapters'}
+                      {parts.length > 0 ? ` (${parts.length})` : ''}
                     </Text>
-                  ) : null}
+                  </View>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setSort((v) => (v === 'syllabus' ? 'questions' : 'syllabus'))}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      minHeight: 40,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: theme.color.border,
+                      backgroundColor: theme.color.surface,
+                      paddingHorizontal: 11,
+                    }}
+                  >
+                    <Icon name="chart" size={15} color={theme.color.primary} />
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontFamily: theme.family.displayBold,
+                        color: theme.color.primary,
+                      }}
+                    >
+                      {sort === 'syllabus'
+                        ? hi
+                          ? 'क्रम'
+                          : 'Syllabus'
+                        : hi
+                          ? 'प्रश्न'
+                          : 'Questions'}
+                    </Text>
+                  </Pressable>
                 </View>
 
                 {topics.length === 0 ? (

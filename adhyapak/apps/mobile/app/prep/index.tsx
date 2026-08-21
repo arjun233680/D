@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { t, theme } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { Icon, type IconName } from '@/components/icons';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import { selectionTitle, useSelection } from '@/lib/useSelection';
 import {
@@ -35,7 +36,7 @@ import {
 const TILES = [
   {
     href: '/prep/pyq',
-    icon: '📄',
+    icon: 'test',
     tint: '#e6f0fd',
     dot: '#2563eb',
     label: { en: 'PYQ', hi: 'विगत वर्ष' },
@@ -43,7 +44,7 @@ const TILES = [
   },
   {
     href: '/(tabs)/study',
-    icon: '📗',
+    icon: 'book',
     tint: '#e8f7ee',
     dot: '#16a34a',
     label: { en: 'Notes', hi: 'नोट्स' },
@@ -51,7 +52,7 @@ const TILES = [
   },
   {
     href: '/prep/tests',
-    icon: '📋',
+    icon: 'chart',
     tint: '#fff3e6',
     dot: '#ea580c',
     label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' },
@@ -59,7 +60,7 @@ const TILES = [
   },
   {
     href: '/prep/tests',
-    icon: '🎯',
+    icon: 'target',
     tint: '#f6efff',
     dot: '#9333ea',
     label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' },
@@ -67,7 +68,7 @@ const TILES = [
   },
   {
     href: '/current-affairs',
-    icon: '📰',
+    icon: 'news',
     tint: '#fdeaf3',
     dot: '#db2777',
     label: { en: 'Current Affairs', hi: 'समसामयिकी' },
@@ -75,7 +76,7 @@ const TILES = [
   },
   {
     href: '/practice',
-    icon: '📅',
+    icon: 'calendar',
     tint: '#e8f7ee',
     dot: '#16a34a',
     label: { en: 'DPP', hi: 'DPP' },
@@ -83,7 +84,7 @@ const TILES = [
   },
   {
     href: '/practice',
-    icon: '❓',
+    icon: 'help',
     tint: '#fff8e6',
     dot: '#eab308',
     label: { en: 'Quick Quiz', hi: 'त्वरित क्विज़' },
@@ -91,7 +92,7 @@ const TILES = [
   },
   {
     href: '/(tabs)/study',
-    icon: '📘',
+    icon: 'bookmark',
     tint: '#f1eefc',
     dot: '#6d4aed',
     label: { en: 'Revision Notes', hi: 'रिवीज़न नोट्स' },
@@ -168,7 +169,7 @@ export default function PrepDashboardScreen() {
               >
                 {/* ------------------------------------- study & practice */}
                 <View style={{ marginTop: 20 }}>
-                  <SectionHeading icon="📖" text={hi ? 'अध्ययन एवं अभ्यास' : 'Study & Practice'} />
+                  <SectionHeading icon="book" text={hi ? 'अध्ययन एवं अभ्यास' : 'Study & Practice'} />
 
                   <View
                     style={{
@@ -190,7 +191,18 @@ export default function PrepDashboardScreen() {
                             backgroundColor: tile.tint,
                           }}
                         >
-                          <Text style={{ fontSize: 30 }}>{tile.icon}</Text>
+                          <View
+                            style={{
+                              height: 44,
+                              width: 44,
+                              borderRadius: 14,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#ffffffbd',
+                            }}
+                          >
+                            <Icon name={tile.icon} size={22} color={tile.dot} />
+                          </View>
                           <Text
                             style={{
                               marginTop: 12,
@@ -245,7 +257,18 @@ export default function PrepDashboardScreen() {
                       padding: 16,
                     }}
                   >
-                    <Text style={{ fontSize: 24 }}>Σ</Text>
+                    <View
+                      style={{
+                        height: 40,
+                        width: 40,
+                        borderRadius: 13,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#ffffffbd',
+                      }}
+                    >
+                      <Icon name="flask" size={20} color="#0d9488" />
+                    </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text
                         style={{
@@ -280,7 +303,7 @@ export default function PrepDashboardScreen() {
                 {/* ---------------------------------- continue learning */}
                 <View style={{ marginTop: 28 }}>
                   <SectionHeading
-                    icon="🔖"
+                    icon="bookmark"
                     text={hi ? 'तैयारी जारी रखें' : 'Continue Learning'}
                   />
                   <View style={{ marginTop: 12 }}>
@@ -302,10 +325,21 @@ export default function PrepDashboardScreen() {
 
 /* --------------------------------------------------------------- fragments */
 
-function SectionHeading({ icon, text }: { icon: string; text: string }) {
+function SectionHeading({ icon, text }: { icon: IconName; text: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <Text style={{ fontSize: 17 }}>{icon}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+      <View
+        style={{
+          height: 30,
+          width: 30,
+          borderRadius: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.color.primaryLight,
+        }}
+      >
+        <Icon name={icon} size={18} color={theme.color.primary} />
+      </View>
       <Text style={{ fontSize: 17, fontFamily: theme.family.displayBold, color: INK }}>
         {text}
       </Text>

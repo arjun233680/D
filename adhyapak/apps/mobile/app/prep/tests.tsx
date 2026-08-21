@@ -15,6 +15,7 @@ import {
   type TestType,
 } from '@adhyapak/core';
 import { useStore } from '@/lib/store';
+import { Icon, subjectIcon, type IconName } from '@/components/icons';
 import { useResponsive } from '@/lib/responsive';
 import { selectionTitle, useSelection } from '@/lib/useSelection';
 import {
@@ -47,10 +48,10 @@ import {
 
 type Tab = 'all' | 'subject' | 'mine';
 
-const TABS: { id: Tab; icon: string; label: { en: string; hi: string } }[] = [
-  { id: 'all', icon: '📄', label: { en: 'All Tests', hi: 'सभी टेस्ट' } },
-  { id: 'subject', icon: '📖', label: { en: 'Subject Wise', hi: 'विषय अनुसार' } },
-  { id: 'mine', icon: '🔖', label: { en: 'My Tests', hi: 'मेरे टेस्ट' } },
+const TABS: { id: Tab; icon: IconName; label: { en: string; hi: string } }[] = [
+  { id: 'all', icon: 'test', label: { en: 'All Tests', hi: 'सभी टेस्ट' } },
+  { id: 'subject', icon: 'book', label: { en: 'Subject Wise', hi: 'विषय अनुसार' } },
+  { id: 'mine', icon: 'bookmark', label: { en: 'My Tests', hi: 'मेरे टेस्ट' } },
 ];
 
 const BADGE: Record<TestType, { en: string; hi: string; tint: string; color: string }> = {
@@ -203,7 +204,7 @@ export default function TestSeriesScreen() {
                         borderBottomColor: on ? VIOLET : 'transparent',
                       }}
                     >
-                      <Text style={{ fontSize: 13.5 }}>{item.icon}</Text>
+                      <Icon name={item.icon} size={16} color={on ? VIOLET : MUTED} />
                       <Text
                         style={{
                           fontSize: 13.5,
@@ -238,15 +239,19 @@ export default function TestSeriesScreen() {
                       >
                         <View
                           style={{
-                            height: 48,
-                            width: 48,
-                            borderRadius: 24,
+                            height: 46,
+                            width: 46,
+                            borderRadius: 23,
                             alignItems: 'center',
                             justifyContent: 'center',
                             backgroundColor: `${sec.color}1a`,
                           }}
                         >
-                          <Text style={{ fontSize: 20 }}>{sec.icon}</Text>
+                          {/* The drawing comes from the subject id, not from
+                              `sec.icon`: that column holds an emoji, which
+                              cannot take the subject's colour and renders as a
+                              different picture on every platform. */}
+                          <Icon name={subjectIcon(sec.subjectId)} size={22} color={sec.color} />
                         </View>
                         <Text
                           style={{
@@ -329,7 +334,7 @@ function TestCard({ test, lang, hi }: { test: Test; lang: Lang; hi: boolean }) {
             backgroundColor: '#f1eefc',
           }}
         >
-          <Text style={{ fontSize: 16 }}>🗓️</Text>
+          <Icon name="calendar" size={19} color={theme.color.primary} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <View
