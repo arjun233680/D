@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { theme } from '@adhyapak/core';
 
 /**
@@ -34,8 +34,29 @@ export interface Responsive {
 const PHONE_MAX = 600;
 const TABLET_MAX = 1024;
 
+/**
+ * How wide the app is ever drawn in a browser.
+ *
+ * This is a phone app. Its web build exists so the phone app can be looked at
+ * on a desktop — not so it can become a website; the website is a separate
+ * Next.js app at apps/web with its own layouts. Letting the Expo build spread
+ * into a 1120pt three-column desktop layout meant that opening the link on a
+ * laptop showed a wide layout no handset will ever render, which reads as "the
+ * mobile app keeps turning into the web version".
+ *
+ * So on web the viewport is treated as a handset however large the window is,
+ * and the app is drawn in a 420pt column down the middle. That is what the
+ * design prototype does — `width: min(100%, 420px)` — and it is the honest
+ * thing for a phone app's preview to do.
+ *
+ * Native is untouched: a real tablet still gets the tablet layout, because
+ * there the extra width is a real device and not a desktop browser window.
+ */
+const WEB_PHONE_WIDTH = 420;
+
 export function useResponsive(): Responsive {
-  const { width } = useWindowDimensions();
+  const { width: viewport } = useWindowDimensions();
+  const width = Platform.OS === 'web' ? Math.min(viewport, WEB_PHONE_WIDTH) : viewport;
 
   const isPhone = width < PHONE_MAX;
   const isTablet = width >= PHONE_MAX && width < TABLET_MAX;

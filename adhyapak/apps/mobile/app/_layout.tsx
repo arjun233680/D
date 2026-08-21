@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -136,13 +136,39 @@ function Shell() {
   );
 }
 
+/**
+ * Centres the app in a handset-width column when it is being viewed in a
+ * browser window wider than a phone.
+ *
+ * A desktop browser is not a device this app is for — it is where somebody
+ * looks at the phone app. Filling a 1440pt window with it produced a layout no
+ * handset will ever render, and made the link look like it kept "turning into
+ * the web version". Now the window holds a phone, the way the design prototype
+ * does, and the page behind it is the app's own canvas rather than white.
+ *
+ * A no-op on a device and on a phone-sized browser: `maxWidth` only bites once
+ * the window is wider than the column.
+ */
+function WebFrame({ children }: { children: React.ReactNode }) {
+  if (Platform.OS !== 'web') return <>{children}</>;
+  return (
+    <View style={{ flex: 1, alignItems: 'center', backgroundColor: theme.color.bg }}>
+      <View style={{ flex: 1, width: '100%', maxWidth: 420, backgroundColor: theme.color.bg }}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StoreProvider>
         <SessionProvider>
           <StatusBar style="dark" />
-          <Shell />
+          <WebFrame>
+            <Shell />
+          </WebFrame>
         </SessionProvider>
       </StoreProvider>
     </SafeAreaProvider>

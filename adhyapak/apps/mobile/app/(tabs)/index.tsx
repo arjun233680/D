@@ -21,6 +21,7 @@ import {
 import { useStore } from '@/lib/store';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
 import { CANVAS, FAINT, INK, LINE, MUTED, StepLoading, VIOLET, tint } from '@/components/onboarding';
+import { Icon, type IconName } from '@/components/icons';
 
 /**
  * The dashboard.
@@ -55,7 +56,7 @@ import { CANVAS, FAINT, INK, LINE, MUTED, StepLoading, VIOLET, tint } from '@/co
 const QUICK = [
   {
     href: '/(tabs)/study',
-    icon: '📖',
+    icon: 'book',
     label: { en: 'Notes', hi: 'नोट्स' },
     sub: { en: 'Study Smart', hi: 'बेहतर पढ़ाई' },
     tint: '#efeafe',
@@ -63,7 +64,7 @@ const QUICK = [
   },
   {
     href: '/prep/pyq',
-    icon: '📄',
+    icon: 'test',
     label: { en: 'PYQ', hi: 'विगत वर्ष' },
     sub: { en: 'Previous Year Questions', hi: 'विगत वर्ष प्रश्न' },
     tint: '#e8f7ee',
@@ -71,7 +72,7 @@ const QUICK = [
   },
   {
     href: '/prep/tests',
-    icon: '📋',
+    icon: 'chart',
     label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' },
     sub: { en: 'Practice & Improve', hi: 'अभ्यास एवं सुधार' },
     tint: '#e6f0fd',
@@ -79,7 +80,7 @@ const QUICK = [
   },
   {
     href: '/prep/tests',
-    icon: '🎯',
+    icon: 'target',
     label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' },
     sub: { en: 'Real Exam Experience', hi: 'वास्तविक परीक्षा अनुभव' },
     tint: '#fff1e6',
@@ -87,7 +88,7 @@ const QUICK = [
   },
   {
     href: '/current-affairs',
-    icon: '🌐',
+    icon: 'news',
     label: { en: 'Current Affairs', hi: 'समसामयिकी' },
     sub: { en: 'Stay Updated Daily', hi: 'रोज़ अपडेट रहें' },
     tint: '#fdeaf3',
@@ -328,7 +329,7 @@ export default function DashboardScreen() {
                   gap: 12,
                 }}
               >
-                <SectionTitle icon="🔖" text={hi ? 'मेरे चुनाव' : 'My Selections'} />
+                <SectionTitle icon="bookmark" text={hi ? 'मेरे चुनाव' : 'My Selections'} />
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => router.push('/onboarding/exams?change=1')}
@@ -484,7 +485,7 @@ export default function DashboardScreen() {
 
             {/* ----------------------------------------------- quick access */}
             <View style={{ marginTop: 24 }}>
-              <SectionTitle icon="⚡" text={hi ? 'त्वरित पहुँच' : 'Quick Access'} />
+              <SectionTitle icon="bolt" text={hi ? 'त्वरित पहुँच' : 'Quick Access'} />
               <Text
                 style={{ marginTop: 2, fontSize: 12.5, fontFamily: theme.family.body, color: FAINT }}
               >
@@ -509,7 +510,18 @@ export default function DashboardScreen() {
                       padding: 14,
                     }}
                   >
-                    <Text style={{ fontSize: 26 }}>{q.icon}</Text>
+                    <View
+                      style={{
+                        height: 42,
+                        width: 42,
+                        borderRadius: 14,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#ffffffbd',
+                      }}
+                    >
+                      <Icon name={q.icon} size={21} color={q.color} />
+                    </View>
                     <Text
                       style={{
                         marginTop: 10,
@@ -552,7 +564,7 @@ export default function DashboardScreen() {
             {/* ------------------------------------- continue your preparation */}
             <Panel style={{ marginTop: 24 }}>
               <SectionTitle
-                icon="🔖"
+                icon="book"
                 text={hi ? 'तैयारी जारी रखें' : 'Continue Your Preparation'}
               />
               {/* The design puts a half-read chapter here with a 60% bar. There
@@ -622,7 +634,7 @@ export default function DashboardScreen() {
 
             {/* --------------------------------------------- today's snapshot */}
             <View style={{ marginTop: 24 }}>
-              <SectionTitle icon="📊" text={hi ? 'आज का सारांश' : "Today's Snapshot"} />
+              <SectionTitle icon="chart" text={hi ? 'आज का सारांश' : "Today's Snapshot"} />
 
               {/* Four tiles, as the design lays them out. Two of them have a
                   source and two do not; all four are here so the row is the row
@@ -741,11 +753,23 @@ function IconButton({
   );
 }
 
-function SectionTitle({ icon, text }: { icon: string; text: string }) {
+/** The prototype's section heading: a tinted plate, then the title. */
+function SectionTitle({ icon, text }: { icon: IconName; text: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <Text style={{ fontSize: 16 }}>{icon}</Text>
-      <Text style={{ fontSize: 16, fontFamily: theme.family.displayBold, color: INK }}>{text}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+      <View
+        style={{
+          height: 30,
+          width: 30,
+          borderRadius: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.color.primaryLight,
+        }}
+      >
+        <Icon name={icon} size={19} color={theme.color.primary} />
+      </View>
+      <Text style={{ fontSize: 18, fontFamily: theme.family.displayBold, color: INK }}>{text}</Text>
     </View>
   );
 }

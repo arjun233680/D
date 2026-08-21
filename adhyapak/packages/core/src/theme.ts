@@ -12,24 +12,24 @@ export const theme = {
        until those screens landed; leaving it green meant every older screen
        stayed a different product from the one a learner had just walked
        through. Both apps read these, so the phone moves with the website. */
-    ink: '#1E1B4B',
+    ink: '#071243',
     inkSoft: '#2A2560',
-    primary: '#6D4AED',
-    primaryDark: '#5B3CE0',
-    primaryLight: '#F1EEFC',
+    primary: '#6B19F3',
+    primaryDark: '#5A12D6',
+    primaryLight: '#F2EBFF',
     accent: '#4F46E5',
     accentLight: '#EEF0FE',
-    saffron: '#F97316',
+    saffron: '#FF7B0A',
     saffronLight: '#FFF2E6',
 
     /* Semantic */
-    success: '#16A34A',
+    success: '#15B95E',
     successLight: '#E8F7EE',
     danger: '#DC2626',
     dangerLight: '#FDECEC',
     warning: '#D97706',
     warningLight: '#FEF3E2',
-    info: '#0284C7',
+    info: '#1687F6',
     infoLight: '#E4F2FB',
 
     /* Neutrals.
@@ -43,14 +43,14 @@ export const theme = {
        and of globals.css both claimed the two mirrored one another; neither
        noticed, because the website never imports this object. If you change a
        neutral here, change it there too. */
-    bg: '#FAF9FF',
+    bg: '#FBFAFF',
     surface: '#FFFFFF',
     surfaceAlt: '#F9FAFC',
-    border: '#ECEAF6',
+    border: '#E8E4F4',
     borderStrong: '#D8D3EE',
-    text: '#1E1B4B',
-    textMuted: '#6B7280',
-    textFaint: '#8B869E',
+    text: '#071243',
+    textMuted: '#58617F',
+    textFaint: '#8B91AD',
     white: '#FFFFFF',
 
     /* Test-player palette — fixed meanings, never re-themed */
@@ -63,7 +63,7 @@ export const theme = {
   /* `card` is the website's --radius-card. It sits between md and lg rather
      than replacing either, because 14 and 18 are both still in use elsewhere
      and rounding every one of them to 16 would move more than the cards. */
-  radius: { sm: 10, md: 14, card: 16, lg: 18, xl: 24, pill: 999 },
+  radius: { sm: 10, md: 14, card: 18, lg: 18, xl: 24, pill: 999 },
   /* 4pt grid. Screens use these rather than ad-hoc numbers so rhythm holds. */
   space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 },
 
