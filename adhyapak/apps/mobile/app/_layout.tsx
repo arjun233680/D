@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
+import type { ViewStyle } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -169,7 +170,27 @@ function Shell() {
 function WebFrame({ children }: { children: React.ReactNode }) {
   if (Platform.OS !== 'web') return <>{children}</>;
   return (
-    <View style={{ flex: 1, alignItems: 'center', backgroundColor: theme.color.bg }}>
+    <View
+      style={[
+        { alignItems: 'center', backgroundColor: theme.color.bg },
+        /*
+         * The app is exactly as tall as the part of the browser you can see,
+         * and it does not scroll — the ScrollView inside it does.
+         *
+         * Without this the page itself scrolled, so a phone browser hid its
+         * address bar on the way down and showed it again on the way up, and
+         * the viewport changed height each time. Anything pinned to the bottom
+         * moved with it, which is what made the continue bar slide about while
+         * a list scrolled under it.
+         *
+         * `dvh` rather than `vh`: `vh` is the tallest the viewport ever gets,
+         * so it hides the last strip of every screen behind the address bar
+         * until you scroll. React Native has no unit for this and
+         * react-native-web passes the value through, hence the cast.
+         */
+        { height: '100dvh', overflow: 'hidden' } as unknown as ViewStyle,
+      ]}
+    >
       <View style={{ flex: 1, width: '100%', maxWidth: 420, backgroundColor: theme.color.bg }}>
         {children}
       </View>

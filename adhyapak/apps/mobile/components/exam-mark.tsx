@@ -71,7 +71,18 @@ const EXAM_LOGOS: Record<string, number> = {
 
 export const hasExamLogo = (examId: string): boolean => examId in EXAM_LOGOS;
 
-export function ExamMark({ exam, size = 36 }: { exam: Exam; size?: number }) {
+/*
+ * Takes the id and the colour rather than a whole `Exam`, so the strip on the
+ * level step can show the same mark without carrying a row it has no other use
+ * for. An `Exam` still satisfies it.
+ */
+export function ExamMark({
+  exam,
+  size = 36,
+}: {
+  exam: Pick<Exam, 'id' | 'color'>;
+  size?: number;
+}) {
   const logo = EXAM_LOGOS[exam.id];
 
   /*

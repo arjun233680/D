@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import type { ViewStyle } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
@@ -13,6 +12,7 @@ import Svg, {
 } from 'react-native-svg';
 import { theme } from '@adhyapak/core';
 import { useResponsive } from '@/lib/responsive';
+import { ExamMark } from '@/components/exam-mark';
 
 /**
  * The furniture every onboarding step shares — the native half of
@@ -350,22 +350,22 @@ export function ContinueBar({
     <View
       style={{
         /*
-         * `fixed` on web, and it has to be.
+         * Absolute, against a viewport the app itself bounds — see WebFrame.
          *
-         * A phone browser hides its address bar as you scroll down and shows
-         * it again as you scroll up, and the page's height changes each time.
-         * An absolutely-positioned bar is pinned to the bottom of that
-         * changing box, so it slid up and down by the height of the address
-         * bar while the list scrolled underneath it, and cards showed below
-         * it in the gap. `fixed` pins to the visual viewport instead, which
-         * is the part the reader can actually see, and it stops moving.
+         * This was `fixed` for a day, to stop the bar drifting while a phone
+         * browser hid and showed its address bar. It stopped the drift and
+         * cost the button: expo-router animates a pushed screen with a
+         * transform, and a transformed ancestor makes `fixed` resolve against
+         * that ancestor rather than the viewport, so the bar left the screen
+         * entirely on step 2. The first screen was fine, which is why it took
+         * a second pair of eyes on the level step to find.
          *
-         * React Native has no `fixed`, react-native-web does — hence the cast.
-         * On a device this stays `absolute`, where it was never wrong.
+         * The drift was never the bar's fault anyway. The page was scrolling,
+         * so the viewport kept changing height under it. WebFrame bounds the
+         * app to the visual viewport now, the ScrollView scrolls inside that,
+         * and the address bar has no reason to move at all.
          */
-        ...(Platform.OS === 'web'
-          ? ({ position: 'fixed' } as unknown as ViewStyle)
-          : ({ position: 'absolute' } as const)),
+        position: 'absolute',
         left: 0,
         right: 0,
         bottom: 0,
@@ -450,21 +450,19 @@ export function ChosenExams({
   title?: string;
 }) {
   if (items.length === 0) return null;
+  /*
+   * No card around it. The strip used to sit on a violet panel, which put a
+   * card inside the step and a tinted tile inside that — three boxes deep
+   * before the mark. It is a reminder of what was tapped a screen ago, not a
+   * thing to tap, so it reads as a line of marks and names.
+   */
   return (
-    <View
-      style={{
-        marginTop: 20,
-        borderRadius: 16,
-        backgroundColor: '#f4f1fd',
-        paddingVertical: 12,
-      }}
-    >
+    <View style={{ marginTop: 20 }}>
       {title ? (
         <Text
           style={{
             marginBottom: 8,
-            paddingHorizontal: 16,
-            fontSize: 12.5,
+            fontSize: 12,
             fontFamily: theme.family.displayBold,
             color: VIOLET,
           }}
@@ -475,29 +473,18 @@ export function ChosenExams({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 12, paddingHorizontal: 12 }}
+        contentContainerStyle={{ gap: 14 }}
       >
         {items.map((e) => (
           <View
             key={e.id}
-            style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, width: 170 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 190 }}
           >
-            <View
-              style={{
-                height: 40,
-                width: 40,
-                borderRadius: 12,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: tint(e.color),
-              }}
-            >
-              <Text style={{ fontSize: 18 }}>{e.emoji}</Text>
-            </View>
+            <ExamMark exam={{ id: e.id, color: e.color }} size={52} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text
-                  style={{ fontSize: 14, fontFamily: theme.family.displayBold, color: e.color }}
+                  style={{ fontSize: 16, fontFamily: theme.family.displayBold, color: e.color }}
                 >
                   {e.shortName}
                 </Text>
@@ -518,8 +505,8 @@ export function ChosenExams({
                 numberOfLines={2}
                 style={{
                   marginTop: 2,
-                  fontSize: 11.5,
-                  lineHeight: 15,
+                  fontSize: 12,
+                  lineHeight: 16,
                   fontFamily: theme.family.body,
                   color: MUTED,
                 }}

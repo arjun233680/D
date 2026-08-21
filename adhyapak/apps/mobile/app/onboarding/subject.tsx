@@ -296,7 +296,7 @@ export default function ChooseSubjectScreen() {
                           numberOfLines={3}
                           style={{
                             marginTop: 4,
-                            fontSize: 11.5,
+                            fontSize: 12,
                             lineHeight: 15,
                             fontFamily: theme.family.body,
                             color: MUTED,
