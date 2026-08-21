@@ -32,6 +32,7 @@ import {
   GradientFill,
   INK,
   LINE,
+  MUTED,
   PICKED_BG,
   SearchIcon,
   StepHeader,
@@ -384,6 +385,31 @@ export default function ChooseExamScreen() {
         busy={saving}
         label={saving ? (hi ? 'सहेजा जा रहा है…' : 'Saving…') : hi ? 'आगे बढ़ें' : 'Continue'}
       >
+        {/*
+          The button goes inert with nothing chosen, and until now nothing said
+          so. That was survivable while a box above it read "0 exams selected";
+          removing the box took the explanation with it, and left a dead button
+          at 45% opacity as the only clue. It matters most on "Change
+          Selection", which arrives with the old answers already ticked — tap
+          the one you came to pick and you have just unticked it.
+
+          A line, not the box back: it appears only while the way forward is
+          blocked, the way the error note does.
+        */}
+        {chosen.size === 0 ? (
+          <Text
+            style={{
+              marginBottom: 4,
+              textAlign: 'center',
+              fontSize: 13,
+              fontFamily: theme.family.bodySemi,
+              color: MUTED,
+            }}
+          >
+            {hi ? 'कम से कम एक परीक्षा चुनें' : 'Choose at least one exam'}
+          </Text>
+        ) : null}
+
         {failed ? (
           <ErrorNote>
             {hi
