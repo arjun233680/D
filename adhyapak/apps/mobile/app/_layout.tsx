@@ -172,7 +172,10 @@ function WebFrame({ children }: { children: React.ReactNode }) {
   return (
     <View
       style={[
-        { alignItems: 'center', backgroundColor: theme.color.bg },
+        // `flex: 1` stays under it. If the height below is ever dropped — an
+        // older browser, a build that strips the unit — this is what still
+        // bounds the app, and taking it away left nothing holding the box up.
+        { flex: 1, alignItems: 'center', backgroundColor: theme.color.bg },
         /*
          * The app is exactly as tall as the part of the browser you can see,
          * and it does not scroll — the ScrollView inside it does.

@@ -2,6 +2,9 @@ import {
   fetchLearnerExamIds as fetchExamIdsRemote,
   fetchLearnerLevelIds as fetchLevelIdsRemote,
   fetchLearnerSubjects as fetchSubjectsRemote,
+  saveLearnerExamIds as saveExamIdsRemote,
+  saveLearnerLevelIds as saveLevelIdsRemote,
+  type WriteOutcome,
 } from '@adhyapak/core';
 
 /**
@@ -26,9 +29,14 @@ import {
  * Only the three answers. Every exam, level, subject, topic, paper, question
  * and year still comes from the database over the anon key, because that
  * content is public and reads fine without a session — so what you are looking
- * at is the real HTET TGT Science syllabus, not a mock of one. Nothing is
- * written: `saveLearner*` is untouched and still needs a real session, so the
- * preview cannot corrupt anybody's account.
+ * at is the real HTET TGT Science syllabus, not a mock of one.
+ *
+ * Nothing is written. The saves try the database first and, in preview only,
+ * report success when it refuses them for want of a session. They have to:
+ * reads alone let step 1 be looked at and no further, because pressing
+ * Continue writes, the write is refused, and the flow stops there. That is
+ * how a broken continue button on step 2 went three rounds without anybody
+ * being able to reach the screen it was broken on.
  *
  * WHY AN ENV FLAG RATHER THAN A COMMENT
  *
@@ -86,3 +94,22 @@ export const fetchLearnerSubjects = async (): Promise<
   if (real.length > 0 || !isDevPreview()) return real;
   return PREVIEW.subjects;
 };
+
+
+/* ------------------------------------------------------------ the answers */
+
+/**
+ * The saves, which in preview report success rather than blocking the walk.
+ *
+ * The real write is always attempted and its answer always wins — a signed-in
+ * developer saves for real. Only a refusal is softened, only under the flag,
+ * so the next step opens and the flow can be walked to its end.
+ */
+const previewOk = (outcome: WriteOutcome): WriteOutcome =>
+  outcome.ok || !isDevPreview() ? outcome : { ok: true };
+
+export const saveLearnerExamIds = async (examIds: readonly string[]): Promise<WriteOutcome> =>
+  previewOk(await saveExamIdsRemote(examIds));
+
+export const saveLearnerLevelIds = async (levelIds: readonly string[]): Promise<WriteOutcome> =>
+  previewOk(await saveLevelIdsRemote(levelIds));

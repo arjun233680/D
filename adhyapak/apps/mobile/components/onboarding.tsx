@@ -403,6 +403,22 @@ export function ContinueBar({
             justifyContent: 'center',
             gap: 8,
             opacity: off ? 0.45 : 1,
+            /*
+             * The button's own colour, under the gradient.
+             *
+             * It had none: the violet came entirely from `GradientFill`, an
+             * SVG parked at `zIndex: -1`, and the label is white. Where that
+             * SVG does not paint inside its parent the button becomes white
+             * text on white canvas — present, laid out, tappable, invisible.
+             * That is what "the continue button is missing" turned out to be,
+             * and it is why every measurement of it read correct: the box was
+             * always there.
+             *
+             * The same trick already cost this app the arrow on every gradient
+             * button once. A solid colour underneath costs nothing and cannot
+             * fail; the gradient is a sheen on top of it, not the button.
+             */
+            backgroundColor: VIOLET,
           }}
         >
           <GradientFill />
