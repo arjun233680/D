@@ -1882,7 +1882,20 @@ const writeWithSession = async (
   if (!(await hasLiveSession())) return { ok: false, expired: true };
 
   const second = await attempt();
-  return second.error ? { ok: false, expired: false } : { ok: true };
+  if (!second.error) return { ok: true };
+
+  /*
+   * Classify the retry too, rather than calling every second failure a
+   * connection problem.
+   *
+   * `getSession()` hands back whatever is in storage, and a session whose
+   * refresh token the server has already forgotten still looks like a session.
+   * So a signed-out browser reached here, retried, was refused a second time,
+   * and the caller was told to check its connection — which sent the learner
+   * back to tap the same button against a request that could never succeed.
+   * Two 401s in a row are not a network fault.
+   */
+  return explainWriteFailure(second.error);
 };
 
 /** True when the request has a session the server will accept. */

@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
-import { configureBackend, saveLearnerExamIds, saveLearnerLevelIds } from '../src/index.ts';
+import {
+  configureBackend,
+  explainWriteFailure,
+  saveLearnerExamIds,
+  saveLearnerLevelIds,
+} from '../src/index.ts';
 
 /**
  * The learner writes, and the shape their failures arrive in.
@@ -36,4 +41,37 @@ describe('a learner write that cannot reach the server', () => {
       assert.equal(typeof (outcome as { expired: boolean }).expired, 'boolean');
     }
   });
+});
+
+/**
+ * How a refused write is classified.
+ *
+ * `writeWithSession` retries once, and it used to call whatever came back from
+ * that retry a connection problem. It is not: `getSession()` hands back
+ * whatever is in storage, so a browser whose refresh token the server has
+ * already forgotten still looks signed in, gets refused twice, and was told to
+ * check its connection — which sent the learner back to press the same button
+ * against a request that could never succeed. The retry now goes through this
+ * function, so what it says about a 401 is what the screen does.
+ */
+describe('classifying a refused write', () => {
+  it('calls the auth refusals expired, whichever vocabulary they arrive in', async () => {
+    for (const message of [
+      'permission denied for function set_learner_exams',
+      'JWT expired',
+      'Request failed with status code 401',
+      'Unauthorized',
+    ]) {
+      const outcome = await explainWriteFailure(new Error(message));
+      assert.equal(outcome.ok, false);
+      assert.equal(outcome.ok === false && outcome.expired, true, message);
+    }
+  });
+
+  /*
+   * There is deliberately no case here for a non-auth failure. With no backend
+   * configured there is no session either, so `explainWriteFailure` reports
+   * that one as expired as well — correctly, and for a reason that has nothing
+   * to do with the message. Pinning it would enshrine the test's own setup.
+   */
 });
