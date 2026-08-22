@@ -203,7 +203,9 @@ export default function DashboardScreen() {
    * huddle at the left.
    */
   const selectionGap = 8;
-  const selectionColumns = Math.min(Math.max(selections.length, 1), 4);
+  // Never one across. A single selection stretched to the full width made a
+  // wide, near-empty box out of a 34pt symbol and three short words.
+  const selectionColumns = Math.min(Math.max(selections.length, 2), 4);
   const selectionWidth =
     (r.width - r.gutter * 2 - 28 - selectionGap * (selectionColumns - 1)) / selectionColumns;
   // Four snapshot tiles across, on a phone too. Two per row made the section
@@ -232,19 +234,28 @@ export default function DashboardScreen() {
                 justifyContent: 'space-between',
               }}
             >
-              <IconButton
-                label={hi ? 'मेन्यू' : 'Menu'}
-                onPress={() => router.push('/(tabs)/profile')}
+              {/*
+                The mark and the name ride this row.
+                
+                They had a row of their own directly under it, so the screen
+                spent two bands and about 60pt on a logo, a word and three
+                buttons — while the row holding the buttons had the whole
+                middle of the screen empty. The menu moves to the right with
+                its siblings; a hamburger on the left is not more findable
+                than a hamburger on the right, and the left is where a name
+                belongs.
+              */}
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}
               >
-                <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
-                  <Path
-                    d="M3 6h14M3 10h14M3 14h14"
-                    stroke={INK}
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                  />
-                </Svg>
-              </IconButton>
+                <DashboardArt width={r.isPhone ? 46 : 58} />
+                <Text
+                  numberOfLines={1}
+                  style={{ fontSize: 21, fontFamily: theme.family.displayBold, color: INK }}
+                >
+                  Adhyapak
+                </Text>
+              </View>
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <IconButton label={hi ? 'खोजें' : 'Search'} onPress={() => router.push('/explore')}>
@@ -288,36 +299,35 @@ export default function DashboardScreen() {
                     }}
                   />
                 </IconButton>
+                <IconButton
+                  label={hi ? 'मेन्यू' : 'Menu'}
+                  onPress={() => router.push('/(tabs)/profile')}
+                >
+                  <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+                    <Path
+                      d="M3 6h14M3 10h14M3 14h14"
+                      stroke={INK}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                </IconButton>
               </View>
             </View>
 
             {/* -------------------------------------------------- greeting */}
-            {/*
-              The app's own mark, beside its name.
-              
-              It used to be a plain violet tile with a cap glyph on the left and
-              the drawn cap-and-books parked on the right, so the header carried
-              two logos for one app and a column of blank canvas between them.
-              One mark, on the left, where a name's logo goes.
-            */}
-            <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <DashboardArt width={r.isPhone ? 62 : 78} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontSize: 26, fontFamily: theme.family.displayBold, color: INK }}>
-                  Adhyapak
-                </Text>
-                <Text
-                  style={{
-                    marginTop: 2,
-                    fontSize: 15,
-                    fontFamily: theme.family.displayBold,
-                    color: INK,
-                  }}
-                >
-                  {hi ? `नमस्ते, ${user.name || 'साथी'}! 👋` : `Hello, ${user.name || 'there'}! 👋`}
-                </Text>
-              </View>
-            </View>
+            {/* The name has gone up to the top row, so what is left here is
+                the greeting itself — one line rather than a block. */}
+            <Text
+              style={{
+                marginTop: 10,
+                fontSize: 15,
+                fontFamily: theme.family.displayBold,
+                color: INK,
+              }}
+            >
+              {hi ? `नमस्ते, ${user.name || 'साथी'}! 👋` : `Hello, ${user.name || 'there'}! 👋`}
+            </Text>
 
             {/* ------------------------------------------------- selections */}
             {/* The mockup boxes this section rather than letting it sit on the
@@ -590,7 +600,7 @@ export default function DashboardScreen() {
                 <StatTile
                   icon="⏱️"
                   tintColor="#e8f7ee"
-                  label={hi ? 'अध्ययन समय' : 'Study Time'}
+                  label={hi ? 'समय' : 'Time'}
                   value={hi ? '0 मिनट' : '0 min'}
                   measured={false}
                   width={tileW}
@@ -598,7 +608,7 @@ export default function DashboardScreen() {
                 <StatTile
                   icon="🎯"
                   tintColor="#fdeaf3"
-                  label={hi ? 'हल किए प्रश्न' : 'Questions Solved'}
+                  label={hi ? 'हल किए' : 'Solved'}
                   value={String(solved)}
                   measured
                   width={tileW}
@@ -606,7 +616,7 @@ export default function DashboardScreen() {
                 <StatTile
                   icon="📖"
                   tintColor="#efeafe"
-                  label={hi ? 'पूर्ण विषय' : 'Topics Completed'}
+                  label={hi ? 'विषय' : 'Topics'}
                   value="0"
                   measured={false}
                   width={tileW}
@@ -614,7 +624,7 @@ export default function DashboardScreen() {
                 <StatTile
                   icon="🔥"
                   tintColor="#fff1e6"
-                  label={hi ? 'दैनिक श्रृंखला' : 'Daily Streak'}
+                  label={hi ? 'श्रृंखला' : 'Streak'}
                   value={hi ? `${streak} दिन` : `${streak} day${streak === 1 ? '' : 's'}`}
                   measured
                   width={tileW}
