@@ -542,7 +542,18 @@ export function ChosenExams({
    * card inside the step and a tinted tile inside that — three boxes deep
    * before the mark. It is a reminder of what was tapped a screen ago, not a
    * thing to tap, so it reads as a line of marks and names.
+   *
+   * Every item was pinned to 230pt whatever it held. Two exams then wanted
+   * 474pt of a 343pt row, so the second ran off the right edge, and CTET's
+   * short name floated in the middle of a box sized for a long one — which is
+   * the field of empty strip that showed up between them. Sized by content
+   * instead, and the arithmetic then decides the rest: 375pt of screen less
+   * the gutters leaves 343, two items and the gap between them have to fit
+   * inside that, and at the single-exam mark size they cannot. The mark gives
+   * up ten points when there is more than one, which is what buys the second
+   * exam its full name. A third scrolls.
    */
+  const many = items.length > 1;
   return (
     // Close under the heading it belongs to. 26 was set while a chip sat
     // between the two and needed clearing; nothing is between them now.
@@ -562,15 +573,22 @@ export function ChosenExams({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 14 }}
+        contentContainerStyle={{ gap: many ? 12 : 14 }}
       >
         {items.map((e) => (
           <View
             key={e.id}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, width: 230 }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: many ? 6 : 12,
+              // Sized by what it holds. A fixed width is what ran the second
+              // exam off the edge and spaced the two of them a strip apart.
+              maxWidth: many ? undefined : 230,
+            }}
           >
-            <ExamMark exam={{ id: e.id, color: e.color }} size={68} />
-            <View style={{ flex: 1, minWidth: 0 }}>
+            <ExamMark exam={{ id: e.id, color: e.color }} size={many ? 58 : 68} />
+            <View style={{ flexShrink: 1, minWidth: 0, maxWidth: many ? 100 : undefined }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {/* Ink, not the exam's own colour. HTET's green against a
                     violet chip, violet button and a blue-and-orange grid put
@@ -578,7 +596,14 @@ export function ChosenExams({
                     identifies the exam — it is the ground its mark sits on,
                     right beside this — so the name does not have to shout it
                     a second time. */}
-                <Text style={{ fontSize: 18, fontFamily: theme.family.displayBold, color: INK }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 18,
+                    fontFamily: theme.family.displayBold,
+                    color: INK,
+                  }}
+                >
                   {e.shortName}
                 </Text>
                 <View
@@ -594,7 +619,7 @@ export function ChosenExams({
                   <Tick small />
                 </View>
               </View>
-              <Text
+                      <Text
                 numberOfLines={2}
                 style={{
                   marginTop: 3,

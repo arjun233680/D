@@ -253,30 +253,48 @@ export default function ChooseSubjectScreen() {
                   color: VIOLET,
                 }}
               >
+                {/* What the level step settled, the way step 2's chip reports
+                    step 1. It used to read "Subject for TGT" over a heading
+                    reading "Choose Your TGT Subject" over a line reading
+                    "Select the subject … in TGT level" — the same sentence
+                    three times down one screen. */}
+                {/* Named, not counted. "2 levels selected" makes the reader
+                    work out which two from a screen that no longer shows
+                    them; the names are shorter than the count's sentence
+                    anyway. */}
                 {hi
-                  ? `${current.name} स्तर का विषय`
-                  : `Subject for ${current.name}`}
+                  ? `बढ़िया! ${levels.map((l) => l.name).join(', ')} चुना गया 🎉`
+                  : `Great! ${levels.map((l) => l.name).join(', ')} selected 🎉`}
               </Text>
               <StepProgress done={stepDone} total={stepTotal} width={72} />
             </View>
 
             <StepHeader
               trailing={<BooksArt width={100} />}
-              title={hi ? `अपना ${current.name} विषय चुनें` : `Choose Your ${current.name} Subject`}
-              subtitle={
-                hi
-                  ? `${current.name} स्तर के लिए वह विषय चुनें जिसकी आप तैयारी करना चाहते हैं।`
-                  : `Select the subject you want to prepare for in ${current.name} level.`
-              }
+              title={hi ? `${current.name} विषय` : `${current.name} Subject`}
+              /* No subtitle: it restated the heading directly above it, word
+                 for word and level for level. */
             />
 
-            <ChosenExams
-              items={strip}
-              title={hi ? 'आपकी चुनी परीक्षाएँ' : 'Your Selected Exams'}
-            />
+            <ChosenExams items={strip} />
 
-            {/* No second heading: the title already asks for the subject. */}
-            <View style={{ marginTop: 24, flexDirection: 'row', flexWrap: 'wrap', gap }}>
+            {/* The label sits over the thing it labels, the way "Select Level
+                / Target" does on step 2. Over the exam strip it named a row
+                nobody has to act on, and left the grid — the one question on
+                the screen — with nothing over it at all. */}
+            <Text
+              style={{
+                marginTop: 26,
+                fontSize: 14,
+                letterSpacing: 0.2,
+                fontFamily: theme.family.displayBold,
+                color: VIOLET,
+              }}
+            >
+              {hi ? 'विषय चुनें' : 'Select Subject'}
+            </Text>
+
+            <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap }}>
               {offers.map((offer) => {
                 const on = picked === offer.subjectId;
                 return (
