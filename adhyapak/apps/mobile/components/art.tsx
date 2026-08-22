@@ -7,8 +7,11 @@ import { Icon, subjectIcon, type IconName } from '@/components/icons';
  * Drawn strokes read well but look like what they are — a line icon. These are
  * pictures: one PNG per subject, bundled rather than typed, so 🔬 is the same
  * drawing on every phone instead of a different one per manufacturer.
- * `scripts/emoji-art.py` fetches them and says where they come from, including
- * why they are not photographs.
+ *
+ * Microsoft's Fluent 3D renders, which are modelled and lit rather than drawn
+ * flat — the flat set that came before them read as the phone keyboard's own
+ * stickers pasted onto cards. `scripts/emoji-art.py` fetches them and says
+ * where they come from, including why they are not photographs.
  *
  * Both maps fall back to the stroke set. A subject the database has and this
  * file does not still gets a mark, which matters because the subject list is a
