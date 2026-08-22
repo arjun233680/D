@@ -168,16 +168,48 @@ export function BooksArt({ width = 86 }: { width?: number }) {
  * clutter. Now it holds two, at opposite ends, with the whole width between
  * them; the art is gone from the step chrome entirely.
  */
+/** The violet chip that notes the answer a previous step already took. */
+export function EyebrowPill({ label }: { label: string }) {
+  return (
+    <View
+      style={{
+        alignSelf: 'flex-start',
+        borderRadius: 999,
+        backgroundColor: '#efeafe',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+      }}
+    >
+      <Text style={{ fontSize: 13, fontFamily: theme.family.displayBold, color: VIOLET }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 export function StepHeaderRow({
   step,
   fallback,
   back = true,
+  eyebrow,
+  lang = 'en',
 }: {
+  /** The rail names its current step, so it needs the learner's language. */
+  lang?: 'en' | 'hi';
   /** Omitted on step 1, which has no rail to draw. */
   step?: 1 | 2 | 3;
   fallback: string;
   /** Step 1 only shows a back arrow when it was reached to change an answer. */
   back?: boolean;
+  /**
+   * The note about the answer already given, when it should ride this row.
+   *
+   * An arrow on the left and a rail on the right leave the middle of the row
+   * empty, and the chip was taking a line of its own underneath — so the
+   * screen spent two rows saying what fits comfortably on one, and the
+   * question got pushed further down for it.
+   */
+  eyebrow?: string;
 }) {
   // Nothing to go back to and no rail to draw is step 1 arrived at fresh.
   // Render nothing rather than an empty 44pt strip above the welcome.
@@ -188,11 +220,16 @@ export function StepHeaderRow({
         minHeight: 44,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: 10,
       }}
     >
       {back ? <BackButton fallback={fallback} /> : <View style={{ width: 44 }} />}
-      {step ? <StepRail step={step} /> : null}
+      {/* Takes the slack so the rail stays pinned right whether or not there
+          is a chip to show. */}
+      <View style={{ flex: 1, alignItems: 'flex-start' }}>
+        {eyebrow ? <EyebrowPill label={eyebrow} /> : null}
+      </View>
+      {step ? <StepRail step={step} lang={lang} /> : null}
     </View>
   );
 }
@@ -206,24 +243,47 @@ export function StepHeaderRow({
  * three of these and you are on the second", which bars say quietly. The count
  * still reaches a screen reader, which the circles never told it.
  */
-export function StepRail({ step }: { step: 1 | 2 | 3 }) {
+export function StepRail({ step }: { step: 1 | 2 | 3; lang?: 'en' | 'hi' }) {
+  /*
+   * "2 / 3", and a track that is two thirds full.
+   *
+   * This has now been two things that were both too much for the corner of a
+   * header. Three anonymous bars gave a proportion and no position. Naming the
+   * current step fixed that and cost the width of a word — beside the "1 exam
+   * selected" chip on the same row, the two of them crowded each other, and
+   * the name only ever repeated the heading directly underneath it.
+   *
+   * A count says position and proportion in three characters, and at that
+   * width the type can be large enough to actually read.
+   */
   return (
     <View
       accessibilityRole="progressbar"
+      accessibilityLabel={`Step ${step} of 3`}
       accessibilityValue={{ min: 1, max: 3, now: step }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+      style={{ alignItems: 'flex-end', gap: 5 }}
     >
-      {([1, 2, 3] as const).map((n) => (
+      <Text
+        style={{
+          fontSize: 14,
+          lineHeight: 17,
+          fontFamily: theme.family.displayBold,
+          color: VIOLET,
+        }}
+      >
+        {step}
+        <Text style={{ color: '#B9B0E4' }}>{` / 3`}</Text>
+      </Text>
+      <View style={{ height: 4, width: 42, borderRadius: 999, backgroundColor: '#E3DDF7' }}>
         <View
-          key={n}
           style={{
-            height: 6,
-            width: n === step ? 32 : 16,
+            height: 4,
+            width: 42 * (step / 3),
             borderRadius: 999,
-            backgroundColor: n <= step ? VIOLET : '#e3ddf7',
+            backgroundColor: VIOLET,
           }}
         />
-      ))}
+      </View>
     </View>
   );
 }
@@ -273,7 +333,7 @@ export function Tip({ children }: { children: ReactNode }) {
   return (
     <View
       style={{
-        marginTop: 20,
+        marginTop: 14,
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 12,
@@ -283,12 +343,32 @@ export function Tip({ children }: { children: ReactNode }) {
         paddingVertical: 14,
       }}
     >
-      <Text style={{ fontSize: 15 }}>💡</Text>
+      {/* Drawn, not 💡. An emoji is a different typeface on every platform —
+          flat and outlined on one, a glossy yellow render on another — so the
+          one decorative mark on the screen was the one thing that could not be
+          made to match the rest of it. This is the violet the strip is
+          already tinted with. */}
+      <Svg width={17} height={17} viewBox="0 0 20 20" fill="none" style={{ marginTop: 1 }}>
+        {/* The glass, lit. A bulb outlined in violet was a violet shape that
+            happened to be bulb-suggested; the colour is most of what makes it
+            read as one at 17pt. */}
+        <Path
+          d="M10 2.4a5.2 5.2 0 0 0-3.1 9.4c.5.4.8 1 .8 1.6h4.6c0-.6.3-1.2.8-1.6A5.2 5.2 0 0 0 10 2.4Z"
+          fill="#FFD44D"
+        />
+        <Path
+          d="M7.6 15.2h4.8M8.4 17.6h3.2M10 2.4a5.2 5.2 0 0 0-3.1 9.4c.5.4.8 1 .8 1.6h4.6c0-.6.3-1.2.8-1.6A5.2 5.2 0 0 0 10 2.4Z"
+          stroke="#E0A106"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
       <Text
         style={{
           flex: 1,
-          fontSize: 12.5,
-          lineHeight: 19,
+          fontSize: 15,
+          lineHeight: 22,
           fontFamily: theme.family.body,
           color: '#5c5875',
         }}
@@ -406,10 +486,12 @@ export function ContinueBar({
           maxWidth: r.maxWidth,
           alignSelf: 'center',
           paddingHorizontal: r.gutter,
-          paddingTop: 16,
+          paddingTop: 12,
           paddingBottom: 16 + insets.bottom,
-          borderTopWidth: 1,
-          borderTopColor: '#eeebf8',
+          /* No rule and no surface of its own. The border drew a line across
+             the screen and the padding above it read as a card the button was
+             sitting in — a container around a single control that needed no
+             container. The button sits on the page background instead. */
           backgroundColor: CANVAS,
         }}
       >
@@ -429,6 +511,11 @@ export function ContinueBar({
             justifyContent: 'center',
             gap: 8,
             opacity: off ? 0.45 : 1,
+            /* Its own violet, not grey. A saturated control over a grey
+               shadow always reads as an accident; over its own hue it reads
+               as lit. Dropped while the button is inert, because a dead
+               control should not look like it is floating. */
+            ...(off ? null : theme.shadow.raised),
             /*
              * The button's own colour, under the gradient.
              *
@@ -494,7 +581,10 @@ export function ChosenExams({
    * thing to tap, so it reads as a line of marks and names.
    */
   return (
-    <View style={{ marginTop: 28 }}>
+    // Under the chip and still with it: the chip counts the exams and this
+    // names them, so they stay a pair — but not so tight that they stack into
+    // one label.
+    <View style={{ marginTop: 26 }}>
       {title ? (
         <Text
           style={{
@@ -520,9 +610,13 @@ export function ChosenExams({
             <ExamMark exam={{ id: e.id, color: e.color }} size={68} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text
-                  style={{ fontSize: 18, fontFamily: theme.family.displayBold, color: e.color }}
-                >
+                {/* Ink, not the exam's own colour. HTET's green against a
+                    violet chip, violet button and a blue-and-orange grid put
+                    four unrelated hues on one screen. The exam colour still
+                    identifies the exam — it is the ground its mark sits on,
+                    right beside this — so the name does not have to shout it
+                    a second time. */}
+                <Text style={{ fontSize: 18, fontFamily: theme.family.displayBold, color: INK }}>
                   {e.shortName}
                 </Text>
                 <View
@@ -571,46 +665,75 @@ export function StepHeader({
   eyebrow,
   title,
   subtitle,
+  leading,
+  trailing,
 }: {
   eyebrow?: string;
   title: string;
   subtitle?: string;
+  /**
+   * Something to sit on the heading's left — in practice the back arrow.
+   *
+   * A 44pt arrow on its own row leaves the rest of that row empty and pushes
+   * the question down a full line for nothing. Beside the heading it uses
+   * width that was already blank, and the screen opens on the exams instead
+   * of on canvas. The heading keeps the rest of the row, so a long title
+   * still wraps rather than shrinking.
+   */
+  leading?: ReactNode;
+  /**
+   * Something to sit on the heading's right — in practice the step count.
+   *
+   * Same argument as `leading` from the other end: the arrow and the counter
+   * were holding down a 44pt row between them with nothing in the middle,
+   * while the question they belong to started underneath it. On the heading's
+   * own line all three fit, and the screen opens on the answer list.
+   */
+  trailing?: ReactNode;
 }) {
   const r = useResponsive();
+  const heading = (
+    <Text
+      style={{
+        marginTop: eyebrow ? 16 : 0,
+        flexShrink: leading || trailing ? 1 : undefined,
+        fontSize: r.isPhone ? 26 : 32,
+        lineHeight: r.isPhone ? 34 : 40,
+        fontFamily: theme.family.displayBold,
+        color: INK,
+      }}
+    >
+      {title}
+    </Text>
+  );
   return (
-    <View style={{ marginTop: 24 }}>
-      {eyebrow ? (
-        <View
-          style={{
-            alignSelf: 'flex-start',
-            borderRadius: 999,
-            backgroundColor: '#efeafe',
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-          }}
-        >
-          <Text style={{ fontSize: 13, fontFamily: theme.family.displayBold, color: VIOLET }}>
-            {eyebrow}
-          </Text>
+    // With no chip above it the heading is the first thing on the screen, and
+    // a 24pt gap under a bare back arrow is just blank canvas — it starts
+    // close to the top instead, which is a row of exam cards earned back.
+    <View style={{ marginTop: eyebrow ? 24 : 6 }}>
+      {eyebrow ? <EyebrowPill label={eyebrow} /> : null}
+      {leading || trailing ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {leading}
+          {heading}
+          {/* Takes the slack so the trailing mark stays pinned right however
+              short the heading is. */}
+          {trailing ? <View style={{ flex: 1, alignItems: 'flex-end' }}>{trailing}</View> : null}
         </View>
-      ) : null}
-      <Text
-        style={{
-          marginTop: eyebrow ? 16 : 0,
-          fontSize: r.isPhone ? 26 : 32,
-          lineHeight: r.isPhone ? 34 : 40,
-          fontFamily: theme.family.displayBold,
-          color: INK,
-        }}
-      >
-        {title}
-      </Text>
+      ) : (
+        heading
+      )}
       {subtitle ? (
         <Text
           style={{
-            marginTop: 10,
-            fontSize: 14,
-            lineHeight: 22,
+            marginTop: 6,
+            // Under the heading rather than under the arrow beside it: 44pt of
+            // button and the 12pt gap, so the supporting line starts where the
+            // title starts and the two read as one block.
+            marginLeft: leading ? 56 : 0,
+            textAlign: 'justify',
+            fontSize: 15,
+            lineHeight: 21,
             fontFamily: theme.family.body,
             color: MUTED,
           }}

@@ -26,7 +26,7 @@ import {
   BAR_CLEARANCE,
   CANVAS,
   CheckDot,
-  StepHeaderRow,
+  BackButton,
   ContinueBar,
   ErrorNote,
   GradientFill,
@@ -83,6 +83,11 @@ export default function ChooseExamScreen() {
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  // The grid's real width, measured on layout. `gridItemWidth` computes from
+  // the viewport, which on a desktop browser overshoots by the scrollbar's
+  // ~15px — enough to push the third card to a second row. Measuring the
+  // container instead is scrollbar-proof, so three cards fit on every width.
+  const [gridWidth, setGridWidth] = useState(0);
 
   const noBackend = !isBackendConfigured();
 
@@ -201,9 +206,14 @@ export default function ChooseExamScreen() {
    * Still a `min`, because 80 does not fit everywhere. A 320pt handset leaves
    * 78, and a hardcoded 80 would push the mark past the card's own edge there.
    */
-  const cardWidth = gridItemWidth(r, columns, gap);
+  const cardWidth =
+    gridWidth > 0 ? Math.floor((gridWidth - gap * (columns - 1)) / columns) : gridItemWidth(r, columns, gap);
   const cardPadding = 5;
-  const markSize = Math.min(80, cardWidth - cardPadding * 2);
+  // 76 rather than 80: four rows of cards then clear the button on a
+  // 812pt screen, so the grid opens on twelve exams instead of nine and
+  // a clipped tenth. Still a `min`, because a narrow handset gives the
+  // card less width than that and the mark may not exceed it.
+  const markSize = Math.min(76, cardWidth - cardPadding * 2);
 
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
@@ -221,12 +231,13 @@ export default function ChooseExamScreen() {
               paddingHorizontal: r.gutter,
             }}
           >
-            {/* Nothing above the heading unless there is somewhere to go
-                back to: the row draws itself away rather than leaving a strip
-                of empty canvas at the top of the first screen. */}
-            <StepHeaderRow fallback="/" back={changing} />
+            {/* No greeting chip here. "Welcome!" said nothing the heading did
+                not, and it cost a line at the top of the screen that the exam
+                grid uses better. The back arrow — only there when this step
+                was reached to change an answer — sits beside the heading for
+                the same reason, rather than on a row of its own. */}
             <StepHeader
-              eyebrow={hi ? 'स्वागत है!' : 'Welcome!'}
+              leading={changing ? <BackButton fallback="/" /> : undefined}
               title={hi ? 'अपनी परीक्षा चुनें' : 'Choose Your Exam'}
               /* This used to read "Select your exam to get started" while a
                  box above the button said "Select one or more exams to
@@ -241,7 +252,10 @@ export default function ChooseExamScreen() {
             />
 
             {/* ------------------------------------------------------ search */}
-            <View style={{ marginTop: 24, justifyContent: 'center' }}>
+            {/* Closer to the heading than it was: the gap under the subtitle
+                was wide enough to read as a break between two sections, when
+                searching is how you answer the question above it. */}
+            <View style={{ marginTop: 14, justifyContent: 'center' }}>
               <View style={{ position: 'absolute', left: 16, zIndex: 1 }}>
                 <SearchIcon />
               </View>
@@ -355,8 +369,9 @@ export default function ChooseExamScreen() {
               </Text>
             ) : (
               <View
+                onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
                 style={{
-                  marginTop: 20,
+                  marginTop: 14,
                   flexDirection: 'row',
                   flexWrap: 'wrap',
                   gap,
@@ -457,8 +472,11 @@ function ExamCard({
    * `examSubtitle` still exists and still spells the acronym out; it belongs
    * on a screen with room for it, not on a thumbnail.
    *
-   * `minHeight` keeps a row level when one name wraps ("SuperTET") and its
-   * neighbours do not.
+   * The card is as tall as one name, not two. It used to reserve a second
+   * line against a wrap that no acronym in the table actually makes — 19pt of
+   * blank card under every name, which cost a whole row of the grid. A card
+   * whose name does wrap still gets its second line, and its neighbours
+   * stretch to match it, because that is what a wrapped flex row does.
    */
   return (
     <Pressable
@@ -466,7 +484,7 @@ function ExamCard({
       accessibilityState={{ checked: selected }}
       onPress={onToggle}
       style={{
-        minHeight: markSize + 58,
+        minHeight: markSize + 39,
         borderRadius: theme.radius.card,
         borderWidth: 1,
         padding,

@@ -68,6 +68,46 @@ export const theme = {
   space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 },
 
   /**
+   * Depth.
+   *
+   * Cards were a flat white rectangle inside a 1pt border, which is what a
+   * wireframe looks like. Two layers do the work: a tight one that seats the
+   * card on the page, and a wide soft one that lifts it off. Both are cast in
+   * the ink colour rather than black — a grey shadow over a violet-tinted
+   * canvas reads as dirt.
+   *
+   * `raised` is the colour a control casts in its own hue. A violet button
+   * over a violet shadow is the detail that separates a considered UI from an
+   * assembled one; grey under a saturated control always looks like a mistake.
+   *
+   * React Native wants these as `shadowColor`/`shadowOffset`/`shadowOpacity`/
+   * `shadowRadius`, so they are kept as parts rather than a CSS string.
+   */
+  shadow: {
+    card: {
+      shadowColor: '#1E1B4B',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.06,
+      shadowRadius: 18,
+      elevation: 2,
+    },
+    picked: {
+      shadowColor: '#6D4AED',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.16,
+      shadowRadius: 20,
+      elevation: 4,
+    },
+    raised: {
+      shadowColor: '#6D4AED',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.28,
+      shadowRadius: 20,
+      elevation: 6,
+    },
+  },
+
+  /**
    * Type scale.
    *
    * Sized for Devanagari, which needs more room than Latin: body sits at 16

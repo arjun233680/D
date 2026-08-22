@@ -212,7 +212,7 @@ export default function ChooseSubjectScreen() {
               paddingTop: 8,
             }}
           >
-            <StepHeaderRow step={3} fallback="/onboarding/level" />
+            <StepHeaderRow step={3} lang={lang} fallback="/onboarding/level" />
 
             <StepHeader
               title={hi ? `अपना ${current.name} विषय चुनें` : `Choose Your ${current.name} Subject`}
@@ -284,9 +284,9 @@ export default function ChooseSubjectScreen() {
             </View>
 
             <Tip>
-              {hi
-                ? 'आप बाद में प्रोफ़ाइल सेटिंग्स से विषय जोड़ या बदल सकते हैं।'
-                : 'You can add or change subject later from your profile settings.'}
+              {/* Same correction as the level step: the control is "Change
+                  Selections" on the home screen, not in a profile. */}
+              {hi ? 'बाद में होम स्क्रीन से बदल सकते हैं।' : 'You can change this later from Home.'}
             </Tip>
           </View>
         </ScrollView>

@@ -18,8 +18,8 @@ import {
   fetchLearnerLevelIds,
 } from '@/lib/learner';
 import { useStore } from '@/lib/store';
-import { gridItemWidth, useResponsive } from '@/lib/responsive';
-import { LevelMark } from '@/components/art';
+import { useResponsive } from '@/lib/responsive';
+import { LEVEL_ART_COLOR, LevelMark } from '@/components/art';
 import {
   BAR_CLEARANCE,
   CANVAS,
@@ -28,15 +28,14 @@ import {
   ContinueBar,
   ErrorNote,
   INK,
-  LINE,
-  MUTED,
   PICKED_BG,
   StepHeader,
   StepLoading,
-  StepHeaderRow,
+  BackButton,
+  EyebrowPill,
+  StepRail,
   Tip,
   VIOLET,
-  tint,
 } from '@/components/onboarding';
 
 /**
@@ -181,96 +180,184 @@ export default function ChooseLevelScreen() {
               paddingTop: 8,
             }}
           >
-            <StepHeaderRow step={2} fallback="/onboarding/exams" />
+            {/* Arrow, heading and step count on one line.
 
+                The arrow and the counter used to hold down a 44pt row with
+                nothing between them, and the heading started under all of it.
+                They fit either side of the heading, which is a row of the
+                screen given back to the levels. */}
             <StepHeader
-              /* A chip now, not a second headline, so it says what it is: a
-                 note about the answer already given. "Great! … 🎉" was a
-                 celebration of tapping two cards, shouting over the question
-                 underneath it. */
-              eyebrow={
-                hi
-                  ? exams.length === 1
-                    ? '1 परीक्षा चुनी गई'
-                    : `${exams.length} परीक्षाएँ चुनी गईं`
-                  : `${exams.length} exam${exams.length === 1 ? '' : 's'} selected`
-              }
               /* "Select Your Level / Target" wrapped onto two lines and the
-                 Hindi never carried the second half anyway. The subtitle
-                 still says target, where there is room to say it. */
+                 Hindi never carried the second half anyway. */
               title={hi ? 'अपना स्तर चुनें' : 'Select Your Level'}
-              subtitle={
-                hi
-                  ? 'चुनी गई परीक्षाओं में आप जिस स्तर की तैयारी कर रहे हैं, वह चुनें।'
-                  : 'Choose the level or target you are preparing for in the selected exams.'
-              }
+              leading={<BackButton fallback="/onboarding/exams" />}
+              trailing={<StepRail step={2} />}
+              /* No subtitle. "For the exams you just chose" restated the strip
+                 of exam marks directly underneath it, which shows the same
+                 thing and names them. */
             />
+
+            {/* Under the heading, not beside the arrow. It is a note about the
+                answer already given, and above the question it was competing
+                with the heading for the top of the screen. */}
+            <View style={{ marginTop: 12, alignSelf: 'flex-start' }}>
+              <EyebrowPill
+                label={
+                  hi
+                    ? exams.length === 1
+                      ? '1 परीक्षा चुनी गई'
+                      : `${exams.length} परीक्षाएँ चुनी गईं`
+                    : `${exams.length} exam${exams.length === 1 ? '' : 's'} selected`
+                }
+              />
+            </View>
 
             <ChosenExams items={strip} />
 
             {/* The heading above the list said "Select Level / Target" under a
                 title that already said "Select Your Level / Target". One
                 question, asked once. */}
-            <View style={{ marginTop: 24, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {/*
+              One card per row.
+
+              Two columns gave each card about 138pt of text width, and no size
+              above the 12pt floor fits "Trained Graduate Teacher" on one line
+              in 138pt — it broke to three. Full width fits every name on one
+              line at a comfortable size and leaves room for a bigger book
+              beside it, which is what the two-column grid was really costing.
+            */}
+            {/* Well clear of the exam strip. The first card started 16 under
+                it — the same gap the cards keep between themselves — so the
+                strip read as the top card of the list rather than as the exams
+                the list is for. The break is what separates the two. */}
+            <View style={{ marginTop: 52, gap: 10 }}>
               {levels.map((level) => {
                 const on = chosen.has(level.id);
+                /*
+                 * The line under the name.
+                 *
+                 * Usually the class range, which is what actually tells PRT
+                 * from TGT. "Other" has no range, and without one it was the
+                 * only card of the four showing a single line — so it falls
+                 * back to what its full name adds. That name leads with the
+                 * card's own word ("Other / Non-Teaching Posts"), and
+                 * repeating it under itself says nothing, so the lead comes
+                 * off.
+                 */
+                const full = t(level.fullName, lang);
+                const lead = `${level.name} / `;
+                const detail = level.classes
+                  ? t(level.classes, lang)
+                  : full.startsWith(lead)
+                    ? full.slice(lead.length)
+                    : full;
                 return (
-                  <View key={level.id} style={{ width: gridItemWidth(r, 2, 12) }}>
-                    <Pressable
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: on }}
-                      onPress={() => toggle(level.id)}
+                  <Pressable
+                    key={level.id}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: on }}
+                    onPress={() => toggle(level.id)}
+                    /* The card answers the tap before the state does. Without
+                       it a press on a card that is already chosen looks like
+                       nothing happened at all. */
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                      borderRadius: theme.radius.card,
+                      borderWidth: 1,
+                      padding: 10,
+                      /* Level with each other. The two names that wrap to a
+                         second line came out 3pt taller than the two that do
+                         not, which down a list of four reads as a wobble
+                         rather than as a set. Measured, not guessed. */
+                      minHeight: 85,
+                      borderColor: on ? VIOLET : '#F1EEFC',
+                      backgroundColor: on ? PICKED_BG : '#fff',
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                      ...(on ? theme.shadow.picked : theme.shadow.card),
+                    })}
+                  >
+                    <View
                       style={{
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        padding: 14,
-                        minHeight: 176,
-                        borderColor: on ? VIOLET : LINE,
-                        backgroundColor: on ? PICKED_BG : '#fff',
+                        height: 60,
+                        width: 60,
+                        borderRadius: theme.radius.md,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#F3F0FE',
                       }}
                     >
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <LevelMark levelId={level.id} color={level.color} size={54} />
-                        <CheckDot on={on} size={20} />
-                      </View>
+                      <LevelMark levelId={level.id} color={level.color} size={52} />
+                    </View>
+
+                    <View style={{ flex: 1, minWidth: 0, paddingRight: 30 }}>
+                      {/*
+                        The acronym is the name.
+
+                        The card carried both — "Primary Teacher" over "PRT" —
+                        and the full form was the longer, quieter half of a
+                        pair that says one thing. PRT, TGT and PGT are what
+                        every notice, every syllabus and every aspirant calls
+                        these, so the card says that and gives it the size.
+                        "Other" is not an acronym; it stands as its own word.
+                      */}
                       <Text
+                        numberOfLines={1}
                         style={{
-                          marginTop: 10,
-                          fontSize: 18,
-                          fontFamily: theme.family.display,
-                          color: INK,
+                          fontSize: 26,
+                          lineHeight: 32,
+                          letterSpacing: 0.3,
+                          fontFamily: theme.family.displayBold,
+                          /* Its own book's colour, so the letters and the
+                             picture beside them agree. */
+                          color: LEVEL_ART_COLOR[level.id] ?? INK,
                         }}
                       >
-                        {level.name}
+                        {level.name.length <= 3 ? level.name.toUpperCase() : level.name}
                       </Text>
-                      <Text
-                        style={{
-                          marginTop: 3,
-                          fontSize: 14,
-                          lineHeight: 19,
-                          fontFamily: theme.family.body,
-                          color: MUTED,
-                        }}
-                      >
-                        {t(level.fullName, lang)}
-                        {level.classes ? `\n(${t(level.classes, lang)})` : ''}
-                      </Text>
-                    </Pressable>
-                  </View>
+                      {detail ? (
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            marginTop: 1,
+                            fontSize: 14,
+                            lineHeight: 19,
+                            letterSpacing: 0.2,
+                            fontFamily: theme.family.bodySemi,
+                            color: '#8B91AD',
+                          }}
+                        >
+                          {detail}
+                        </Text>
+                      ) : null}
+                    </View>
+
+                    {/* Out of the flow, in the corner. In the row it cost the
+                        name 38pt of width, which is exactly what turned
+                        "Trained Graduate Teacher" into an ellipsis. */}
+                    <View
+                      style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: 0,
+                        bottom: 0,
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <CheckDot on={on} size={22} />
+                    </View>
+                  </Pressable>
                 );
               })}
             </View>
 
             <Tip>
-              {hi
-                ? 'आप बाद में प्रोफ़ाइल सेटिंग्स से किसी भी परीक्षा के लिए स्तर बदल या जोड़ सकते हैं।'
-                : 'You can change or add more levels for any exam later from your profile settings.'}
+              {/* It said "profile settings", and there is nothing there to
+                  change: the control is "Change Selections" on the home
+                  screen. A tip that sends you to the wrong screen is worse
+                  than no tip. */}
+              {hi ? 'बाद में होम स्क्रीन से बदल सकते हैं।' : 'You can change this later from Home.'}
             </Tip>
           </View>
         </ScrollView>

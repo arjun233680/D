@@ -64,6 +64,21 @@ const SUBJECT_ART: Record<string, number> = {
 };
 
 /** `other` is a typographic ellipsis, which has no artwork; it draws instead. */
+/**
+ * The colour each level's art is actually painted in.
+ *
+ * Sampled off the PNGs rather than guessed, and deliberately not the `color`
+ * on the level row — that one has PRT green while the art is a blue "abc"
+ * tile, so type tinted from it sat next to a picture it did not match. Each is
+ * the art's dominant hue taken a couple of steps darker, because the tones
+ * that read well as a 60pt illustration are too light to read as type.
+ */
+export const LEVEL_ART_COLOR: Record<string, string> = {
+  prt: '#2E7FE0',
+  tgt: '#1596C4',
+  pgt: '#C24E22',
+};
+
 const LEVEL_ART: Record<string, number> = {
   prt: require('../assets/level-art/prt.png'),
   pgt: require('../assets/level-art/pgt.png'),
