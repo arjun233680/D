@@ -219,10 +219,6 @@ export default function DashboardScreen() {
     return <StepLoading label={hi ? 'लाया जा रहा है…' : 'Loading…'} />;
   }
 
-  // Four snapshot tiles across, on a phone too. Two per row made the section
-  // twice as tall to say four short numbers, and a number with a one-word
-  // label does not need half a screen to be legible.
-  const tileW = gridItemWidth(r, 4, 8);
 
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
@@ -508,42 +504,94 @@ export default function DashboardScreen() {
             <View style={{ marginTop: 24 }}>
               <SectionTitle icon="chart" text={hi ? 'आज का सारांश' : "Today's Snapshot"} />
 
-              {/* Four tiles, as the design lays them out. Two of them have a
-                  source and two do not; all four are here so the row is the row
-                  from the picture, and the two without one read zero. */}
-              <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <StatTile
-                  icon="⏱️"
-                  tintColor="#e8f7ee"
-                  label={hi ? 'समय' : 'Time'}
-                  value={hi ? '0 मिनट' : '0 min'}
-                  measured={false}
-                  width={tileW}
-                />
-                <StatTile
-                  icon="🎯"
-                  tintColor="#fdeaf3"
-                  label={hi ? 'हल किए' : 'Solved'}
-                  value={String(solved)}
-                  measured
-                  width={tileW}
-                />
-                <StatTile
-                  icon="📖"
-                  tintColor="#efeafe"
-                  label={hi ? 'विषय' : 'Topics'}
-                  value="0"
-                  measured={false}
-                  width={tileW}
-                />
-                <StatTile
-                  icon="🔥"
-                  tintColor="#fff1e6"
-                  label={hi ? 'श्रृंखला' : 'Streak'}
-                  value={hi ? `${streak} दिन` : `${streak} day${streak === 1 ? '' : 's'}`}
-                  measured
-                  width={tileW}
-                />
+              {/*
+                One card, four columns.
+                
+                Four separate tiles each carried a 30pt icon disc, a value and a
+                label, and stood 105pt tall to report four numbers that are all
+                currently zero. They are one strip now, split by hairlines —
+                same four facts, a third of the height, and it reads as one
+                thing rather than four cards that happen to be adjacent.
+              */}
+              <View
+                style={{
+                  marginTop: 12,
+                  flexDirection: 'row',
+                  alignItems: 'stretch',
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: '#F1EEFC',
+                  backgroundColor: '#fff',
+                  paddingVertical: 12,
+                  ...theme.shadow.card,
+                }}
+              >
+                {[
+                  {
+                    icon: '⏱️',
+                    label: hi ? 'समय' : 'Time',
+                    value: hi ? '0 मिनट' : '0 min',
+                    measured: false,
+                  },
+                  {
+                    icon: '🎯',
+                    label: hi ? 'हल किए' : 'Solved',
+                    value: String(solved),
+                    measured: true,
+                  },
+                  {
+                    icon: '📖',
+                    label: hi ? 'विषय' : 'Topics',
+                    value: '0',
+                    measured: false,
+                  },
+                  {
+                    icon: '🔥',
+                    label: hi ? 'श्रृंखला' : 'Streak',
+                    value: hi ? `${streak} दिन` : `${streak} day${streak === 1 ? '' : 's'}`,
+                    measured: true,
+                  },
+                ].map((stat, i) => (
+                  <View
+                    key={stat.label}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      alignItems: 'center',
+                      paddingHorizontal: 4,
+                      // A hairline between, not around: the card is the border.
+                      borderLeftWidth: i === 0 ? 0 : 1,
+                      borderLeftColor: '#F4F2FC',
+                    }}
+                  >
+                    <Text style={{ fontSize: 14 }}>{stat.icon}</Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        marginTop: 3,
+                        fontSize: 16,
+                        fontFamily: theme.family.displayBold,
+                        /* Greyed where the number is a placeholder rather than
+                           a measurement — see the note at the head of this
+                           file. */
+                        color: stat.measured ? INK : '#a8a3bd',
+                      }}
+                    >
+                      {stat.value}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        marginTop: 1,
+                        fontSize: 12,
+                        fontFamily: theme.family.body,
+                        color: MUTED,
+                      }}
+                    >
+                      {stat.label}
+                    </Text>
+                  </View>
+                ))}
               </View>
 
               <Text
@@ -824,77 +872,6 @@ function SectionTitle({ icon, text }: { icon: IconName; text: string }) {
   );
 }
 
-/**
- * One snapshot tile.
- *
- * `measured` is not decoration. A tile whose number nothing counts is drawn at
- * the same size and in the same place as the others — the design's row stays
- * the design's row — but its value is greyed, so the eye can tell a real zero
- * from a zero that only means "not recorded yet" without reading the footnote.
- */
-function StatTile({
-  icon,
-  tintColor,
-  label,
-  value,
-  measured,
-  width,
-}: {
-  icon: string;
-  tintColor: string;
-  label: string;
-  value: string;
-  measured: boolean;
-  width: number;
-}) {
-  return (
-    <View
-      style={{
-        width,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: LINE,
-        backgroundColor: '#fff',
-        padding: 14,
-      }}
-    >
-      <View
-        style={{
-          height: 30,
-          width: 30,
-          borderRadius: 12,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: tintColor,
-        }}
-      >
-        <Text style={{ fontSize: 15 }}>{icon}</Text>
-      </View>
-      <Text
-        style={{
-          marginTop: 8,
-          fontSize: 16,
-          fontFamily: theme.family.displayBold,
-          color: measured ? INK : '#b8b3c9',
-        }}
-      >
-        {value}
-      </Text>
-      <Text
-        numberOfLines={2}
-        style={{
-          textAlign: 'center',
-          fontSize: 12,
-          lineHeight: 15,
-          fontFamily: theme.family.body,
-          color: MUTED,
-        }}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
 
 function ArrowGlyph({ size = 14 }: { size?: number }) {
   return (
