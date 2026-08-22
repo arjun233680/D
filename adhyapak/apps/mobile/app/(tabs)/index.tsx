@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import {
   currentStreak,
@@ -24,7 +24,17 @@ import {
 } from '@/lib/learner';
 import { useStore } from '@/lib/store';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
-import { CANVAS, FAINT, INK, LINE, MUTED, StepLoading, VIOLET, tint } from '@/components/onboarding';
+import {
+  CANVAS,
+  FAINT,
+  INK,
+  LINE,
+  MUTED,
+  StepLoading,
+  Tick,
+  VIOLET,
+  tint,
+} from '@/components/onboarding';
 import { Icon, type IconName } from '@/components/icons';
 
 /**
@@ -110,10 +120,21 @@ export default function DashboardScreen() {
   const { lang, user, results, ready } = useStore();
   const hi = lang === 'hi';
   const r = useResponsive();
+  const insets = useSafeAreaInsets();
 
   const [selections, setSelections] = useState<Selection[] | null>(null);
   /** The selection grid's real width, measured on layout. */
   const [examsOpen, setExamsOpen] = useState(false);
+  /**
+   * Which selections are switched on.
+   *
+   * Keyed "examId::levelId". Everything a learner has chosen starts on — they
+   * chose it — and the sheet is where they narrow the app down to one exam for
+   * a while without unpicking the rest.
+   */
+  const [active, setActive] = useState<Set<string>>(new Set());
+  /** The sheet's own working copy, so closing without applying changes nothing. */
+  const [draft, setDraft] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let live = true;
@@ -182,6 +203,9 @@ export default function DashboardScreen() {
       }
 
       setSelections(built);
+      const all = new Set(built.map((b) => `${b.exam?.id ?? 'x'}::${b.level.id}`));
+      setActive(all);
+      setDraft(all);
     })();
     return () => {
       live = false;
@@ -254,13 +278,13 @@ export default function DashboardScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityState={{ expanded: examsOpen }}
-                    onPress={() => setExamsOpen((open) => !open)}
+                    onPress={() => setExamsOpen(true)}
                     style={{
                       flexShrink: 1,
                       minHeight: 44,
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 6,
+                      gap: 8,
                       paddingHorizontal: 12,
                       borderRadius: 999,
                       backgroundColor: '#efeafe',
@@ -274,13 +298,31 @@ export default function DashboardScreen() {
                         color: VIOLET,
                       }}
                     >
-                      {hi ? 'मेरी परीक्षाएँ' : 'My exams'}
+                      {hi ? 'मेरी परीक्षाएँ' : 'My Exams'}
                     </Text>
-                    {/* Points down when there is more to see, up when it is
-                        already open — the one job a caret has. */}
+                    {/* How many are switched on. The pill cannot list four
+                        selections, and a count is the part you would have
+                        counted anyway. */}
+                    <View
+                      style={{
+                        minWidth: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingHorizontal: 6,
+                        backgroundColor: VIOLET,
+                      }}
+                    >
+                      <Text
+                        style={{ fontSize: 12, fontFamily: theme.family.displayBold, color: '#fff' }}
+                      >
+                        {active.size}
+                      </Text>
+                    </View>
                     <Svg width={12} height={12} viewBox="0 0 20 20" fill="none">
                       <Path
-                        d={examsOpen ? 'M5 12.5 10 7.5l5 5' : 'M5 7.5 10 12.5l5-5'}
+                        d="M5 7.5 10 12.5l5-5"
                         stroke={VIOLET}
                         strokeWidth={2.2}
                         strokeLinecap="round"
@@ -337,107 +379,6 @@ export default function DashboardScreen() {
                   </IconButton>
                 </View>
               </View>
-
-              {/* The selections, where you switch between them. Absolute so
-                  opening it lifts nothing below — the dashboard does not jump
-                  when a menu appears over it. */}
-              {examsOpen ? (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 52,
-                    left: 0,
-                    right: 0,
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: '#F1EEFC',
-                    backgroundColor: '#fff',
-                    paddingVertical: 6,
-                    ...theme.shadow.card,
-                  }}
-                >
-                  {selections.map((sel) => {
-                    const accent = sel.subject?.color ?? sel.level.color;
-                    const levelWord = sel.level.officialNames?.length
-                      ? t(sel.level.officialNames[0], lang)
-                      : sel.level.name;
-                    return (
-                      <Pressable
-                        key={`${sel.exam?.id ?? 'x'}-${sel.level.id}`}
-                        accessibilityRole="button"
-                        onPress={() => {
-                          setExamsOpen(false);
-                          router.push(`/prep?level=${sel.level.id}`);
-                        }}
-                        style={{
-                          minHeight: 46,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 8,
-                          paddingHorizontal: 14,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontFamily: theme.family.displayBold,
-                            color: sel.exam?.color ?? VIOLET,
-                          }}
-                        >
-                          {sel.exam?.shortName ?? '—'}
-                        </Text>
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            fontSize: 15,
-                            fontFamily: theme.family.displayBold,
-                            color: INK,
-                          }}
-                        >
-                          {levelWord}
-                        </Text>
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            flex: 1,
-                            textAlign: 'right',
-                            fontSize: 13,
-                            fontFamily: theme.family.body,
-                            color: accent,
-                          }}
-                        >
-                          {sel.subject ? t(sel.subject.name, lang) : t(sel.level.fullName, lang)}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => {
-                      setExamsOpen(false);
-                      router.push('/onboarding/exams?change=1');
-                    }}
-                    style={{
-                      minHeight: 46,
-                      justifyContent: 'center',
-                      paddingHorizontal: 14,
-                      borderTopWidth: 1,
-                      borderTopColor: '#F4F2FC',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontFamily: theme.family.displayBold,
-                        color: VIOLET,
-                      }}
-                    >
-                      ✎ {hi ? 'बदलें' : 'Change Selections'}
-                    </Text>
-                  </Pressable>
-                </View>
-              ) : null}
             </View>
 
             {/* ----------------------------------------------- quick access */}
@@ -622,6 +563,209 @@ export default function DashboardScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/*
+        The exam sheet.
+        
+        A dropdown hanging off the pill could hold four rows and not much more;
+        a learner with six exams needs a list that can scroll, a way to add
+        another, and somewhere for a control that applies. It comes up from the
+        bottom, which is also where a thumb is.
+      */}
+      {examsOpen ? (
+        <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={hi ? 'बंद करें' : 'Close'}
+            onPress={() => {
+              // Closing on the backdrop discards: the draft is only kept by
+              // the button that says it applies.
+              setDraft(new Set(active));
+              setExamsOpen(false);
+            }}
+            style={{ flex: 1, backgroundColor: '#1e1b4b55' }}
+          />
+
+          <View
+            style={{
+              width: '100%',
+              maxWidth: r.maxWidth,
+              alignSelf: 'center',
+              borderTopLeftRadius: 22,
+              borderTopRightRadius: 22,
+              backgroundColor: '#fff',
+              paddingBottom: 14 + insets.bottom,
+            }}
+          >
+            {/* The grabber, which is how a sheet says it is a sheet. */}
+            <View
+              style={{
+                alignSelf: 'center',
+                marginTop: 10,
+                height: 5,
+                width: 44,
+                borderRadius: 999,
+                backgroundColor: '#e6e2f4',
+              }}
+            />
+
+            <View
+              style={{
+                marginTop: 12,
+                paddingHorizontal: 16,
+                paddingBottom: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <Text
+                style={{ fontSize: 17, fontFamily: theme.family.displayBold, color: INK }}
+              >
+                {hi ? 'आपकी चुनी परीक्षाएँ' : 'Your Enrolled Exams'}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setExamsOpen(false);
+                  router.push('/onboarding/exams?change=1');
+                }}
+                style={{ minHeight: 40, justifyContent: 'center' }}
+              >
+                <Text
+                  style={{ fontSize: 14, fontFamily: theme.family.displayBold, color: VIOLET }}
+                >
+                  + {hi ? 'और जोड़ें' : 'Add More'}
+                </Text>
+              </Pressable>
+            </View>
+
+            <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+              {selections.map((sel) => {
+                const key = `${sel.exam?.id ?? 'x'}::${sel.level.id}`;
+                const on = draft.has(key);
+                const levelWord = sel.level.officialNames?.length
+                  ? t(sel.level.officialNames[0], lang)
+                  : sel.level.name;
+                return (
+                  <Pressable
+                    key={key}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: on }}
+                    onPress={() =>
+                      setDraft((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(key)) next.delete(key);
+                        else next.add(key);
+                        return next;
+                      })
+                    }
+                    style={{
+                      minHeight: 56,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                      paddingHorizontal: 16,
+                      borderTopWidth: 1,
+                      borderTopColor: '#F4F2FC',
+                    }}
+                  >
+                    <View
+                      style={{
+                        height: 22,
+                        width: 22,
+                        borderRadius: 6,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderWidth: on ? 0 : 1.6,
+                        borderColor: '#cfc8ee',
+                        backgroundColor: on ? VIOLET : 'transparent',
+                      }}
+                    >
+                      {on ? <Tick small /> : null}
+                    </View>
+
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={{ fontSize: 15, fontFamily: theme.family.displayBold, color: INK }}
+                      >
+                        {`${sel.exam?.shortName ?? '—'} ${levelWord}`}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          marginTop: 1,
+                          fontSize: 13,
+                          fontFamily: theme.family.body,
+                          color: MUTED,
+                        }}
+                      >
+                        {sel.subject ? t(sel.subject.name, lang) : t(sel.level.fullName, lang)}
+                      </Text>
+                    </View>
+
+                    {/* Straight to that selection's preparation, without
+                        disturbing the tick beside it. */}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={hi ? 'खोलें' : 'Open'}
+                      onPress={() => {
+                        setExamsOpen(false);
+                        router.push(`/prep?level=${sel.level.id}`);
+                      }}
+                      style={{
+                        height: 32,
+                        width: 32,
+                        borderRadius: 16,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Svg width={16} height={16} viewBox="0 0 20 20" fill="none">
+                        <Path
+                          d="M7.5 5 12.5 10l-5 5"
+                          stroke={MUTED}
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    </Pressable>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: draft.size === 0 }}
+                disabled={draft.size === 0}
+                onPress={() => {
+                  setActive(new Set(draft));
+                  setExamsOpen(false);
+                }}
+                style={{
+                  minHeight: 52,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: draft.size === 0 ? 0.45 : 1,
+                  backgroundColor: VIOLET,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 16, fontFamily: theme.family.displayBold, color: '#fff' }}
+                >
+                  {hi ? 'लागू करें' : 'Apply Filter'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
