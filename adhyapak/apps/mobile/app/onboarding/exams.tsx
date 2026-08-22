@@ -27,6 +27,7 @@ import {
   CANVAS,
   CheckDot,
   BackButton,
+  StepProgress,
   ContinueBar,
   ErrorNote,
   GradientFill,
@@ -236,6 +237,13 @@ export default function ChooseExamScreen() {
                 grid uses better. The back arrow — only there when this step
                 was reached to change an answer — sits beside the heading for
                 the same reason, rather than on a row of its own. */}
+            {/* First of three, at the least — a learner who picks two levels
+                that each need a subject will see more, and the subject step
+                counts those honestly once it knows them. */}
+            <View style={{ marginTop: 4, marginBottom: 10, alignItems: 'flex-end' }}>
+              <StepProgress done={1} total={3} width={72} />
+            </View>
+
             <StepHeader
               leading={changing ? <BackButton fallback="/" /> : undefined}
               title={hi ? 'अपनी परीक्षा चुनें' : 'Choose Your Exam'}

@@ -28,12 +28,14 @@ import {
   ContinueBar,
   ErrorNote,
   INK,
+  MUTED,
   PICKED_BG,
   StepHeader,
   StepLoading,
   BackButton,
-  EyebrowPill,
-  StepRail,
+  StepProgress,
+  BooksArt,
+  tint,
   Tip,
   VIOLET,
 } from '@/components/onboarding';
@@ -180,37 +182,52 @@ export default function ChooseLevelScreen() {
               paddingTop: 8,
             }}
           >
-            {/* Arrow, heading and step count on one line.
+            {/* One row: where you came from, what the last step settled, and
+                how far through the three this is — with the app's mark under
+                it on the same side, so the right of the row reads top to
+                bottom as progress then brand. */}
+            <View
+              style={{
+                minHeight: 44,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <BackButton fallback="/onboarding/exams" />
+              {/* No pill behind it. The tinted plate made a line of text look
+                  like a control, and its padding was the difference between
+                  the line fitting this row and the 🎉 dropping to a second
+                  one. One line, kept to one line. */}
+              <Text
+                numberOfLines={1}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: 13,
+                  lineHeight: 18,
+                  fontFamily: theme.family.displayBold,
+                  color: VIOLET,
+                }}
+              >
+                {hi
+                  ? exams.length === 1
+                    ? 'बढ़िया! 1 परीक्षा चुनी गई 🎉'
+                    : `बढ़िया! ${exams.length} परीक्षाएँ चुनी गईं 🎉`
+                  : `Great! ${exams.length} exam${exams.length === 1 ? '' : 's'} selected 🎉`}
+              </Text>
+              <StepProgress done={2} total={3} width={72} />
+            </View>
 
-                The arrow and the counter used to hold down a 44pt row with
-                nothing between them, and the heading started under all of it.
-                They fit either side of the heading, which is a row of the
-                screen given back to the levels. */}
             <StepHeader
+              /* The mark rides the heading's own line. On a row of its own it
+                 was 72pt of height spent on decoration, which is what pushed
+                 the tip under the button. */
+              trailing={<BooksArt width={100} />}
               /* "Select Your Level / Target" wrapped onto two lines and the
                  Hindi never carried the second half anyway. */
               title={hi ? 'अपना स्तर चुनें' : 'Select Your Level'}
-              leading={<BackButton fallback="/onboarding/exams" />}
-              trailing={<StepRail step={2} />}
-              /* No subtitle. "For the exams you just chose" restated the strip
-                 of exam marks directly underneath it, which shows the same
-                 thing and names them. */
             />
-
-            {/* Under the heading, not beside the arrow. It is a note about the
-                answer already given, and above the question it was competing
-                with the heading for the top of the screen. */}
-            <View style={{ marginTop: 12, alignSelf: 'flex-start' }}>
-              <EyebrowPill
-                label={
-                  hi
-                    ? exams.length === 1
-                      ? '1 परीक्षा चुनी गई'
-                      : `${exams.length} परीक्षाएँ चुनी गईं`
-                    : `${exams.length} exam${exams.length === 1 ? '' : 's'} selected`
-                }
-              />
-            </View>
 
             <ChosenExams items={strip} />
 
@@ -226,126 +243,120 @@ export default function ChooseLevelScreen() {
               line at a comfortable size and leaves room for a bigger book
               beside it, which is what the two-column grid was really costing.
             */}
-            {/* Well clear of the exam strip. The first card started 16 under
-                it — the same gap the cards keep between themselves — so the
-                strip read as the top card of the list rather than as the exams
-                the list is for. The break is what separates the two. */}
-            <View style={{ marginTop: 52, gap: 10 }}>
+            {/* A label for the list, in the design's own words. It does
+                echo the heading above it; the mockup carries both. */}
+            <Text
+              style={{
+                marginTop: 34,
+                fontSize: 14,
+                letterSpacing: 0.2,
+                fontFamily: theme.family.displayBold,
+                color: VIOLET,
+              }}
+            >
+              {hi ? 'स्तर / लक्ष्य चुनें' : 'Select Level / Target'}
+            </Text>
+
+            <View style={{ marginTop: 12, gap: 10 }}>
               {levels.map((level) => {
                 const on = chosen.has(level.id);
-                /*
-                 * The line under the name.
-                 *
-                 * Usually the class range, which is what actually tells PRT
-                 * from TGT. "Other" has no range, and without one it was the
-                 * only card of the four showing a single line — so it falls
-                 * back to what its full name adds. That name leads with the
-                 * card's own word ("Other / Non-Teaching Posts"), and
-                 * repeating it under itself says nothing, so the lead comes
-                 * off.
-                 */
-                const full = t(level.fullName, lang);
-                const lead = `${level.name} / `;
-                const detail = level.classes
-                  ? t(level.classes, lang)
-                  : full.startsWith(lead)
-                    ? full.slice(lead.length)
-                    : full;
                 return (
                   <Pressable
                     key={level.id}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: on }}
                     onPress={() => toggle(level.id)}
-                    /* The card answers the tap before the state does. Without
-                       it a press on a card that is already chosen looks like
-                       nothing happened at all. */
                     style={({ pressed }) => ({
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 14,
                       borderRadius: theme.radius.card,
                       borderWidth: 1,
-                      padding: 10,
-                      /* Level with each other. The two names that wrap to a
-                         second line came out 3pt taller than the two that do
-                         not, which down a list of four reads as a wobble
-                         rather than as a set. Measured, not guessed. */
-                      minHeight: 85,
+                      paddingVertical: 12,
+                      paddingHorizontal: 14,
                       borderColor: on ? VIOLET : '#F1EEFC',
                       backgroundColor: on ? PICKED_BG : '#fff',
                       transform: [{ scale: pressed ? 0.98 : 1 }],
                       ...(on ? theme.shadow.picked : theme.shadow.card),
                     })}
                   >
+                    {/* A disc, not a rounded square: the design's marks sit in
+                        circles tinted from the level's own colour. */}
                     <View
                       style={{
-                        height: 60,
-                        width: 60,
-                        borderRadius: theme.radius.md,
+                        height: 52,
+                        width: 52,
+                        borderRadius: 26,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: '#F3F0FE',
+                        backgroundColor: tint(level.color),
                       }}
                     >
-                      <LevelMark levelId={level.id} color={level.color} size={52} />
+                      <LevelMark levelId={level.id} color={level.color} size={32} />
                     </View>
 
-                    <View style={{ flex: 1, minWidth: 0, paddingRight: 30 }}>
-                      {/*
-                        The acronym is the name.
-
-                        The card carried both — "Primary Teacher" over "PRT" —
-                        and the full form was the longer, quieter half of a
-                        pair that says one thing. PRT, TGT and PGT are what
-                        every notice, every syllabus and every aspirant calls
-                        these, so the card says that and gives it the size.
-                        "Other" is not an acronym; it stands as its own word.
-                      */}
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <Text
                         numberOfLines={1}
                         style={{
-                          fontSize: 26,
-                          lineHeight: 32,
-                          letterSpacing: 0.3,
+                          fontSize: 17,
+                          lineHeight: 22,
                           fontFamily: theme.family.displayBold,
-                          /* Its own book's colour, so the letters and the
-                             picture beside them agree. */
-                          color: LEVEL_ART_COLOR[level.id] ?? INK,
+                          color: INK,
                         }}
                       >
-                        {level.name.length <= 3 ? level.name.toUpperCase() : level.name}
+                        {level.name}
                       </Text>
-                      {detail ? (
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          marginTop: 1,
+                          fontSize: 14,
+                          lineHeight: 19,
+                          fontFamily: theme.family.body,
+                          color: MUTED,
+                        }}
+                      >
+                        {t(level.fullName, lang)}
+                      </Text>
+                      {level.classes ? (
                         <Text
                           numberOfLines={1}
                           style={{
-                            marginTop: 1,
-                            fontSize: 14,
-                            lineHeight: 19,
-                            letterSpacing: 0.2,
-                            fontFamily: theme.family.bodySemi,
-                            color: '#8B91AD',
+                            fontSize: 13,
+                            lineHeight: 18,
+                            fontFamily: theme.family.body,
+                            color: MUTED,
                           }}
                         >
-                          {detail}
+                          {`(${t(level.classes, lang)})`}
                         </Text>
                       ) : null}
                     </View>
 
-                    {/* Out of the flow, in the corner. In the row it cost the
-                        name 38pt of width, which is exactly what turned
-                        "Trained Graduate Teacher" into an ellipsis. */}
+                    {/* A radio, which is what the design draws — a ring that
+                        takes a filled core when chosen, rather than a tick. */}
                     <View
                       style={{
-                        position: 'absolute',
-                        right: 12,
-                        top: 0,
-                        bottom: 0,
+                        height: 22,
+                        width: 22,
+                        borderRadius: 11,
+                        borderWidth: on ? 2 : 1.5,
+                        borderColor: on ? VIOLET : '#D8D3EE',
+                        alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <CheckDot on={on} size={22} />
+                      {on ? (
+                        <View
+                          style={{
+                            height: 11,
+                            width: 11,
+                            borderRadius: 6,
+                            backgroundColor: VIOLET,
+                          }}
+                        />
+                      ) : null}
                     </View>
                   </Pressable>
                 );

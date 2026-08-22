@@ -1,4 +1,5 @@
 import { Image, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { Icon, subjectIcon, type IconName } from '@/components/icons';
 
 /**
@@ -135,5 +136,47 @@ export function LevelMark({
   color: string;
   size?: number;
 }) {
+  /*
+   * PGT is drawn; the rest are painted.
+   *
+   * Its art file is a book, and a book is what TGT's file is too — so the two
+   * senior levels arrived as the same object in two colours and the design's
+   * figure never appeared. A post-graduate teacher is a person in a cap, which
+   * is what this draws, in the orange the rest of that card already uses.
+   */
+  if (levelId === 'pgt') return <GraduateMark color={PGT_COLOR} size={size} />;
   return <Mark art={LEVEL_ART[levelId]} icon="plan" color={color} size={size} />;
+}
+
+/**
+ * Orange, and a cleaner one than the level row carries.
+ *
+ * PRT and TGT both arrive blue, so this is the one mark with room to be warm,
+ * and warm is what tells the senior level apart at a glance. The row's own
+ * `color` is a muddier brick (#D86030) that was mixed for a painted book, not
+ * for a flat figure; this is the same hue with the grey taken out, and taken
+ * light — the figure is a solid silhouette, so a saturated orange at that size
+ * shouted over the two blue marks it sits between.
+ */
+const PGT_COLOR = '#FBA24A';
+
+/** A figure in a mortarboard: the mark for the post-graduate level. */
+function GraduateMark({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      {/* Shoulders. */}
+      <Path
+        d="M9 41c0-7.7 6.7-13 15-13s15 5.3 15 13v1H9v-1Z"
+        fill={color}
+      />
+      <Path d="M20 30h8v6a4 4 0 0 1-8 0v-6Z" fill={color} opacity={0.55} />
+      {/* Head. */}
+      <Circle cx={24} cy={21} r={8} fill={color} opacity={0.85} />
+      {/* The cap, and its tassel. */}
+      <Path d="M24 5 42 13 24 21 6 13l18-8Z" fill={color} />
+      <Path d="M24 5 42 13 24 21 24 5Z" fill="#000" opacity={0.14} />
+      <Path d="M38 15v8" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Circle cx={38} cy={25} r={2.6} fill={color} />
+    </Svg>
+  );
 }

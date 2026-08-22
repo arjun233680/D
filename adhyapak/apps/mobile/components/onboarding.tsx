@@ -187,103 +187,67 @@ export function EyebrowPill({ label }: { label: string }) {
   );
 }
 
-export function StepHeaderRow({
-  step,
-  fallback,
-  back = true,
-  eyebrow,
-  lang = 'en',
-}: {
-  /** The rail names its current step, so it needs the learner's language. */
-  lang?: 'en' | 'hi';
-  /** Omitted on step 1, which has no rail to draw. */
-  step?: 1 | 2 | 3;
-  fallback: string;
-  /** Step 1 only shows a back arrow when it was reached to change an answer. */
-  back?: boolean;
-  /**
-   * The note about the answer already given, when it should ride this row.
-   *
-   * An arrow on the left and a rail on the right leave the middle of the row
-   * empty, and the chip was taking a line of its own underneath — so the
-   * screen spent two rows saying what fits comfortably on one, and the
-   * question got pushed further down for it.
-   */
-  eyebrow?: string;
-}) {
-  // Nothing to go back to and no rail to draw is step 1 arrived at fresh.
-  // Render nothing rather than an empty 44pt strip above the welcome.
-  if (!back && !step) return null;
-  return (
-    <View
-      style={{
-        minHeight: 44,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-      }}
-    >
-      {back ? <BackButton fallback={fallback} /> : <View style={{ width: 44 }} />}
-      {/* Takes the slack so the rail stays pinned right whether or not there
-          is a chip to show. */}
-      <View style={{ flex: 1, alignItems: 'flex-start' }}>
-        {eyebrow ? <EyebrowPill label={eyebrow} /> : null}
-      </View>
-      {step ? <StepRail step={step} lang={lang} /> : null}
-    </View>
-  );
-}
-
 /**
- * How far along you are: three segments, the one you are on drawn long.
+ * How far along you are: one bar across the top of the step.
  *
- * It was three 28pt circles carrying numbers and ticks, joined by rules — a
- * five-part diagram of a three-part journey, and the loudest thing on a screen
- * whose job is to ask one question. A progress rail only has to say "there are
- * three of these and you are on the second", which bars say quietly. The count
- * still reaches a screen reader, which the circles never told it.
+ * This has been four things, and the last three were all attempts to put it
+ * somewhere clever. Three anonymous bars in the header gave a proportion and
+ * no position. Naming the step fixed that and crowded the row. Moving it into
+ * the Continue button put the mark and the label in the same place, and they
+ * fought: a pale fill cannot carry white type, and dark type on a violet
+ * call-to-action is worse than either.
+ *
+ * So it is a plain bar, first thing on the screen, spanning the content — the
+ * one place nothing else wants and every reader looks first. The button goes
+ * back to being a button.
  */
-export function StepRail({ step }: { step: 1 | 2 | 3; lang?: 'en' | 'hi' }) {
+export function StepProgress({
+  done,
+  total,
+  width,
+}: {
+  /** Steps finished, counting the one on screen. */
+  done: number;
+  /** How many there are in all. */
+  total: number;
+  width?: number;
+}) {
   /*
-   * "2 / 3", and a track that is two thirds full.
+   * Not always three.
    *
-   * This has now been two things that were both too much for the corner of a
-   * header. Three anonymous bars gave a proportion and no position. Naming the
-   * current step fixed that and cost the width of a word — beside the "1 exam
-   * selected" chip on the same row, the two of them crowded each other, and
-   * the name only ever repeated the heading directly underneath it.
+   * Onboarding asks for exams, then levels, then a subject *per level* — and a
+   * learner who teaches both TGT and PGT answers the subject question twice,
+   * because the two lists barely overlap. Hard-coding three told that learner
+   * they were finished with a screen still to go.
    *
-   * A count says position and proportion in three characters, and at that
-   * width the type can be large enough to actually read.
+   * The subject step knows how many levels it has to get through, so it says
+   * so. The two steps before it cannot know yet — nobody has picked a level —
+   * and assume the common single-level case; being one screen optimistic at
+   * the start is a far smaller lie than being wrong at the end.
    */
+  const h = width ? 5 : 6;
+  const pct = total > 0 ? Math.min(1, Math.max(0, done / total)) : 0;
   return (
     <View
       accessibilityRole="progressbar"
-      accessibilityLabel={`Step ${step} of 3`}
-      accessibilityValue={{ min: 1, max: 3, now: step }}
-      style={{ alignItems: 'flex-end', gap: 5 }}
+      accessibilityLabel={`Step ${done} of ${total}`}
+      accessibilityValue={{ min: 0, max: total, now: done }}
+      style={{
+        height: h,
+        width,
+        borderRadius: 999,
+        backgroundColor: '#E9E3FB',
+        overflow: 'hidden',
+      }}
     >
-      <Text
+      <View
         style={{
-          fontSize: 14,
-          lineHeight: 17,
-          fontFamily: theme.family.displayBold,
-          color: VIOLET,
+          height: h,
+          width: `${pct * 100}%`,
+          borderRadius: 999,
+          backgroundColor: VIOLET,
         }}
-      >
-        {step}
-        <Text style={{ color: '#B9B0E4' }}>{` / 3`}</Text>
-      </Text>
-      <View style={{ height: 4, width: 42, borderRadius: 999, backgroundColor: '#E3DDF7' }}>
-        <View
-          style={{
-            height: 4,
-            width: 42 * (step / 3),
-            borderRadius: 999,
-            backgroundColor: VIOLET,
-          }}
-        />
-      </View>
+      />
     </View>
   );
 }
@@ -544,7 +508,6 @@ export function ContinueBar({
           >
             {label}
           </Text>
-          <Arrow />
         </Pressable>
       </View>
     </View>
@@ -581,10 +544,9 @@ export function ChosenExams({
    * thing to tap, so it reads as a line of marks and names.
    */
   return (
-    // Under the chip and still with it: the chip counts the exams and this
-    // names them, so they stay a pair — but not so tight that they stack into
-    // one label.
-    <View style={{ marginTop: 26 }}>
+    // Close under the heading it belongs to. 26 was set while a chip sat
+    // between the two and needed clearing; nothing is between them now.
+    <View style={{ marginTop: 12 }}>
       {title ? (
         <Text
           style={{
@@ -710,7 +672,10 @@ export function StepHeader({
     // With no chip above it the heading is the first thing on the screen, and
     // a 24pt gap under a bare back arrow is just blank canvas — it starts
     // close to the top instead, which is a row of exam cards earned back.
-    <View style={{ marginTop: eyebrow ? 24 : 6 }}>
+    // Tight under the row above. That row is the arrow, the note and the
+    // progress bar — chrome the heading follows directly, not a block it has
+    // to separate itself from.
+    <View style={{ marginTop: eyebrow ? 24 : 0 }}>
       {eyebrow ? <EyebrowPill label={eyebrow} /> : null}
       {leading || trailing ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
