@@ -6,8 +6,10 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import {
   currentStreak,
   listExams,
+  listExamLevelSubjects,
   listLevelSubjects,
   listLevels,
+  listLevelsForExams,
   nextOnboardingStep,
   t,
   theme,
@@ -137,29 +139,46 @@ export default function DashboardScreen() {
         router.replace('/onboarding/exams');
         return;
       }
-      const offers = await Promise.all(levelIds.map((id) => listLevelSubjects(id)));
-      if (!live) return;
-
       const mine = exams.filter((e) => examIds.includes(e.id));
-      // One card per level the learner sits, so PRT — which has no subject —
-      // still gets a line of its own rather than vanishing from the dashboard.
-      const built = levelIds
-        .map((levelId, i): Selection | undefined => {
-          const level = levels.find((l) => l.id === levelId);
-          if (!level) return undefined;
-          const pick = chosen.find((c) => c.levelId === levelId);
-          const subject = pick
-            ? offers.flat().find((o) => o.levelId === levelId && o.subjectId === pick.subjectId)
-            : undefined;
+      const myLevels = levels.filter((l) => levelIds.includes(l.id));
+
+      /*
+       * One card per exam-and-level pair, which is what the learner actually
+       * holds.
+       *
+       * It used to be one card per level, with an exam paired off by array
+       * index — the code said in as many words that this was a presentation
+       * choice rather than a claim, because the data could not say which exam
+       * a level belonged to. It can now: `learner_subjects` is keyed on the
+       * exam, and `exam_levels` says which exams run which levels. Somebody
+       * sitting CTET and HTET at both PRT and TGT has four answers and was
+       * being shown two, one of them stamped with the wrong exam.
+       */
+      const built: Selection[] = [];
+      for (const exam of mine) {
+        const runs = await listLevelsForExams([exam.id]);
+        if (!live) return;
+        for (const level of myLevels) {
+          const labelled = runs.find((l) => l.id === level.id);
+          if (!labelled) continue;
+          const pick = chosen.find((c) => c.examId === exam.id && c.levelId === level.id);
           /*
-           * The badge is an exam, and which one is a genuine ambiguity: the
-           * learner picked several and did not say which level belongs to
-           * which. Pairing them off in order is a presentation choice, not a
-           * claim — hence no attempt to look clever about it.
+           * The board's own list, not the generic one. `level_subjects.tgt`
+           * has no "Mathematics & Science", so looking a CTET answer up there
+           * found nothing and the card fell back to the level's full name —
+           * "Trained Graduate Teacher" where the learner had chosen a subject.
            */
-          return { level, subject, exam: mine[i % Math.max(mine.length, 1)] };
-        })
-        .filter((sel): sel is Selection => sel !== undefined);
+          const offers = pick
+            ? await listExamLevelSubjects(exam.id, level.id, level.teachingLevels)
+            : [];
+          if (!live) return;
+          built.push({
+            level: labelled,
+            subject: pick ? offers.find((o) => o.subjectId === pick.subjectId) : undefined,
+            exam,
+          });
+        }
+      }
 
       setSelections(built);
     })();
@@ -176,9 +195,10 @@ export default function DashboardScreen() {
   }
 
   // The mockup shows two selection cards side by side with the second clipped,
-  // which is what says "scrollable". Half the width plus a peek does that at
-  // any phone size, and settles once a tablet can hold two whole ones.
-  const selectionWidth = r.isPhone ? Math.min(r.width * 0.56, 260) : 300;
+  // which is what says "scrollable". The card reads across now rather than
+  // down — symbol, exam, level, subject on one line — so it needs more width
+  // and far less height than the stacked version it replaced.
+  const selectionWidth = r.isPhone ? Math.min(r.width * 0.78, 300) : 320;
   // Two snapshot tiles per row on a phone, four once there is room.
   const tileW = gridItemWidth(r, r.isPhone ? 2 : 4);
 
@@ -364,9 +384,16 @@ export default function DashboardScreen() {
               >
                 {selections.map((sel) => {
                   const accent = sel.subject?.color ?? sel.level.color;
+                  /* This board's own word for the level — CTET's "Paper II"
+                     rather than the shared "TGT". */
+                  const levelWord = sel.level.officialNames?.length
+                    ? t(sel.level.officialNames[0], lang)
+                    : sel.level.name;
                   return (
                     <Pressable
-                      key={sel.level.id}
+                      /* Keyed on both, because one level can appear twice —
+                         once per exam that sets it. */
+                      key={`${sel.exam?.id ?? 'x'}-${sel.level.id}`}
                       accessibilityRole="button"
                       onPress={() => router.push(`/prep?level=${sel.level.id}`)}
                       style={{
@@ -375,111 +402,129 @@ export default function DashboardScreen() {
                         // Tinted in the selection's own colour, which is what
                         // makes two selections legible at a glance.
                         backgroundColor: `${accent}14`,
-                        padding: 14,
+                        padding: 12,
                       }}
                     >
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                          gap: 8,
-                        }}
-                      >
+                      {/*
+                        Laid across rather than down.
+                        
+                        The card stacked six things in a column — exam chip,
+                        icon, level, subject, a status line and a progress row —
+                        and ran nearly 200pt tall for four short strings. The
+                        symbol and the exam badge stay, because they are what
+                        makes one card tell itself from the next at a glance;
+                        they just sit beside the text instead of above it.
+                      */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <View
                           style={{
-                            borderRadius: 8,
-                            paddingHorizontal: 8,
-                            paddingVertical: 4,
-                            backgroundColor: tint(sel.exam?.color ?? VIOLET),
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              fontFamily: theme.family.displayBold,
-                              color: sel.exam?.color ?? VIOLET,
-                            }}
-                          >
-                            {sel.exam?.shortName ?? '—'}
-                          </Text>
-                        </View>
-                        <View
-                          style={{
-                            height: 44,
-                            width: 44,
-                            borderRadius: 14,
+                            height: 40,
+                            width: 40,
+                            borderRadius: 12,
                             alignItems: 'center',
                             justifyContent: 'center',
                             backgroundColor: '#ffffffcc',
                           }}
                         >
-                          <Text style={{ fontSize: 20 }}>
+                          <Text style={{ fontSize: 19 }}>
                             {sel.subject?.icon ?? sel.level.icon}
                           </Text>
                         </View>
-                      </View>
 
-                      <Text
-                        style={{
-                          marginTop: 10,
-                          fontSize: 22,
-                          fontFamily: theme.family.displayBold,
-                          color: INK,
-                        }}
-                      >
-                        {sel.level.name}
-                      </Text>
-                      {/* Primary has no subject line because it has no subject:
-                          the whole paper is the syllabus. */}
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          marginTop: 2,
-                          fontSize: 14,
-                          fontFamily: theme.family.bodySemi,
-                          color: accent,
-                        }}
-                      >
-                        {sel.subject ? t(sel.subject.name, lang) : t(sel.level.fullName, lang)}
-                      </Text>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <View
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                          >
+                            <View
+                              style={{
+                                borderRadius: 6,
+                                paddingHorizontal: 6,
+                                paddingVertical: 2,
+                                backgroundColor: tint(sel.exam?.color ?? VIOLET),
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontFamily: theme.family.displayBold,
+                                  color: sel.exam?.color ?? VIOLET,
+                                }}
+                              >
+                                {sel.exam?.shortName ?? '—'}
+                              </Text>
+                            </View>
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                flexShrink: 1,
+                                fontSize: 15,
+                                fontFamily: theme.family.displayBold,
+                                color: INK,
+                              }}
+                            >
+                              {levelWord}
+                            </Text>
+                          </View>
 
-                      {/* The design reads "45% Completed" here. See the note at
-                          the head of this file for why this one says nothing
-                          has been started. */}
-                      <Text
-                        style={{
-                          marginTop: 12,
-                          fontSize: 12,
-                          fontFamily: theme.family.bodySemi,
-                          color: MUTED,
-                        }}
-                      >
-                        {hi ? 'अभी शुरू नहीं किया' : 'Not started yet'}
-                      </Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          {/* Primary has no subject line because it has no
+                              subject: the whole paper is the syllabus. */}
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              marginTop: 2,
+                              fontSize: 13,
+                              fontFamily: theme.family.bodySemi,
+                              color: accent,
+                            }}
+                          >
+                            {sel.subject
+                              ? t(sel.subject.name, lang)
+                              : t(sel.level.fullName, lang)}
+                          </Text>
+                        </View>
+
                         <View
                           style={{
-                            flex: 1,
-                            marginTop: 6,
-                            height: 6,
-                            borderRadius: 999,
-                            backgroundColor: '#ffffffcc',
-                          }}
-                        />
-                        <View
-                          style={{
-                            marginTop: 6,
-                            height: 28,
-                            width: 28,
-                            borderRadius: 14,
+                            height: 26,
+                            width: 26,
+                            borderRadius: 13,
                             alignItems: 'center',
                             justifyContent: 'center',
                             backgroundColor: accent,
                           }}
                         >
-                          <ArrowGlyph size={13} />
+                          <ArrowGlyph size={12} />
                         </View>
+                      </View>
+
+                      {/* The design reads "45% Completed" here. See the note at
+                          the head of this file for why this one says nothing
+                          has been started. */}
+                      <View
+                        style={{
+                          marginTop: 10,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flex: 1,
+                            height: 5,
+                            borderRadius: 999,
+                            backgroundColor: '#ffffffcc',
+                          }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontFamily: theme.family.bodySemi,
+                            color: MUTED,
+                          }}
+                        >
+                          {hi ? 'शुरू नहीं' : 'Not started'}
+                        </Text>
                       </View>
                     </Pressable>
                   );
