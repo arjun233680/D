@@ -405,6 +405,17 @@ export default function DashboardScreen() {
                 onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
                 style={{
                   marginTop: 14,
+                  /*
+                   * Stretched on purpose, and this is not optional.
+                   *
+                   * The panel around it centres its children, so without this
+                   * the grid takes its width from the cards while the cards
+                   * take theirs from the grid — and the pair collapses to a
+                   * 12pt sliver on first paint and never recovers, because
+                   * nothing ever changes to trigger another measurement.
+                   */
+                  alignSelf: 'stretch',
+                  width: '100%',
                   flexDirection: 'row',
                   flexWrap: 'wrap',
                   gap: selectionGap,
