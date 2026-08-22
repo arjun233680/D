@@ -113,7 +113,7 @@ export default function DashboardScreen() {
 
   const [selections, setSelections] = useState<Selection[] | null>(null);
   /** The selection grid's real width, measured on layout. */
-  const [gridWidth, setGridWidth] = useState(0);
+  const [examsOpen, setExamsOpen] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -195,46 +195,6 @@ export default function DashboardScreen() {
     return <StepLoading label={hi ? 'लाया जा रहा है…' : 'Loading…'} />;
   }
 
-  /*
-   * Wide enough to read, narrow enough that four fit.
-   *
-   * Four is the ceiling because four is what a learner with two exams at two
-   * levels holds, and a dashboard that hides half of somebody's own answers
-   * behind a sideways swipe is not showing them their selections. Never one
-   * across either: a single selection stretched to the full width made a wide,
-   * near-empty box out of three short words.
-   *
-   * Measured rather than computed. Working back from the viewport meant
-   * subtracting the gutter, then the panel's padding, then the gaps — and one
-   * of those numbers is in another component, so the arithmetic was wrong by
-   * eighteen points and nobody could see why. The grid reports its own width.
-   */
-  const selectionGap = 8;
-  /*
-   * As many as fit, up to four, and never fewer than two.
-   *
-   * Four across is what a learner with two exams at two levels wants to see at
-   * once, and on a 375pt phone four cards are 75pt each — which is 63pt of
-   * text once the padding is off, and "Paper II" at 18pt needs 78. Something
-   * had to give, and it is the count rather than the type: a card that says
-   * "Pape…" has failed at the one job it has. A minimum width decides how many
-   * fit, so a phone shows three, a wider screen four.
-   */
-  const SELECTION_MIN = 100;
-  const selectionColumns = Math.max(
-    2,
-    Math.min(
-      selections.length || 2,
-      4,
-      gridWidth > 0
-        ? Math.max(1, Math.floor((gridWidth + selectionGap) / (SELECTION_MIN + selectionGap)))
-        : 4,
-    ),
-  );
-  const selectionWidth =
-    gridWidth > 0
-      ? Math.floor((gridWidth - selectionGap * (selectionColumns - 1)) / selectionColumns)
-      : undefined;
   // Four snapshot tiles across, on a phone too. Two per row made the section
   // twice as tall to say four short numbers, and a number with a one-word
   // label does not need half a screen to be legible.
@@ -253,244 +213,232 @@ export default function DashboardScreen() {
               paddingTop: 8,
             }}
           >
-            {/* ------------------------------------------------- top actions */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              {/*
-                The menu, then the mark and the name, all on this row.
-                
-                They had a row of their own directly under it, so the screen
-                spent two bands and about 60pt on a logo, a word and three
-                buttons — while the row holding the buttons had the whole
-                middle of the screen empty.
-              */}
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}
-              >
-                <IconButton
-                  label={hi ? 'मेन्यू' : 'Menu'}
-                  onPress={() => router.push('/(tabs)/profile')}
-                >
-                  <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
-                    <Path
-                      d="M3 6h14M3 10h14M3 14h14"
-                      stroke={INK}
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                    />
-                  </Svg>
-                </IconButton>
-                <DashboardArt width={r.isPhone ? 40 : 52} />
-                <Text
-                  numberOfLines={1}
-                  style={{ fontSize: 21, fontFamily: theme.family.displayBold, color: INK }}
-                >
-                  Adhyapak
-                </Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <IconButton label={hi ? 'खोजें' : 'Search'} onPress={() => router.push('/explore')}>
-                  <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
-                    <Circle cx={9} cy={9} r={6} stroke={INK} strokeWidth={1.9} />
-                    <Path
-                      d="m13.6 13.6 3.4 3.4"
-                      stroke={INK}
-                      strokeWidth={1.9}
-                      strokeLinecap="round"
-                    />
-                  </Svg>
-                </IconButton>
-                <IconButton
-                  label={hi ? 'सूचनाएँ' : 'Updates'}
-                  onPress={() => router.push('/current-affairs')}
-                >
-                  <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
-                    <Path
-                      d="M10 3a5 5 0 0 0-5 5v3l-1.4 2.2h12.8L15 11V8a5 5 0 0 0-5-5Z"
-                      stroke={INK}
-                      strokeWidth={1.7}
-                      strokeLinejoin="round"
-                    />
-                    <Path
-                      d="M8.2 16a2 2 0 0 0 3.6 0"
-                      stroke={INK}
-                      strokeWidth={1.7}
-                      strokeLinecap="round"
-                    />
-                  </Svg>
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: 9,
-                      right: 9,
-                      height: 8,
-                      width: 8,
-                      borderRadius: 4,
-                      backgroundColor: VIOLET,
-                    }}
-                  />
-                </IconButton>
-              </View>
-            </View>
-
-            {/* -------------------------------------------------- greeting */}
-            {/* The name has gone up to the top row, so what is left here is
-                the greeting itself — one line rather than a block. */}
-            <Text
-              style={{
-                marginTop: 10,
-                fontSize: 15,
-                fontFamily: theme.family.displayBold,
-                color: INK,
-              }}
-            >
-              {hi ? `नमस्ते, ${user.name || 'साथी'}!` : `Hello, ${user.name || 'there'}!`}
-            </Text>
-
-            {/* ------------------------------------------------- selections */}
-            {/* The mockup boxes this section rather than letting it sit on the
-                canvas, which is what separates "what I chose" from the rails
-                below it. */}
-            <Panel style={{ marginTop: 20 }}>
+            {/* ----------------------------------------------------- header */}
+            {/*
+              One bar: the sidebar, what you are preparing for, and the two
+              things you might want from anywhere.
+              
+              The dashboard used to open with a row of buttons, then the app's
+              name, then a greeting, then a panel of selection cards — four
+              bands and roughly 260pt before the first thing a learner came to
+              do. The selections are the one piece of that worth keeping, and
+              they belong where you switch between them rather than on a shelf
+              of their own: behind the name of what you are preparing for.
+            */}
+            <View style={{ zIndex: 20 }}>
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 12,
+                  gap: 8,
                 }}
               >
-                <SectionTitle icon="bookmark" text={hi ? 'मेरे चुनाव' : 'My Selections'} />
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push('/onboarding/exams?change=1')}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: '#e2dcf7',
-                    paddingHorizontal: 12,
-                    // 40pt is the floor for anything a thumb has to hit; the
-                    // padding alone left this at 36.
-                    minHeight: 40,
-                  }}
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}
                 >
-                  <Text
-                    style={{ fontSize: 12.5, fontFamily: theme.family.displayBold, color: VIOLET }}
+                  <IconButton
+                    label={hi ? 'मेन्यू' : 'Menu'}
+                    onPress={() => router.push('/(tabs)/profile')}
                   >
-                    ✎ {hi ? 'बदलें' : 'Change Selections'}
-                  </Text>
-                </Pressable>
-              </View>
+                    <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+                      <Path
+                        d="M3 6h14M3 10h14M3 14h14"
+                        stroke={INK}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                      />
+                    </Svg>
+                  </IconButton>
 
-              {/*
-                A grid, not a rail.
-
-                Two cards used to sit side by side with a third clipped, to say
-                "scrollable" — fine for a learner with one exam, wrong for the
-                case this now supports. CTET and HTET at PRT and TGT is four
-                cards, and hiding half of somebody's own answers behind a
-                sideways swipe is the opposite of a dashboard. They wrap, four
-                to a row at most, so nothing is out of sight.
-              */}
-              <View
-                onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
-                style={{
-                  marginTop: 14,
-                  /*
-                   * Stretched on purpose, and this is not optional.
-                   *
-                   * The panel around it centres its children, so without this
-                   * the grid takes its width from the cards while the cards
-                   * take theirs from the grid — and the pair collapses to a
-                   * 12pt sliver on first paint and never recovers, because
-                   * nothing ever changes to trigger another measurement.
-                   */
-                  alignSelf: 'stretch',
-                  width: '100%',
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: selectionGap,
-                }}
-              >
-                {selections.map((sel) => {
-                  const accent = sel.subject?.color ?? sel.level.color;
-                  /* This board's own word for the level — CTET's "Paper II"
-                     rather than the shared "TGT". */
-                  const levelWord = sel.level.officialNames?.length
-                    ? t(sel.level.officialNames[0], lang)
-                    : sel.level.name;
-                  return (
-                    <Pressable
-                      /* Keyed on both, because one level appears twice when two
-                         exams set it. */
-                      key={`${sel.exam?.id ?? 'x'}-${sel.level.id}`}
-                      accessibilityRole="button"
-                      onPress={() => router.push(`/prep?level=${sel.level.id}`)}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: examsOpen }}
+                    onPress={() => setExamsOpen((open) => !open)}
+                    style={{
+                      flexShrink: 1,
+                      minHeight: 44,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingHorizontal: 12,
+                      borderRadius: 999,
+                      backgroundColor: '#efeafe',
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
                       style={{
-                        width: selectionWidth,
-                        borderRadius: 14,
-                        backgroundColor: `${accent}14`,
-                        paddingVertical: 12,
-                        paddingHorizontal: 6,
-                        alignItems: 'center',
+                        fontSize: 15,
+                        fontFamily: theme.family.displayBold,
+                        color: VIOLET,
                       }}
                     >
-                      {/* No symbol. The tile carried a subject emoji that told
-                          a reader nothing the words under it did not, and it
-                          was taking the height the words needed to be read at
-                          a sensible size. */}
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          fontSize: 13,
-                          letterSpacing: 0.2,
-                          fontFamily: theme.family.displayBold,
-                          color: sel.exam?.color ?? VIOLET,
-                        }}
-                      >
-                        {sel.exam?.shortName ?? '—'}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          marginTop: 1,
-                          fontSize: 18,
-                          lineHeight: 24,
-                          fontFamily: theme.family.displayBold,
-                          color: INK,
-                        }}
-                      >
-                        {levelWord}
-                      </Text>
-                      {/* Primary has no subject line because it has no
-                          subject: the whole paper is the syllabus. */}
-                      <Text
-                        numberOfLines={2}
-                        style={{
-                          marginTop: 2,
-                          textAlign: 'center',
-                          fontSize: 13,
-                          lineHeight: 17,
-                          fontFamily: theme.family.body,
-                          color: accent,
-                        }}
-                      >
-                        {sel.subject ? t(sel.subject.name, lang) : t(sel.level.fullName, lang)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                      {hi ? 'मेरी परीक्षाएँ' : 'My exams'}
+                    </Text>
+                    {/* Points down when there is more to see, up when it is
+                        already open — the one job a caret has. */}
+                    <Svg width={12} height={12} viewBox="0 0 20 20" fill="none">
+                      <Path
+                        d={examsOpen ? 'M5 12.5 10 7.5l5 5' : 'M5 7.5 10 12.5l5-5'}
+                        stroke={VIOLET}
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </Pressable>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <IconButton
+                    label={hi ? 'खोजें' : 'Search'}
+                    onPress={() => router.push('/explore')}
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+                      <Circle cx={9} cy={9} r={6} stroke={INK} strokeWidth={1.9} />
+                      <Path
+                        d="m13.6 13.6 3.4 3.4"
+                        stroke={INK}
+                        strokeWidth={1.9}
+                        strokeLinecap="round"
+                      />
+                    </Svg>
+                  </IconButton>
+                  <IconButton
+                    label={hi ? 'सूचनाएँ' : 'Updates'}
+                    onPress={() => router.push('/current-affairs')}
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+                      <Path
+                        d="M10 3a5 5 0 0 0-5 5v3l-1.4 2.2h12.8L15 11V8a5 5 0 0 0-5-5Z"
+                        stroke={INK}
+                        strokeWidth={1.7}
+                        strokeLinejoin="round"
+                      />
+                      <Path
+                        d="M8.2 16a2 2 0 0 0 3.6 0"
+                        stroke={INK}
+                        strokeWidth={1.7}
+                        strokeLinecap="round"
+                      />
+                    </Svg>
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 9,
+                        right: 9,
+                        height: 8,
+                        width: 8,
+                        borderRadius: 4,
+                        backgroundColor: VIOLET,
+                      }}
+                    />
+                  </IconButton>
+                </View>
               </View>
-            </Panel>
+
+              {/* The selections, where you switch between them. Absolute so
+                  opening it lifts nothing below — the dashboard does not jump
+                  when a menu appears over it. */}
+              {examsOpen ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 52,
+                    left: 0,
+                    right: 0,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: '#F1EEFC',
+                    backgroundColor: '#fff',
+                    paddingVertical: 6,
+                    ...theme.shadow.card,
+                  }}
+                >
+                  {selections.map((sel) => {
+                    const accent = sel.subject?.color ?? sel.level.color;
+                    const levelWord = sel.level.officialNames?.length
+                      ? t(sel.level.officialNames[0], lang)
+                      : sel.level.name;
+                    return (
+                      <Pressable
+                        key={`${sel.exam?.id ?? 'x'}-${sel.level.id}`}
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setExamsOpen(false);
+                          router.push(`/prep?level=${sel.level.id}`);
+                        }}
+                        style={{
+                          minHeight: 46,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 8,
+                          paddingHorizontal: 14,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontFamily: theme.family.displayBold,
+                            color: sel.exam?.color ?? VIOLET,
+                          }}
+                        >
+                          {sel.exam?.shortName ?? '—'}
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontSize: 15,
+                            fontFamily: theme.family.displayBold,
+                            color: INK,
+                          }}
+                        >
+                          {levelWord}
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            flex: 1,
+                            textAlign: 'right',
+                            fontSize: 13,
+                            fontFamily: theme.family.body,
+                            color: accent,
+                          }}
+                        >
+                          {sel.subject ? t(sel.subject.name, lang) : t(sel.level.fullName, lang)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setExamsOpen(false);
+                      router.push('/onboarding/exams?change=1');
+                    }}
+                    style={{
+                      minHeight: 46,
+                      justifyContent: 'center',
+                      paddingHorizontal: 14,
+                      borderTopWidth: 1,
+                      borderTopColor: '#F4F2FC',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontFamily: theme.family.displayBold,
+                        color: VIOLET,
+                      }}
+                    >
+                      ✎ {hi ? 'बदलें' : 'Change Selections'}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
 
             {/* ----------------------------------------------- quick access */}
             <View style={{ marginTop: 24 }}>
@@ -680,33 +628,6 @@ export default function DashboardScreen() {
 
 /* --------------------------------------------------------------- fragments */
 
-/** The white box the design groups a section inside. */
-function Panel({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: React.ComponentProps<typeof View>['style'];
-}) {
-  return (
-    <View
-      style={[
-        {
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: LINE,
-          backgroundColor: '#fff',
-          paddingVertical: 12,
-        paddingHorizontal: 8,
-        alignItems: 'center',
-        },
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
-}
 
 function IconButton({
   label,
@@ -845,18 +766,3 @@ function ArrowGlyph({ size = 14 }: { size?: number }) {
   );
 }
 
-/** The cap-and-books mark in the dashboard header's corner. Decoration only. */
-function DashboardArt({ width }: { width: number }) {
-  const height = (width / 180) * 130;
-  return (
-    <Svg width={width} height={height} viewBox="0 0 180 130" fill="none">
-      <Circle cx={140} cy={34} r={32} fill="#efecfd" />
-      <Path d="M60 76c-9-3-14-11-12-19 9-1 17 4 19 12" fill="#34c77b" opacity={0.8} />
-      <Rect x={66} y={86} width={96} height={14} rx={4} fill="#7c5cf7" />
-      <Rect x={72} y={100} width={88} height={14} rx={4} fill="#fbc02d" />
-      <Rect x={62} y={114} width={102} height={13} rx={4} fill="#eef1fb" />
-      <Path d="M113 40 158 56l-45 16-45-16 45-16Z" fill="#5b46d6" />
-      <Path d="M88 64v13c0 5 11 9 25 9s25-4 25-9V64l-25 9-25-9Z" fill={VIOLET} />
-    </Svg>
-  );
-}
