@@ -1412,12 +1412,35 @@ export const listLevelsForExams = async (examIds: readonly string[]): Promise<Le
   if (!db || examIds.length === 0) return all;
   const { data, error } = await db
     .from('exam_levels')
-    .select('level_id')
+    .select('level_id, label')
     .in('exam_id', [...examIds]);
   if (error || !data) return all;
-  const allowed = new Set((data as { level_id: string }[]).map((r) => r.level_id));
+  const rows = data as { level_id: string; label: Bilingual | null }[];
+  const allowed = new Set(rows.map((r) => r.level_id));
   if (allowed.size === 0) return all;
-  return all.filter((l) => allowed.has(l.id));
+
+  /*
+   * The names the learner's own boards use, deduplicated.
+   *
+   * Two exams can label one level the same way — every state TET calls it
+   * "Paper 1" — and showing that twice is noise. Two exams can also disagree,
+   * and then both belong on the card: CTET's Paper I and HTET's PRT are the
+   * same level and a candidate sitting both needs to recognise either.
+   */
+  const named = new Map<string, Bilingual[]>();
+  for (const r of rows) {
+    if (!r.label) continue;
+    const list = named.get(r.level_id) ?? [];
+    if (!list.some((b) => b.en === r.label!.en)) list.push(r.label);
+    named.set(r.level_id, list);
+  }
+
+  return all
+    .filter((l) => allowed.has(l.id))
+    .map((l) => {
+      const labels = named.get(l.id);
+      return labels && labels.length > 0 ? { ...l, officialNames: labels } : l;
+    });
 };
 
 /**

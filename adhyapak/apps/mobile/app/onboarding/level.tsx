@@ -297,7 +297,14 @@ export default function ChooseLevelScreen() {
                           color: INK,
                         }}
                       >
-                        {level.name}
+                        {/* What this learner's own boards call it. CTET sets
+                            Paper I, REET Level 1, MPTET Varg 3 — none of them
+                            says PRT, and a first-timer hunting for "Level 2"
+                            should not have to know it means TGT. Falls back to
+                            the acronym for the boards that do use it. */}
+                        {level.officialNames && level.officialNames.length > 0
+                          ? level.officialNames.map((n) => t(n, lang)).join(' / ')
+                          : level.name}
                       </Text>
                       <Text
                         numberOfLines={1}

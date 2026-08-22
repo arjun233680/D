@@ -625,6 +625,20 @@ export interface Level {
   id: string;
   /** The acronym as printed on the card: PRT, TGT, PGT. */
   name: string;
+  /**
+   * What the learner's own exams call this level, when they call it something
+   * else.
+   *
+   * CTET sets Paper I and Paper II, REET Level 1 and Level 2, MPTET Varg 3, 2
+   * and 1 — none of them says PRT or TGT, and a first-time candidate looking
+   * for "Level 2" should not have to know it is the same thing as TGT. Absent
+   * for the boards that use PRT/TGT/PGT themselves, and for the whole list
+   * before any exam is known, where `name` is the right label.
+   *
+   * More than one when the chosen exams disagree: CTET and HTET both examine
+   * this level and call it "Paper I" and "PRT" respectively, so both are shown.
+   */
+  officialNames?: Bilingual[];
   fullName: Bilingual;
   /** "Classes 6 to 10". Absent for the catch-all level, which spans none. */
   classes?: Bilingual;
