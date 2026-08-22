@@ -190,7 +190,9 @@ export default function ChooseLevelScreen() {
                  underneath it. */
               eyebrow={
                 hi
-                  ? `${exams.length} परीक्षाएँ चुनी गईं`
+                  ? exams.length === 1
+                    ? '1 परीक्षा चुनी गई'
+                    : `${exams.length} परीक्षाएँ चुनी गईं`
                   : `${exams.length} exam${exams.length === 1 ? '' : 's'} selected`
               }
               /* "Select Your Level / Target" wrapped onto two lines and the
