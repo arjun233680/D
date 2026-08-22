@@ -1389,6 +1389,38 @@ export const listLevels = async (): Promise<Level[]> => {
 };
 
 /**
+ * The levels a particular set of exams actually recruits for.
+ *
+ * `listLevels` returns the whole vocabulary — PRT, TGT, PGT and Other — and
+ * the chooser used to offer all four to everyone. CTET has no PGT; it is
+ * Paper I and Paper II and nothing above class 8. HPSC PGT is the reverse. And
+ * "Other / Non-Teaching Posts" belongs to the handful of boards that recruit
+ * clerks and wardens beside teachers, not to a state's teacher eligibility
+ * test.
+ *
+ * `exam_levels` holds that mapping. Read for several exams at once and unioned,
+ * because a learner sitting CTET and HTET should be offered PGT — HTET sets it
+ * even though CTET does not.
+ *
+ * An empty `examIds`, or a backend that has no `exam_levels` yet, falls back to
+ * the full list. Offering four levels is wrong; offering none would strand the
+ * learner on a screen with nothing to answer.
+ */
+export const listLevelsForExams = async (examIds: readonly string[]): Promise<Level[]> => {
+  const all = await listLevels();
+  const db = getBackend();
+  if (!db || examIds.length === 0) return all;
+  const { data, error } = await db
+    .from('exam_levels')
+    .select('level_id')
+    .in('exam_id', [...examIds]);
+  if (error || !data) return all;
+  const allowed = new Set((data as { level_id: string }[]).map((r) => r.level_id));
+  if (allowed.size === 0) return all;
+  return all.filter((l) => allowed.has(l.id));
+};
+
+/**
  * The subjects one level examines, in the order the board lists them.
  *
  * The subject's own name, icon and colour are joined from `subjects` so the

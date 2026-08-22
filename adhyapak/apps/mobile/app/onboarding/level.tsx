@@ -5,8 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   examSubtitle,
   listExams,
-  listLevels,
-  listPaperLevelsForExams,
+  listLevelsForExams,
   t,
   theme,
   type Exam,
@@ -71,8 +70,7 @@ export default function ChooseLevelScreen() {
   useEffect(() => {
     let live = true;
     void (async () => {
-      const [levelList, examList, examIds, levelIds] = await Promise.all([
-        listLevels(),
+      const [examList, examIds, levelIds] = await Promise.all([
         listExams(),
         fetchLearnerExamIds(),
         fetchLearnerLevelIds(),
@@ -86,24 +84,18 @@ export default function ChooseLevelScreen() {
         return;
       }
       /*
-       * Only levels the chosen exams actually examine.
+       * Only the levels the chosen exams actually recruit for.
        *
-       * CTET has no PGT paper; offering PGT to a CTET candidate lets them pick
-       * a level their exam does not run and then land on a PYQ screen with
-       * nothing behind it. A level with no `teachingLevels` — the catch-all —
-       * is always offered, and if the papers tell us nothing the whole list
-       * stands, because an unanswerable question beats an empty screen.
+       * This used to derive the answer from `exam_papers`, which had two
+       * holes. The paper rows were incomplete — MPTET carried only Varg 3,
+       * EMRS only TGT, HPSC PGT no paper at all — so exams silently lost
+       * levels they do run. And the catch-all was exempted from the filter
+       * altogether, which is why "Other / Non-Teaching Posts" appeared under
+       * every state's teacher eligibility test; a TET recruits teachers and
+       * nothing else. `exam_levels` states it outright, non-teaching included.
        */
-      const offered = await listPaperLevelsForExams(examIds);
+      const usable = await listLevelsForExams(examIds);
       if (!live) return;
-      const usable =
-        offered.length === 0
-          ? levelList
-          : levelList.filter(
-              (l) =>
-                l.teachingLevels.length === 0 ||
-                l.teachingLevels.some((tl) => offered.includes(tl)),
-            );
 
       setLevels(usable);
       setExams(examList.filter((e) => examIds.includes(e.id)));
