@@ -1425,13 +1425,22 @@ export const listLevelsForExams = async (examIds: readonly string[]): Promise<Le
    * Two exams can label one level the same way — every state TET calls it
    * "Paper 1" — and showing that twice is noise. Two exams can also disagree,
    * and then both belong on the card: CTET's Paper I and HTET's PRT are the
-   * same level and a candidate sitting both needs to recognise either.
+   * same level and a candidate sitting both has to recognise either.
+   *
+   * A null label is not "no name": it means the board uses the level's own
+   * word. Skipping those rows is what made CTET-and-HTET show "Paper I" alone
+   * and hide that HTET calls the very same level PRT — the one case where
+   * showing both matters most.
    */
+  const canonical = new Map(all.map((l) => [l.id, l.name]));
   const named = new Map<string, Bilingual[]>();
   for (const r of rows) {
-    if (!r.label) continue;
+    const own = canonical.get(r.level_id);
+    const label: Bilingual | undefined =
+      r.label ?? (own ? { en: own, hi: own } : undefined);
+    if (!label) continue;
     const list = named.get(r.level_id) ?? [];
-    if (!list.some((b) => b.en === r.label!.en)) list.push(r.label);
+    if (!list.some((b) => b.en === label.en)) list.push(label);
     named.set(r.level_id, list);
   }
 
