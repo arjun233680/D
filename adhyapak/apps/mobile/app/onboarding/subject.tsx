@@ -8,7 +8,6 @@ import {
   listExams,
   listLevelSubjects,
   listLevels,
-  saveLearnerSubject,
   t,
   theme,
   type Exam,
@@ -19,6 +18,7 @@ import {
   fetchLearnerExamIds,
   fetchLearnerLevelIds,
   fetchLearnerSubjects,
+  saveLearnerSubject,
 } from '@/lib/learner';
 import { useStore } from '@/lib/store';
 import { gridItemWidth, useResponsive } from '@/lib/responsive';
@@ -36,7 +36,9 @@ import {
   PICKED_BG,
   StepHeader,
   StepLoading,
-  StepHeaderRow,
+  StepProgress,
+  BackButton,
+  BooksArt,
   Tip,
   VIOLET,
   tint,
@@ -154,6 +156,22 @@ export default function ChooseSubjectScreen() {
     };
   }, [advance, changing]);
 
+  /*
+   * Where this screen sits in a run whose length depends on the answers.
+   *
+   * Exams and levels are two steps; after them comes one subject screen per
+   * level that needs one, so a TGT-and-PGT learner has four steps in all and
+   * a PRT-only learner never reaches this screen at all. Counting the levels
+   * that actually require a subject is what makes the bar tell the truth
+   * rather than promise the end a screen early.
+   */
+  const subjectSteps = useMemo(() => levels.filter((l) => l.requiresSubject), [levels]);
+  const stepTotal = 2 + Math.max(1, subjectSteps.length);
+  const stepDone = useMemo(() => {
+    const settled = subjectSteps.filter((l) => answered[l.id]).length;
+    return Math.min(stepTotal, 2 + settled + 1);
+  }, [subjectSteps, answered, stepTotal]);
+
   const strip = useMemo(
     () =>
       exams.map((e) => ({
@@ -212,9 +230,38 @@ export default function ChooseSubjectScreen() {
               paddingTop: 8,
             }}
           >
-            <StepHeaderRow step={3} lang={lang} fallback="/onboarding/level" />
+            {/* One row: back, what the level step settled, and how far through
+                — with the mark on the heading's own line below. Same shape as
+                step 2, so the two read as one flow. */}
+            <View
+              style={{
+                minHeight: 44,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <BackButton fallback="/onboarding/level" />
+              <Text
+                numberOfLines={1}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: 13,
+                  lineHeight: 18,
+                  fontFamily: theme.family.displayBold,
+                  color: VIOLET,
+                }}
+              >
+                {hi
+                  ? `${current.name} स्तर का विषय`
+                  : `Subject for ${current.name}`}
+              </Text>
+              <StepProgress done={stepDone} total={stepTotal} width={72} />
+            </View>
 
             <StepHeader
+              trailing={<BooksArt width={100} />}
               title={hi ? `अपना ${current.name} विषय चुनें` : `Choose Your ${current.name} Subject`}
               subtitle={
                 hi

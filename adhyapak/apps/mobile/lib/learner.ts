@@ -4,6 +4,7 @@ import {
   fetchLearnerSubjects as fetchSubjectsRemote,
   saveLearnerExamIds as saveExamIdsRemote,
   saveLearnerLevelIds as saveLevelIdsRemote,
+  saveLearnerSubject as saveSubjectRemote,
   type WriteOutcome,
 } from '@adhyapak/core';
 
@@ -73,18 +74,38 @@ const PREVIEW = {
   subjects: [{ levelId: 'tgt', subjectId: 'science' }],
 };
 
+/**
+ * What the walker has chosen this session, held in memory.
+ *
+ * The stand-in used to be the only answer preview could give, so the flow read
+ * back "TGT" no matter what was tapped — and that made a whole branch of
+ * onboarding untestable. A learner who takes both TGT and PGT answers the
+ * subject question twice, and preview always reported one level, so the second
+ * screen never came and the progress bar filled a step early. Both looked like
+ * bugs in the flow; neither was.
+ *
+ * So the softened writes now remember. The seed still answers until something
+ * is chosen, and nothing here ever reaches the database — this is preview's
+ * own memory, cleared when the page reloads.
+ */
+const chosen: {
+  examIds: string[] | null;
+  levelIds: string[] | null;
+  subjects: { levelId: string; subjectId: string }[] | null;
+} = { examIds: null, levelIds: null, subjects: null };
+
 export const fetchLearnerExamIds = async (): Promise<string[]> => {
   const real = await fetchExamIdsRemote();
   // The real answer wins whenever there is one, so a signed-in developer sees
   // their own selections and not the stand-in.
   if (real.length > 0 || !isDevPreview()) return real;
-  return PREVIEW.examIds;
+  return chosen.examIds ?? PREVIEW.examIds;
 };
 
 export const fetchLearnerLevelIds = async (): Promise<string[]> => {
   const real = await fetchLevelIdsRemote();
   if (real.length > 0 || !isDevPreview()) return real;
-  return PREVIEW.levelIds;
+  return chosen.levelIds ?? PREVIEW.levelIds;
 };
 
 export const fetchLearnerSubjects = async (): Promise<
@@ -92,7 +113,7 @@ export const fetchLearnerSubjects = async (): Promise<
 > => {
   const real = await fetchSubjectsRemote();
   if (real.length > 0 || !isDevPreview()) return real;
-  return PREVIEW.subjects;
+  return chosen.subjects ?? PREVIEW.subjects;
 };
 
 
@@ -105,11 +126,38 @@ export const fetchLearnerSubjects = async (): Promise<
  * developer saves for real. Only a refusal is softened, only under the flag,
  * so the next step opens and the flow can be walked to its end.
  */
-const previewOk = (outcome: WriteOutcome): WriteOutcome =>
-  outcome.ok || !isDevPreview() ? outcome : { ok: true };
+const previewOk = (outcome: WriteOutcome, remember: () => void): WriteOutcome => {
+  if (outcome.ok || !isDevPreview()) return outcome;
+  remember();
+  return { ok: true };
+};
 
 export const saveLearnerExamIds = async (examIds: readonly string[]): Promise<WriteOutcome> =>
-  previewOk(await saveExamIdsRemote(examIds));
+  previewOk(await saveExamIdsRemote(examIds), () => {
+    chosen.examIds = [...examIds];
+    // A new set of exams invalidates what was answered under the old one.
+    chosen.levelIds = null;
+    chosen.subjects = null;
+  });
 
 export const saveLearnerLevelIds = async (levelIds: readonly string[]): Promise<WriteOutcome> =>
-  previewOk(await saveLevelIdsRemote(levelIds));
+  previewOk(await saveLevelIdsRemote(levelIds), () => {
+    chosen.levelIds = [...levelIds];
+    chosen.subjects = null;
+  });
+
+/**
+ * Wrapped for the same reason as the other two.
+ *
+ * This one went unwrapped, so in preview the subject step's own save was
+ * refused outright and the screen showed "could not save your choice" instead
+ * of moving to the next level.
+ */
+export const saveLearnerSubject = async (
+  levelId: string,
+  subjectId: string,
+): Promise<WriteOutcome> =>
+  previewOk(await saveSubjectRemote(levelId, subjectId), () => {
+    const rest = (chosen.subjects ?? []).filter((sub) => sub.levelId !== levelId);
+    chosen.subjects = [...rest, { levelId, subjectId }];
+  });
