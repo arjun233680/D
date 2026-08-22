@@ -215,7 +215,6 @@ export default function ChooseSubjectScreen() {
             <StepHeaderRow step={3} fallback="/onboarding/level" />
 
             <StepHeader
-              art={false}
               title={hi ? `अपना ${current.name} विषय चुनें` : `Choose Your ${current.name} Subject`}
               subtitle={
                 hi
@@ -230,7 +229,7 @@ export default function ChooseSubjectScreen() {
             />
 
             {/* No second heading: the title already asks for the subject. */}
-            <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap }}>
+            <View style={{ marginTop: 24, flexDirection: 'row', flexWrap: 'wrap', gap }}>
               {offers.map((offer) => {
                 const on = picked === offer.subjectId;
                 return (

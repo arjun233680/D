@@ -26,7 +26,7 @@ import {
   BAR_CLEARANCE,
   CANVAS,
   CheckDot,
-  BackButton,
+  StepHeaderRow,
   ContinueBar,
   ErrorNote,
   GradientFill,
@@ -221,11 +221,10 @@ export default function ChooseExamScreen() {
               paddingHorizontal: r.gutter,
             }}
           >
-            {changing ? (
-              <View style={{ marginTop: 4 }}>
-                <BackButton fallback="/" />
-              </View>
-            ) : null}
+            {/* Nothing above the heading unless there is somewhere to go
+                back to: the row draws itself away rather than leaving a strip
+                of empty canvas at the top of the first screen. */}
+            <StepHeaderRow fallback="/" back={changing} />
             <StepHeader
               eyebrow={hi ? 'स्वागत है!' : 'Welcome!'}
               title={hi ? 'अपनी परीक्षा चुनें' : 'Choose Your Exam'}
@@ -301,7 +300,7 @@ export default function ChooseExamScreen() {
                     <Text style={{ fontSize: 15 }}>{FILTER_LABEL[f].icon}</Text>
                     <Text
                       style={{
-                        fontSize: 12,
+                        fontSize: 14,
                         fontFamily: theme.family.bodySemi,
                         color: on ? '#fff' : '#4b5563',
                       }}

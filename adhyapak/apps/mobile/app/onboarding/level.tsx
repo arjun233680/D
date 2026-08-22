@@ -184,13 +184,19 @@ export default function ChooseLevelScreen() {
             <StepHeaderRow step={2} fallback="/onboarding/exams" />
 
             <StepHeader
-              art={false}
+              /* A chip now, not a second headline, so it says what it is: a
+                 note about the answer already given. "Great! … 🎉" was a
+                 celebration of tapping two cards, shouting over the question
+                 underneath it. */
               eyebrow={
                 hi
-                  ? `बढ़िया! ${exams.length} परीक्षाएँ चुनी गईं 🎉`
-                  : `Great! ${exams.length} exam${exams.length === 1 ? '' : 's'} selected 🎉`
+                  ? `${exams.length} परीक्षाएँ चुनी गईं`
+                  : `${exams.length} exam${exams.length === 1 ? '' : 's'} selected`
               }
-              title={hi ? 'अपना स्तर चुनें' : 'Select Your Level / Target'}
+              /* "Select Your Level / Target" wrapped onto two lines and the
+                 Hindi never carried the second half anyway. The subtitle
+                 still says target, where there is room to say it. */
+              title={hi ? 'अपना स्तर चुनें' : 'Select Your Level'}
               subtitle={
                 hi
                   ? 'चुनी गई परीक्षाओं में आप जिस स्तर की तैयारी कर रहे हैं, वह चुनें।'
@@ -203,7 +209,7 @@ export default function ChooseLevelScreen() {
             {/* The heading above the list said "Select Level / Target" under a
                 title that already said "Select Your Level / Target". One
                 question, asked once. */}
-            <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            <View style={{ marginTop: 24, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
               {levels.map((level) => {
                 const on = chosen.has(level.id);
                 return (

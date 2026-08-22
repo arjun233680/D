@@ -130,7 +130,13 @@ export function SearchIcon({ color = FAINT }: { color?: string }) {
   );
 }
 
-/** The cap-and-books mark that sits in every step's top corner. Decoration. */
+/**
+ * The cap-and-books mark.
+ *
+ * Decoration, and no longer drawn by the step chrome — it was the third thing
+ * on a row that reads better with two. Kept because it is the app's own
+ * drawing and a step that wants a picture should not have to redraw it.
+ */
 export function BooksArt({ width = 86 }: { width?: number }) {
   const height = (width / 180) * 130;
   return (
@@ -152,77 +158,72 @@ export function BooksArt({ width = 86 }: { width?: number }) {
 
 /* ------------------------------------------------------------- step chrome */
 
-/** The three dots at the top. Filled behind you, ringed ahead. */
 /**
- * Back arrow, the three steps, and the books on the end of the row.
+ * The one row above every heading: where you can go back, and how far along
+ * you are.
  *
- * The art used to sit beside the heading, which pushed the title into a narrow
- * column and wrapped it. Up here it fills the space the rail leaves and the
- * heading gets the page's whole width.
+ * It used to carry three things — the arrow, a rail of numbered circles, and
+ * the books — bunched together on the left with the art jammed into the right
+ * edge. Five shapes on one line, above an eyebrow and a headline, read as
+ * clutter. Now it holds two, at opposite ends, with the whole width between
+ * them; the art is gone from the step chrome entirely.
  */
 export function StepHeaderRow({
   step,
   fallback,
+  back = true,
 }: {
-  step: 1 | 2 | 3;
+  /** Omitted on step 1, which has no rail to draw. */
+  step?: 1 | 2 | 3;
   fallback: string;
+  /** Step 1 only shows a back arrow when it was reached to change an answer. */
+  back?: boolean;
 }) {
+  // Nothing to go back to and no rail to draw is step 1 arrived at fresh.
+  // Render nothing rather than an empty 44pt strip above the welcome.
+  if (!back && !step) return null;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-      <BackButton fallback={fallback} />
-      <StepRail step={step} />
-      <View style={{ flex: 1, alignItems: 'flex-end' }}>
-        <BooksArt width={64} />
-      </View>
+    <View
+      style={{
+        minHeight: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
+      {back ? <BackButton fallback={fallback} /> : <View style={{ width: 44 }} />}
+      {step ? <StepRail step={step} /> : null}
     </View>
   );
 }
 
+/**
+ * How far along you are: three segments, the one you are on drawn long.
+ *
+ * It was three 28pt circles carrying numbers and ticks, joined by rules — a
+ * five-part diagram of a three-part journey, and the loudest thing on a screen
+ * whose job is to ask one question. A progress rail only has to say "there are
+ * three of these and you are on the second", which bars say quietly. The count
+ * still reaches a screen reader, which the circles never told it.
+ */
 export function StepRail({ step }: { step: 1 | 2 | 3 }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-      {([1, 2, 3] as const).map((n) => {
-        const done = n < step;
-        const here = n === step;
-        return (
-          <View key={n} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {n > 1 ? (
-              <View
-                style={{
-                  height: 2,
-                  width: 28,
-                  borderRadius: 999,
-                  backgroundColor: n <= step ? VIOLET : '#ded9f3',
-                }}
-              />
-            ) : null}
-            <View
-              style={{
-                height: 28,
-                width: 28,
-                borderRadius: 14,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: done || here ? VIOLET : '#efecfa',
-              }}
-            >
-              {done ? (
-                <Tick />
-              ) : (
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontFamily: theme.family.displayBold,
-                    color: here ? '#fff' : '#a8a3bd',
-                  }}
-                >
-                  {n}
-                </Text>
-              )}
-            </View>
-          </View>
-        );
-      })}
+    <View
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 1, max: 3, now: step }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+    >
+      {([1, 2, 3] as const).map((n) => (
+        <View
+          key={n}
+          style={{
+            height: 6,
+            width: n === step ? 32 : 16,
+            borderRadius: 999,
+            backgroundColor: n <= step ? VIOLET : '#e3ddf7',
+          }}
+        />
+      ))}
     </View>
   );
 }
@@ -493,7 +494,7 @@ export function ChosenExams({
    * thing to tap, so it reads as a line of marks and names.
    */
   return (
-    <View style={{ marginTop: 20 }}>
+    <View style={{ marginTop: 28 }}>
       {title ? (
         <Text
           style={{
@@ -557,55 +558,66 @@ export function ChosenExams({
   );
 }
 
-/** The heading block each step opens with, art tucked into the top corner. */
+/**
+ * The heading block each step opens with.
+ *
+ * Three lines of type stacked four and six points apart, the top one violet
+ * and bold directly above a bold headline, made two headlines fighting. The
+ * eyebrow is a quiet chip now — it reads as a note about what you already did,
+ * which is what it is — and the gaps are large enough that the headline is
+ * plainly the thing to read first.
+ */
 export function StepHeader({
   eyebrow,
   title,
   subtitle,
-  art = true,
 }: {
   eyebrow?: string;
   title: string;
   subtitle?: string;
-  /** The books, tucked into the corner. Off where the step rail carries them. */
-  art?: boolean;
 }) {
   const r = useResponsive();
-  const artWidth = r.isPhone ? 86 : 160;
   return (
-    <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'flex-start' }}>
-      <View style={{ flex: 1, paddingRight: 12 }}>
-        {eyebrow ? (
-          <Text style={{ fontSize: 15, fontFamily: theme.family.displayBold, color: VIOLET }}>
-            {eyebrow}
-          </Text>
-        ) : null}
-        <Text
+    <View style={{ marginTop: 24 }}>
+      {eyebrow ? (
+        <View
           style={{
-            marginTop: 4,
-            fontSize: r.isPhone ? 26 : 32,
-            lineHeight: r.isPhone ? 32 : 38,
-            fontFamily: theme.family.displayBold,
-            color: INK,
+            alignSelf: 'flex-start',
+            borderRadius: 999,
+            backgroundColor: '#efeafe',
+            paddingHorizontal: 12,
+            paddingVertical: 6,
           }}
         >
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text
-            style={{
-              marginTop: 6,
-              fontSize: 14,
-              lineHeight: 20,
-              fontFamily: theme.family.body,
-              color: MUTED,
-            }}
-          >
-            {subtitle}
+          <Text style={{ fontSize: 13, fontFamily: theme.family.displayBold, color: VIOLET }}>
+            {eyebrow}
           </Text>
-        ) : null}
-      </View>
-      {art ? <BooksArt width={artWidth} /> : null}
+        </View>
+      ) : null}
+      <Text
+        style={{
+          marginTop: eyebrow ? 16 : 0,
+          fontSize: r.isPhone ? 26 : 32,
+          lineHeight: r.isPhone ? 34 : 40,
+          fontFamily: theme.family.displayBold,
+          color: INK,
+        }}
+      >
+        {title}
+      </Text>
+      {subtitle ? (
+        <Text
+          style={{
+            marginTop: 10,
+            fontSize: 14,
+            lineHeight: 22,
+            fontFamily: theme.family.body,
+            color: MUTED,
+          }}
+        >
+          {subtitle}
+        </Text>
+      ) : null}
     </View>
   );
 }
