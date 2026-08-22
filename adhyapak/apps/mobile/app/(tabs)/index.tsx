@@ -57,12 +57,22 @@ import { Icon, type IconName } from '@/components/icons';
  * The web original is apps/web/app/page.tsx and makes the same call.
  */
 
+/*
+ * The rails, named and nothing more.
+ *
+ * Each tile carried a second line — "Notes / Study Smart", "PYQ / Previous
+ * Year Questions" — and every one of them either repeated the label or sold
+ * it. A learner who taps Notes knows what notes are.
+ *
+ * "Mock Tests" went with them. It pointed at /prep/tests, which is where
+ * "Test Series" points: one destination wearing two names, side by side on
+ * the same row.
+ */
 const QUICK = [
   {
     href: '/(tabs)/study',
     icon: 'book',
     label: { en: 'Notes', hi: 'नोट्स' },
-    sub: { en: 'Study Smart', hi: 'बेहतर पढ़ाई' },
     tint: '#efeafe',
     color: '#6d4aed',
   },
@@ -70,7 +80,6 @@ const QUICK = [
     href: '/prep/pyq',
     icon: 'test',
     label: { en: 'PYQ', hi: 'विगत वर्ष' },
-    sub: { en: 'Previous Year Questions', hi: 'विगत वर्ष प्रश्न' },
     tint: '#e8f7ee',
     color: '#16a34a',
   },
@@ -78,23 +87,13 @@ const QUICK = [
     href: '/prep/tests',
     icon: 'chart',
     label: { en: 'Test Series', hi: 'टेस्ट सीरीज़' },
-    sub: { en: 'Practice & Improve', hi: 'अभ्यास एवं सुधार' },
     tint: '#e6f0fd',
     color: '#2563eb',
-  },
-  {
-    href: '/prep/tests',
-    icon: 'target',
-    label: { en: 'Mock Tests', hi: 'मॉक टेस्ट' },
-    sub: { en: 'Real Exam Experience', hi: 'वास्तविक परीक्षा अनुभव' },
-    tint: '#fff1e6',
-    color: '#ea580c',
   },
   {
     href: '/current-affairs',
     icon: 'news',
     label: { en: 'Current Affairs', hi: 'समसामयिकी' },
-    sub: { en: 'Stay Updated Daily', hi: 'रोज़ अपडेट रहें' },
     tint: '#fdeaf3',
     color: '#db2777',
   },
@@ -194,13 +193,23 @@ export default function DashboardScreen() {
     return <StepLoading label={hi ? 'लाया जा रहा है…' : 'Loading…'} />;
   }
 
-  // The mockup shows two selection cards side by side with the second clipped,
-  // which is what says "scrollable". The card reads across now rather than
-  // down — symbol, exam, level, subject on one line — so it needs more width
-  // and far less height than the stacked version it replaced.
-  const selectionWidth = r.isPhone ? Math.min(r.width * 0.78, 300) : 320;
-  // Two snapshot tiles per row on a phone, four once there is room.
-  const tileW = gridItemWidth(r, r.isPhone ? 2 : 4);
+  /*
+   * Wide enough to read, narrow enough that four fit.
+   *
+   * Four is the ceiling because four is what a learner with two exams at two
+   * levels holds, and a dashboard that hides half of somebody's own answers
+   * behind a sideways swipe is not showing them their selections. Fewer than
+   * four share the row out between them rather than sitting in a narrow
+   * huddle at the left.
+   */
+  const selectionGap = 8;
+  const selectionColumns = Math.min(Math.max(selections.length, 1), 4);
+  const selectionWidth =
+    (r.width - r.gutter * 2 - 28 - selectionGap * (selectionColumns - 1)) / selectionColumns;
+  // Four snapshot tiles across, on a phone too. Two per row made the section
+  // twice as tall to say four short numbers, and a number with a one-word
+  // label does not need half a screen to be legible.
+  const tileW = gridItemWidth(r, 4, 8);
 
   return (
     <View style={{ flex: 1, backgroundColor: CANVAS }}>
@@ -283,59 +292,31 @@ export default function DashboardScreen() {
             </View>
 
             {/* -------------------------------------------------- greeting */}
-            <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'flex-start' }}>
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View
-                    style={{
-                      height: 40,
-                      width: 40,
-                      borderRadius: 12,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: VIOLET,
-                    }}
-                  >
-                    <Svg width={21} height={21} viewBox="0 0 40 40" fill="none">
-                      <Path d="M20 9 31 13.6 20 18.2 9 13.6 20 9Z" fill="#fff" />
-                      <Path
-                        d="M12 21h7.4c.4 0 .6.3.6.7V31c0-.5-.3-.8-.8-.8H12V21Z"
-                        fill="#fff"
-                        opacity={0.95}
-                      />
-                      <Path
-                        d="M28 21h-7.4c-.4 0-.6.3-.6.7V31c0-.5.3-.8.8-.8H28V21Z"
-                        fill="#fff"
-                        opacity={0.78}
-                      />
-                    </Svg>
-                  </View>
-                  <Text style={{ fontSize: 26, fontFamily: theme.family.displayBold, color: INK }}>
-                    Adhyapak
-                  </Text>
-                </View>
+            {/*
+              The app's own mark, beside its name.
+              
+              It used to be a plain violet tile with a cap glyph on the left and
+              the drawn cap-and-books parked on the right, so the header carried
+              two logos for one app and a column of blank canvas between them.
+              One mark, on the left, where a name's logo goes.
+            */}
+            <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <DashboardArt width={r.isPhone ? 62 : 78} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 26, fontFamily: theme.family.displayBold, color: INK }}>
+                  Adhyapak
+                </Text>
                 <Text
                   style={{
-                    marginTop: 12,
-                    fontSize: 17,
+                    marginTop: 2,
+                    fontSize: 15,
                     fontFamily: theme.family.displayBold,
                     color: INK,
                   }}
                 >
                   {hi ? `नमस्ते, ${user.name || 'साथी'}! 👋` : `Hello, ${user.name || 'there'}! 👋`}
                 </Text>
-                <Text
-                  style={{
-                    marginTop: 2,
-                    fontSize: 13.5,
-                    fontFamily: theme.family.body,
-                    color: MUTED,
-                  }}
-                >
-                  {hi ? 'चलिए तैयारी जारी रखें।' : "Let's continue your learning journey."}
-                </Text>
               </View>
-              <DashboardArt width={r.isPhone ? 96 : 150} />
             </View>
 
             {/* ------------------------------------------------- selections */}
@@ -376,11 +357,23 @@ export default function DashboardScreen() {
                 </Pressable>
               </View>
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginTop: 14, marginHorizontal: -14 }}
-                contentContainerStyle={{ gap: 12, paddingHorizontal: 14 }}
+              {/*
+                A grid, not a rail.
+
+                Two cards used to sit side by side with a third clipped, to say
+                "scrollable" — fine for a learner with one exam, wrong for the
+                case this now supports. CTET and HTET at PRT and TGT is four
+                cards, and hiding half of somebody's own answers behind a
+                sideways swipe is the opposite of a dashboard. They wrap, four
+                to a row at most, so nothing is out of sight.
+              */}
+              <View
+                style={{
+                  marginTop: 14,
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: selectionGap,
+                }}
               >
                 {selections.map((sel) => {
                   const accent = sel.subject?.color ?? sel.level.color;
@@ -391,161 +384,95 @@ export default function DashboardScreen() {
                     : sel.level.name;
                   return (
                     <Pressable
-                      /* Keyed on both, because one level can appear twice —
-                         once per exam that sets it. */
+                      /* Keyed on both, because one level appears twice when two
+                         exams set it. */
                       key={`${sel.exam?.id ?? 'x'}-${sel.level.id}`}
                       accessibilityRole="button"
                       onPress={() => router.push(`/prep?level=${sel.level.id}`)}
                       style={{
                         width: selectionWidth,
-                        borderRadius: 16,
-                        // Tinted in the selection's own colour, which is what
-                        // makes two selections legible at a glance.
+                        borderRadius: 14,
                         backgroundColor: `${accent}14`,
-                        padding: 12,
+                        paddingVertical: 10,
+                        paddingHorizontal: 4,
+                        alignItems: 'center',
                       }}
                     >
-                      {/*
-                        Laid across rather than down.
-                        
-                        The card stacked six things in a column — exam chip,
-                        icon, level, subject, a status line and a progress row —
-                        and ran nearly 200pt tall for four short strings. The
-                        symbol and the exam badge stay, because they are what
-                        makes one card tell itself from the next at a glance;
-                        they just sit beside the text instead of above it.
-                      */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <View
-                          style={{
-                            height: 40,
-                            width: 40,
-                            borderRadius: 12,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: '#ffffffcc',
-                          }}
-                        >
-                          <Text style={{ fontSize: 19 }}>
-                            {sel.subject?.icon ?? sel.level.icon}
-                          </Text>
-                        </View>
-
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <View
-                            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-                          >
-                            <View
-                              style={{
-                                borderRadius: 6,
-                                paddingHorizontal: 6,
-                                paddingVertical: 2,
-                                backgroundColor: tint(sel.exam?.color ?? VIOLET),
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 12,
-                                  fontFamily: theme.family.displayBold,
-                                  color: sel.exam?.color ?? VIOLET,
-                                }}
-                              >
-                                {sel.exam?.shortName ?? '—'}
-                              </Text>
-                            </View>
-                            <Text
-                              numberOfLines={1}
-                              style={{
-                                flexShrink: 1,
-                                fontSize: 15,
-                                fontFamily: theme.family.displayBold,
-                                color: INK,
-                              }}
-                            >
-                              {levelWord}
-                            </Text>
-                          </View>
-
-                          {/* Primary has no subject line because it has no
-                              subject: the whole paper is the syllabus. */}
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              marginTop: 2,
-                              fontSize: 13,
-                              fontFamily: theme.family.bodySemi,
-                              color: accent,
-                            }}
-                          >
-                            {sel.subject
-                              ? t(sel.subject.name, lang)
-                              : t(sel.level.fullName, lang)}
-                          </Text>
-                        </View>
-
-                        <View
-                          style={{
-                            height: 26,
-                            width: 26,
-                            borderRadius: 13,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: accent,
-                          }}
-                        >
-                          <ArrowGlyph size={12} />
-                        </View>
-                      </View>
-
-                      {/* The design reads "45% Completed" here. See the note at
-                          the head of this file for why this one says nothing
-                          has been started. */}
                       <View
                         style={{
-                          marginTop: 10,
-                          flexDirection: 'row',
+                          height: 32,
+                          width: 32,
+                          borderRadius: 11,
                           alignItems: 'center',
-                          gap: 8,
+                          justifyContent: 'center',
+                          backgroundColor: '#ffffffcc',
                         }}
                       >
-                        <View
-                          style={{
-                            flex: 1,
-                            height: 5,
-                            borderRadius: 999,
-                            backgroundColor: '#ffffffcc',
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            fontFamily: theme.family.bodySemi,
-                            color: MUTED,
-                          }}
-                        >
-                          {hi ? 'शुरू नहीं' : 'Not started'}
+                        <Text style={{ fontSize: 16 }}>
+                          {sel.subject?.icon ?? sel.level.icon}
                         </Text>
                       </View>
+
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          marginTop: 6,
+                          fontSize: 12,
+                          letterSpacing: 0.2,
+                          fontFamily: theme.family.displayBold,
+                          color: sel.exam?.color ?? VIOLET,
+                        }}
+                      >
+                        {sel.exam?.shortName ?? '—'}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 13,
+                          fontFamily: theme.family.displayBold,
+                          color: INK,
+                        }}
+                      >
+                        {levelWord}
+                      </Text>
+                      {/* Primary has no subject line because it has no
+                          subject: the whole paper is the syllabus. */}
+                      <Text
+                        numberOfLines={2}
+                        style={{
+                          marginTop: 1,
+                          textAlign: 'center',
+                          fontSize: 12,
+                          lineHeight: 15,
+                          fontFamily: theme.family.body,
+                          color: accent,
+                        }}
+                      >
+                        {sel.subject ? t(sel.subject.name, lang) : t(sel.level.fullName, lang)}
+                      </Text>
                     </Pressable>
                   );
                 })}
-              </ScrollView>
+              </View>
             </Panel>
 
             {/* ----------------------------------------------- quick access */}
             <View style={{ marginTop: 24 }}>
+              {/* No strapline. "Your exam prep, simplified" sold the section
+                  to somebody already inside it, over four tiles that name
+                  themselves. */}
               <SectionTitle icon="bolt" text={hi ? 'त्वरित पहुँच' : 'Quick Access'} />
-              <Text
-                style={{ marginTop: 2, fontSize: 12.5, fontFamily: theme.family.body, color: FAINT }}
-              >
-                {hi ? 'आपकी तैयारी, आसान बनाई गई' : 'Your exam prep, simplified'}
-              </Text>
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginTop: 12, marginHorizontal: -r.gutter }}
-                contentContainerStyle={{ gap: 12, paddingHorizontal: r.gutter }}
+              {/*
+                Four tiles, four to a row, no rail.
+                
+                They were 132pt cards on a sideways scroller carrying a label
+                and a subtitle each; with the subtitles gone and Mock Tests
+                merged into Test Series there are four short names, and four
+                short names fit a phone across.
+              */}
+              <View
+                style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
               >
                 {QUICK.map((q, i) => (
                   <Pressable
@@ -553,133 +480,104 @@ export default function DashboardScreen() {
                     accessibilityRole="button"
                     onPress={() => router.push(q.href as never)}
                     style={{
-                      width: 132,
-                      borderRadius: 16,
+                      width: gridItemWidth(r, 4, 8),
+                      borderRadius: 14,
                       backgroundColor: q.tint,
-                      padding: 14,
+                      paddingVertical: 12,
+                      paddingHorizontal: 6,
+                      alignItems: 'center',
                     }}
                   >
                     <View
                       style={{
-                        height: 42,
-                        width: 42,
-                        borderRadius: 14,
+                        height: 36,
+                        width: 36,
+                        borderRadius: 12,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: '#ffffffbd',
                       }}
                     >
-                      <Icon name={q.icon} size={21} color={q.color} />
+                      <Icon name={q.icon} size={19} color={q.color} />
                     </View>
                     <Text
+                      numberOfLines={2}
                       style={{
-                        marginTop: 10,
-                        fontSize: 14,
+                        marginTop: 8,
+                        textAlign: 'center',
+                        fontSize: 12,
+                        lineHeight: 15,
                         fontFamily: theme.family.displayBold,
                         color: INK,
                       }}
                     >
                       {t(q.label, lang)}
                     </Text>
-                    <Text
-                      style={{
-                        marginTop: 2,
-                        fontSize: 12,
-                        lineHeight: 15,
-                        fontFamily: theme.family.body,
-                        color: MUTED,
-                      }}
-                    >
-                      {t(q.sub, lang)}
-                    </Text>
-                    <View
-                      style={{
-                        marginTop: 12,
-                        height: 28,
-                        width: 28,
-                        borderRadius: 14,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: q.color,
-                      }}
-                    >
-                      <ArrowGlyph />
-                    </View>
                   </Pressable>
                 ))}
-              </ScrollView>
+              </View>
             </View>
 
             {/* ------------------------------------- continue your preparation */}
-            <Panel style={{ marginTop: 24 }}>
-              <SectionTitle
-                icon="book"
-                text={hi ? 'तैयारी जारी रखें' : 'Continue Your Preparation'}
-              />
-              {/* The design puts a half-read chapter here with a 60% bar. There
-                  is no "last topic" recorded anywhere, so rather than pick one
-                  at random this says what is true and points at the shelf. */}
+            {/*
+              One card, and the card is the button.
+              
+              This was a section heading over a dashed empty-state box over a
+              violet button — three stacked elements, two sentences and a
+              heading, all to say "you have not started, go to Study". The
+              sentence said what the emptiness already showed, and the heading
+              said what the button said. What is left is the button, wearing
+              the section's own words.
+            */}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/(tabs)/study')}
+              style={{
+                marginTop: 24,
+                minHeight: 56,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                borderRadius: 16,
+                paddingHorizontal: 14,
+                backgroundColor: VIOLET,
+              }}
+            >
               <View
                 style={{
-                  marginTop: 12,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 14,
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderStyle: 'dashed',
-                  borderColor: '#ded9f3',
-                  padding: 14,
-                }}
-              >
-                <View
-                  style={{
-                    height: 52,
-                    width: 52,
-                    borderRadius: 14,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: '#f1eefc',
-                  }}
-                >
-                  <Text style={{ fontSize: 24 }}>📖</Text>
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      lineHeight: 19,
-                      fontFamily: theme.family.body,
-                      color: MUTED,
-                    }}
-                  >
-                    {hi
-                      ? 'अभी कोई अध्याय शुरू नहीं हुआ। जहाँ छोड़ेंगे, वहीं से यहाँ दिखेगा।'
-                      : 'No chapter started yet. Where you leave off will appear here.'}
-                  </Text>
-                </View>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push('/(tabs)/study')}
-                style={{
-                  marginTop: 12,
-                  minHeight: 44,
-                  flexDirection: 'row',
+                  height: 36,
+                  width: 36,
+                  borderRadius: 12,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8,
-                  borderRadius: 12,
-                  backgroundColor: VIOLET,
+                  backgroundColor: '#ffffff2e',
                 }}
               >
-                <Text
-                  style={{ fontSize: 14, fontFamily: theme.family.displayBold, color: '#fff' }}
-                >
-                  ▶ {hi ? 'पढ़ना शुरू करें' : 'Start studying'}
-                </Text>
-              </Pressable>
-            </Panel>
+                <Text style={{ fontSize: 18 }}>📖</Text>
+              </View>
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 15,
+                  fontFamily: theme.family.displayBold,
+                  color: '#fff',
+                }}
+              >
+                {hi ? 'पढ़ना शुरू करें' : 'Start studying'}
+              </Text>
+              <View
+                style={{
+                  height: 28,
+                  width: 28,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#ffffff2e',
+                }}
+              >
+                <ArrowGlyph />
+              </View>
+            </Pressable>
 
             {/* --------------------------------------------- today's snapshot */}
             <View style={{ marginTop: 24 }}>
@@ -688,7 +586,7 @@ export default function DashboardScreen() {
               {/* Four tiles, as the design lays them out. Two of them have a
                   source and two do not; all four are here so the row is the row
                   from the picture, and the two without one read zero. */}
-              <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+              <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 <StatTile
                   icon="⏱️"
                   tintColor="#e8f7ee"
@@ -762,7 +660,9 @@ function Panel({
           borderWidth: 1,
           borderColor: LINE,
           backgroundColor: '#fff',
-          padding: 14,
+          paddingVertical: 12,
+        paddingHorizontal: 8,
+        alignItems: 'center',
         },
         style,
       ]}
@@ -859,27 +759,38 @@ function StatTile({
     >
       <View
         style={{
-          height: 36,
-          width: 36,
+          height: 30,
+          width: 30,
           borderRadius: 12,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: tintColor,
         }}
       >
-        <Text style={{ fontSize: 17 }}>{icon}</Text>
+        <Text style={{ fontSize: 15 }}>{icon}</Text>
       </View>
       <Text
         style={{
           marginTop: 8,
-          fontSize: 19,
+          fontSize: 16,
           fontFamily: theme.family.displayBold,
           color: measured ? INK : '#b8b3c9',
         }}
       >
         {value}
       </Text>
-      <Text style={{ fontSize: 12, fontFamily: theme.family.body, color: MUTED }}>{label}</Text>
+      <Text
+        numberOfLines={2}
+        style={{
+          textAlign: 'center',
+          fontSize: 12,
+          lineHeight: 15,
+          fontFamily: theme.family.body,
+          color: MUTED,
+        }}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
