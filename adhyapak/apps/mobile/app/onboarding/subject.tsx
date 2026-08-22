@@ -4,10 +4,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   examSubtitle,
-  listElectiveChoices,
+  listExamLevelSubjects,
   listExams,
   listLevelSubjects,
   listLevels,
+  listLevelsForExams,
   t,
   theme,
   type Exam,
@@ -69,24 +70,31 @@ export default function ChooseSubjectScreen() {
 
   const [levels, setLevels] = useState<Level[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
+  /** Keyed "examId::levelId", because one level can be two questions. */
   const [answered, setAnswered] = useState<Record<string, string>>({});
   const [offers, setOffers] = useState<LevelSubject[] | null>(null);
-  const [current, setCurrent] = useState<Level | null>(null);
+  const [current, setCurrent] = useState<{ exam: Exam; level: Level } | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  /** Every exam-and-level pair this learner has to answer for, in order. */
+  const [queue, setQueue] = useState<{ exam: Exam; level: Level }[]>([]);
 
   /**
-   * Moves to the next level that still needs a subject, or leaves onboarding.
+   * Moves to the next exam-and-level pair that still needs a subject.
    *
-   * Levels with `requiresSubject: false` are stepped over entirely — primary is
-   * one whole paper with nothing to choose between. A learner who picked only
-   * such levels never sees this screen: they arrive, nothing is outstanding,
-   * and they go straight to the dashboard.
+   * Per pair, not per level. CTET's Paper II and HTET's TGT are the same level
+   * here and offer different things — two subjects against twelve — so a
+   * learner sitting both answers twice, each time against that board's own
+   * list. Asking once and applying the answer to both is what this replaces.
+   *
+   * Levels with `requiresSubject: false` never enter the queue at all: primary
+   * is one whole paper with nothing to choose between. A learner who picked
+   * only such levels arrives, finds the queue empty, and goes to the dashboard.
    */
   const advance = useCallback(
-    (all: Level[], done: Record<string, string>, examIds: string[]) => {
-      const next = all.find((l) => l.requiresSubject && !done[l.id]);
+    (pending: { exam: Exam; level: Level }[], done: Record<string, string>) => {
+      const next = pending.find((p) => !done[`${p.exam.id}::${p.level.id}`]);
       if (!next) {
         router.replace('/(tabs)');
         return;
@@ -96,23 +104,24 @@ export default function ChooseSubjectScreen() {
       setOffers(null);
       void (async () => {
         /*
-         * What this learner's own exams offer, not a generic list for the
-         * level. CTET Paper II offers two subjects; HTET Level 2 offers
-         * twelve. Showing the generic ten to a CTET candidate offered them
-         * eight subjects they cannot sit.
+         * What this one board offers at this one level, whole.
          *
-         * `level_subjects` remains the fallback for exams whose papers carry
-         * no elective data yet — an approximate list beats an empty grid.
+         * Two bugs went out with this. Passing every exam at once showed a
+         * CTET candidate HTET's twelve subjects because HTET happened to be on
+         * the same account. And intersecting the board's list with the generic
+         * `level_subjects` deleted whatever the generic list did not carry —
+         * which included "Mathematics & Science", one of exactly two things
+         * CTET's Paper II offers, so that candidate saw a single real choice.
+         *
+         * `level_subjects` stays as the fallback for papers with no elective
+         * data: an approximate list beats an empty grid.
          */
-        const allowed = await listElectiveChoices(examIds, next.teachingLevels);
-        const generic = await listLevelSubjects(next.id);
-        setOffers(
-          allowed.length > 0
-            ? generic.filter(
-                (o) => allowed.includes(o.subjectId) || o.subjectId === 'other-subject',
-              )
-            : generic,
+        const own = await listExamLevelSubjects(
+          next.exam.id,
+          next.level.id,
+          next.level.teachingLevels,
         );
+        setOffers(own.length > 0 ? own : await listLevelSubjects(next.level.id));
       })();
     },
     [],
@@ -138,18 +147,48 @@ export default function ChooseSubjectScreen() {
         return;
       }
       const mine = levelList.filter((l) => levelIds.includes(l.id));
+      const myExams = examList.filter((e) => examIds.includes(e.id));
+
       /*
-       * Editing asks every level again, even ones already answered — that is
+       * One question per exam-and-level pair the boards actually set.
+       *
+       * `listLevelsForExams` answers which levels the learner's exams run
+       * between them; this needs the finer fact — which of *those* exams runs
+       * which level — so a CTET-and-HTET learner is asked about CTET's Paper II
+       * and HTET's TGT separately, and is not asked about CTET at PGT, which
+       * CTET does not set.
+       *
+       * Exam order follows the chooser's, so the queue runs down the list the
+       * learner just built rather than jumping about.
+       */
+      const pairs: { exam: Exam; level: Level }[] = [];
+      for (const exam of myExams) {
+        const runs = await listLevelsForExams([exam.id]);
+        if (!live) return;
+        for (const level of mine) {
+          if (!level.requiresSubject) continue;
+          // The version from `runs` carries this board's own name for the
+          // level — CTET's "Paper II" rather than the shared "TGT".
+          const labelled = runs.find((l) => l.id === level.id);
+          if (labelled) pairs.push({ exam, level: labelled });
+        }
+      }
+
+      /*
+       * Editing asks every pair again, even ones already answered — that is
        * what "change my subject" means. Onboarding resumes instead, skipping
        * what is already saved.
        */
       const done = changing
         ? {}
-        : Object.fromEntries(subjects.map((sub) => [sub.levelId, sub.subjectId]));
+        : Object.fromEntries(
+            subjects.map((sub) => [`${sub.examId}::${sub.levelId}`, sub.subjectId]),
+          );
       setLevels(mine);
-      setExams(examList.filter((e) => examIds.includes(e.id)));
+      setExams(myExams);
+      setQueue(pairs);
       setAnswered(done);
-      advance(mine, done, examIds);
+      advance(pairs, done);
     })();
     return () => {
       live = false;
@@ -165,30 +204,40 @@ export default function ChooseSubjectScreen() {
    * that actually require a subject is what makes the bar tell the truth
    * rather than promise the end a screen early.
    */
-  const subjectSteps = useMemo(() => levels.filter((l) => l.requiresSubject), [levels]);
-  const stepTotal = 2 + Math.max(1, subjectSteps.length);
+  const stepTotal = 2 + Math.max(1, queue.length);
   const stepDone = useMemo(() => {
-    const settled = subjectSteps.filter((l) => answered[l.id]).length;
+    const settled = queue.filter((p) => answered[`${p.exam.id}::${p.level.id}`]).length;
     return Math.min(stepTotal, 2 + settled + 1);
-  }, [subjectSteps, answered, stepTotal]);
+  }, [queue, answered, stepTotal]);
 
+  /*
+   * The one exam this screen is asking about.
+   *
+   * It listed every exam the learner holds, which was right while the question
+   * was "your subject for TGT" and is wrong now that it is "your subject for
+   * CTET's Paper II" — the other exams have their own turn coming.
+   */
   const strip = useMemo(
     () =>
-      exams.map((e) => ({
-        id: e.id,
-        shortName: e.shortName,
-        subtitle: examSubtitle(e, lang),
-        emoji: e.emoji,
-        color: e.color,
-      })),
-    [exams, lang],
+      current
+        ? [
+            {
+              id: current.exam.id,
+              shortName: current.exam.shortName,
+              subtitle: examSubtitle(current.exam, lang),
+              emoji: current.exam.emoji,
+              color: current.exam.color,
+            },
+          ]
+        : [],
+    [current, lang],
   );
 
   const submit = async () => {
     if (!current || !picked) return;
     setSaving(true);
     setFailed(false);
-    const outcome = await saveLearnerSubject(current.id, picked);
+    const outcome = await saveLearnerSubject(current.exam.id, current.level.id, picked);
     setSaving(false);
     if (!outcome.ok) {
       // See the note on the exam step: an expired session needs the door, not
@@ -200,18 +249,19 @@ export default function ChooseSubjectScreen() {
       setFailed(true);
       return;
     }
-    const done = { ...answered, [current.id]: picked };
+    const done = { ...answered, [`${current.exam.id}::${current.level.id}`]: picked };
     setAnswered(done);
-    advance(
-      levels,
-      done,
-      exams.map((e) => e.id),
-    );
+    advance(queue, done);
   };
 
   if (!ready || !current || offers === null) {
     return <StepLoading label={hi ? 'लाया जा रहा है…' : 'Loading…'} />;
   }
+
+  // This board's word for the level — CTET's "Paper II", not the shared "TGT".
+  const levelWord = current.level.officialNames?.length
+    ? t(current.level.officialNames[0], lang)
+    : current.level.name;
 
   const columns = 3;
   const gap = 10;
@@ -269,13 +319,21 @@ export default function ChooseSubjectScreen() {
               <StepProgress done={stepDone} total={stepTotal} width={72} />
             </View>
 
+            {/* Named for the board as well as the level, because this screen
+                comes round once per exam. "TGT Subject" twice in a row, once
+                for CTET and once for HTET, is the same screen as far as the
+                reader can tell. */}
             <StepHeader
               trailing={<BooksArt width={100} />}
-              title={hi ? `${current.name} विषय` : `${current.name} Subject`}
-              /* No subtitle: it restated the heading directly above it, word
-                 for word and level for level. */
+              title={
+                hi
+                  ? `${current.exam.shortName} ${levelWord} विषय`
+                  : `${current.exam.shortName} ${levelWord} Subject`
+              }
             />
 
+            {/* Only the exam this screen is asking about. The full strip named
+                every exam the learner holds, on a screen that concerns one. */}
             <ChosenExams items={strip} />
 
             {/* The label sits over the thing it labels, the way "Select Level

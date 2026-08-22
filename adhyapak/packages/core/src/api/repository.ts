@@ -1453,6 +1453,79 @@ export const listLevelsForExams = async (examIds: readonly string[]): Promise<Le
 };
 
 /**
+ * The subjects one board offers at one level, as that board lists them.
+ *
+ * `listElectiveChoices` returns bare ids, and the screen used to intersect
+ * those with `listLevelSubjects` to get names and icons. That intersection
+ * quietly deleted anything the generic vocabulary happened not to carry — and
+ * it does not carry much. `level_subjects.tgt` has no "Mathematics & Science",
+ * which is one of exactly two things CTET's Paper II offers, so a CTET
+ * candidate was shown a single real choice. `level_subjects.pgt` holds eleven
+ * of the twenty-one HTET actually sets.
+ *
+ * So the board's own list is read whole, with the subject's name, icon and
+ * colour joined on, and nothing is filtered against a list that was never
+ * meant to be authoritative. Returns empty when the board has no elective data
+ * for that level, which is the caller's signal to fall back.
+ */
+export const listExamLevelSubjects = async (
+  examId: string,
+  levelId: string,
+  teachingLevels: readonly string[],
+): Promise<LevelSubject[]> => {
+  const db = getBackend();
+  if (!db || teachingLevels.length === 0) return [];
+
+  const { data: papers } = await db
+    .from('exam_papers')
+    .select('id')
+    .eq('exam_id', examId)
+    .in('level', [...teachingLevels]);
+  const paperIds = (papers as { id: string }[] | null)?.map((p) => p.id) ?? [];
+  if (paperIds.length === 0) return [];
+
+  const { data: groups } = await db
+    .from('elective_groups')
+    .select('id')
+    .in('paper_id', paperIds);
+  const groupIds = (groups as { id: string }[] | null)?.map((g) => g.id) ?? [];
+  if (groupIds.length === 0) return [];
+
+  const { data, error } = await db
+    .from('elective_choices')
+    .select('subject_id, sort_order, subjects(name, icon, color)')
+    .in('group_id', groupIds)
+    .order('sort_order', { ascending: true });
+  if (error || !data) return [];
+
+  // Same PostgREST to-one/to-many normalisation as `listLevelSubjects`.
+  type Joined = { name: Bilingual; icon: string; color: string };
+  const rows = data as unknown as {
+    subject_id: string;
+    sort_order: number;
+    subjects: Joined | Joined[] | null;
+  }[];
+
+  const seen = new Set<string>();
+  const out: LevelSubject[] = [];
+  for (const r of rows) {
+    if (seen.has(r.subject_id)) continue;
+    const subject = Array.isArray(r.subjects) ? r.subjects[0] : r.subjects;
+    if (!subject) continue;
+    seen.add(r.subject_id);
+    out.push({
+      levelId,
+      subjectId: r.subject_id,
+      name: subject.name,
+      icon: subject.icon,
+      color: subject.color,
+      sortOrder: r.sort_order,
+    });
+  }
+  return out;
+};
+
+/**
  * The subjects one level examines, in the order the board lists them.
  *
  * The subject's own name, icon and colour are joined from `subjects` so the
@@ -1529,22 +1602,30 @@ export const saveLearnerLevelIds = async (
 export const fetchLearnerSubjects = async (): Promise<LearnerSubject[]> => {
   const db = getBackend();
   if (!db) return [];
-  const { data, error } = await db.from('learner_subjects').select('level_id, subject_id');
+  const { data, error } = await db
+    .from('learner_subjects')
+    .select('exam_id, level_id, subject_id');
   if (error || !data) return [];
-  return (data as { level_id: string; subject_id: string }[]).map((r) => ({
+  return (data as { exam_id: string; level_id: string; subject_id: string }[]).map((r) => ({
+    examId: r.exam_id,
     levelId: r.level_id,
     subjectId: r.subject_id,
   }));
 };
 
 /**
- * Records the subject for one level.
+ * Records the subject for one exam at one level.
  *
- * The RPC re-checks that the subject is offered at that level and that the
- * level is one of the learner's own, so a stale tab cannot write a syllabus
- * nobody asked for.
+ * Per exam, because the boards disagree: CTET's Paper II offers two subjects
+ * and HTET's TGT — the same level — offers twelve, so one answer cannot serve
+ * both.
+ *
+ * The RPC re-checks that the exam and level are the learner's own, that the
+ * exam examines that level, and that the board offers that subject there, so a
+ * stale tab cannot write a syllabus nobody asked for.
  */
 export const saveLearnerSubject = async (
+  examId: string,
   levelId: string,
   subjectId: string,
 ): Promise<WriteOutcome> => {
@@ -1553,6 +1634,7 @@ export const saveLearnerSubject = async (
   return writeWithSession(async () => ({
     error: (
       await db.rpc('set_learner_subject', {
+        p_exam_id: examId,
         p_level_id: levelId,
         p_subject_id: subjectId,
       })

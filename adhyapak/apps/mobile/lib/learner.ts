@@ -71,7 +71,7 @@ export const isDevPreview = (): boolean => flag()?.trim() === '1';
 const PREVIEW = {
   examIds: ['htet'],
   levelIds: ['tgt'],
-  subjects: [{ levelId: 'tgt', subjectId: 'science' }],
+  subjects: [{ examId: 'htet', levelId: 'tgt', subjectId: 'science' }],
 };
 
 /**
@@ -91,7 +91,7 @@ const PREVIEW = {
 const chosen: {
   examIds: string[] | null;
   levelIds: string[] | null;
-  subjects: { levelId: string; subjectId: string }[] | null;
+  subjects: { examId: string; levelId: string; subjectId: string }[] | null;
 } = { examIds: null, levelIds: null, subjects: null };
 
 export const fetchLearnerExamIds = async (): Promise<string[]> => {
@@ -109,7 +109,7 @@ export const fetchLearnerLevelIds = async (): Promise<string[]> => {
 };
 
 export const fetchLearnerSubjects = async (): Promise<
-  { levelId: string; subjectId: string }[]
+  { examId: string; levelId: string; subjectId: string }[]
 > => {
   const real = await fetchSubjectsRemote();
   if (real.length > 0 || !isDevPreview()) return real;
@@ -154,10 +154,13 @@ export const saveLearnerLevelIds = async (levelIds: readonly string[]): Promise<
  * of moving to the next level.
  */
 export const saveLearnerSubject = async (
+  examId: string,
   levelId: string,
   subjectId: string,
 ): Promise<WriteOutcome> =>
-  previewOk(await saveSubjectRemote(levelId, subjectId), () => {
-    const rest = (chosen.subjects ?? []).filter((sub) => sub.levelId !== levelId);
-    chosen.subjects = [...rest, { levelId, subjectId }];
+  previewOk(await saveSubjectRemote(examId, levelId, subjectId), () => {
+    const rest = (chosen.subjects ?? []).filter(
+      (sub) => !(sub.examId === examId && sub.levelId === levelId),
+    );
+    chosen.subjects = [...rest, { examId, levelId, subjectId }];
   });

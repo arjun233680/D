@@ -24,15 +24,29 @@ export const nextOnboardingStep = (
   levels: readonly Level[],
   levelIds: readonly string[],
   subjects: readonly LearnerSubject[],
+  /**
+   * Which of the learner's exams examine which of their levels.
+   *
+   * Omit it and every chosen level counts once, which is the old behaviour and
+   * the right answer for a learner sitting one exam. Pass it and the question
+   * is asked per exam, because CTET's Paper II and HTET's TGT are one level
+   * here and two different subject lists in life.
+   */
+  pairs?: readonly { examId: string; levelId: string }[],
 ): OnboardingStep => {
   if (examIds.length === 0) return 'exams';
   if (levelIds.length === 0) return 'level';
 
-  const owes = levels.some(
-    (level) =>
-      level.requiresSubject &&
-      levelIds.includes(level.id) &&
-      !subjects.some((s) => s.levelId === level.id),
-  );
+  const asks = levels.filter((l) => l.requiresSubject && levelIds.includes(l.id));
+
+  const owes = pairs
+    ? pairs.some(
+        (p) =>
+          examIds.includes(p.examId) &&
+          asks.some((l) => l.id === p.levelId) &&
+          !subjects.some((s) => s.examId === p.examId && s.levelId === p.levelId),
+      )
+    : asks.some((level) => !subjects.some((s) => s.levelId === level.id));
+
   return owes ? 'subject' : 'done';
 };

@@ -688,8 +688,16 @@ export interface LevelSubject {
   sortOrder: number;
 }
 
-/** What the learner chose to study at one level. */
+/**
+ * What the learner chose to study, for one exam at one level.
+ *
+ * Keyed on the exam as well as the level because the boards disagree about
+ * what a level even offers: CTET's Paper II is a choice between Maths &
+ * Science and Social Studies, while HTET's TGT — the same level here — lists
+ * twelve subjects. A learner sitting both answers twice.
+ */
 export interface LearnerSubject {
+  examId: string;
   levelId: string;
   subjectId: string;
 }

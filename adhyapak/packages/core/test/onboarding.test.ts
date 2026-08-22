@@ -28,7 +28,11 @@ const TGT = level('tgt', true);
 const PGT = level('pgt', true);
 const LEVELS = [PRT, TGT, PGT];
 
-const sub = (levelId: string, subjectId: string): LearnerSubject => ({ levelId, subjectId });
+const sub = (
+  levelId: string,
+  subjectId: string,
+  examId = 'ctet',
+): LearnerSubject => ({ examId, levelId, subjectId });
 
 describe('which onboarding question is outstanding', () => {
   it('asks for exams when there are none', () => {
@@ -98,5 +102,59 @@ describe('a level with no subject to choose', () => {
    */
   it('ignores a level id that is not in the level list', () => {
     assert.equal(nextOnboardingStep(['ctet'], LEVELS, ['not-a-level'], []), 'done');
+  });
+
+  /*
+   * Two boards, one level, two questions.
+   *
+   * CTET's Paper II and HTET's TGT are the same `tgt` here and offer different
+   * subjects — two choices against twelve — so answering for one leaves the
+   * other outstanding. Without the pairs the old rule counts the level once and
+   * calls a half-answered learner finished.
+   */
+  describe('when two exams examine the same level', () => {
+    const PAIRS = [
+      { examId: 'ctet', levelId: 'tgt' },
+      { examId: 'htet', levelId: 'tgt' },
+    ];
+
+    it('still asks after only one of them is answered', () => {
+      assert.equal(
+        nextOnboardingStep(
+          ['ctet', 'htet'],
+          LEVELS,
+          ['tgt'],
+          [sub('tgt', 'maths-science', 'ctet')],
+          PAIRS,
+        ),
+        'subject',
+      );
+    });
+
+    it('is done once both are answered', () => {
+      assert.equal(
+        nextOnboardingStep(
+          ['ctet', 'htet'],
+          LEVELS,
+          ['tgt'],
+          [sub('tgt', 'maths-science', 'ctet'), sub('tgt', 'science', 'htet')],
+          PAIRS,
+        ),
+        'done',
+      );
+    });
+
+    it('ignores a pair for an exam the learner dropped', () => {
+      assert.equal(
+        nextOnboardingStep(
+          ['ctet'],
+          LEVELS,
+          ['tgt'],
+          [sub('tgt', 'maths-science', 'ctet')],
+          PAIRS,
+        ),
+        'done',
+      );
+    });
   });
 });
