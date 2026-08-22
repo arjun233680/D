@@ -112,6 +112,8 @@ export default function DashboardScreen() {
   const r = useResponsive();
 
   const [selections, setSelections] = useState<Selection[] | null>(null);
+  /** The selection grid's real width, measured on layout. */
+  const [gridWidth, setGridWidth] = useState(0);
 
   useEffect(() => {
     let live = true;
@@ -198,16 +200,41 @@ export default function DashboardScreen() {
    *
    * Four is the ceiling because four is what a learner with two exams at two
    * levels holds, and a dashboard that hides half of somebody's own answers
-   * behind a sideways swipe is not showing them their selections. Fewer than
-   * four share the row out between them rather than sitting in a narrow
-   * huddle at the left.
+   * behind a sideways swipe is not showing them their selections. Never one
+   * across either: a single selection stretched to the full width made a wide,
+   * near-empty box out of three short words.
+   *
+   * Measured rather than computed. Working back from the viewport meant
+   * subtracting the gutter, then the panel's padding, then the gaps — and one
+   * of those numbers is in another component, so the arithmetic was wrong by
+   * eighteen points and nobody could see why. The grid reports its own width.
    */
   const selectionGap = 8;
-  // Never one across. A single selection stretched to the full width made a
-  // wide, near-empty box out of a 34pt symbol and three short words.
-  const selectionColumns = Math.min(Math.max(selections.length, 2), 4);
+  /*
+   * As many as fit, up to four, and never fewer than two.
+   *
+   * Four across is what a learner with two exams at two levels wants to see at
+   * once, and on a 375pt phone four cards are 75pt each — which is 63pt of
+   * text once the padding is off, and "Paper II" at 18pt needs 78. Something
+   * had to give, and it is the count rather than the type: a card that says
+   * "Pape…" has failed at the one job it has. A minimum width decides how many
+   * fit, so a phone shows three, a wider screen four.
+   */
+  const SELECTION_MIN = 100;
+  const selectionColumns = Math.max(
+    2,
+    Math.min(
+      selections.length || 2,
+      4,
+      gridWidth > 0
+        ? Math.max(1, Math.floor((gridWidth + selectionGap) / (SELECTION_MIN + selectionGap)))
+        : 4,
+    ),
+  );
   const selectionWidth =
-    (r.width - r.gutter * 2 - 28 - selectionGap * (selectionColumns - 1)) / selectionColumns;
+    gridWidth > 0
+      ? Math.floor((gridWidth - selectionGap * (selectionColumns - 1)) / selectionColumns)
+      : undefined;
   // Four snapshot tiles across, on a phone too. Two per row made the section
   // twice as tall to say four short numbers, and a number with a one-word
   // label does not need half a screen to be legible.
@@ -235,20 +262,30 @@ export default function DashboardScreen() {
               }}
             >
               {/*
-                The mark and the name ride this row.
+                The menu, then the mark and the name, all on this row.
                 
                 They had a row of their own directly under it, so the screen
                 spent two bands and about 60pt on a logo, a word and three
                 buttons — while the row holding the buttons had the whole
-                middle of the screen empty. The menu moves to the right with
-                its siblings; a hamburger on the left is not more findable
-                than a hamburger on the right, and the left is where a name
-                belongs.
+                middle of the screen empty.
               */}
               <View
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}
               >
-                <DashboardArt width={r.isPhone ? 46 : 58} />
+                <IconButton
+                  label={hi ? 'मेन्यू' : 'Menu'}
+                  onPress={() => router.push('/(tabs)/profile')}
+                >
+                  <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+                    <Path
+                      d="M3 6h14M3 10h14M3 14h14"
+                      stroke={INK}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                </IconButton>
+                <DashboardArt width={r.isPhone ? 40 : 52} />
                 <Text
                   numberOfLines={1}
                   style={{ fontSize: 21, fontFamily: theme.family.displayBold, color: INK }}
@@ -299,19 +336,6 @@ export default function DashboardScreen() {
                     }}
                   />
                 </IconButton>
-                <IconButton
-                  label={hi ? 'मेन्यू' : 'Menu'}
-                  onPress={() => router.push('/(tabs)/profile')}
-                >
-                  <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
-                    <Path
-                      d="M3 6h14M3 10h14M3 14h14"
-                      stroke={INK}
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                    />
-                  </Svg>
-                </IconButton>
               </View>
             </View>
 
@@ -326,7 +350,7 @@ export default function DashboardScreen() {
                 color: INK,
               }}
             >
-              {hi ? `नमस्ते, ${user.name || 'साथी'}! 👋` : `Hello, ${user.name || 'there'}! 👋`}
+              {hi ? `नमस्ते, ${user.name || 'साथी'}!` : `Hello, ${user.name || 'there'}!`}
             </Text>
 
             {/* ------------------------------------------------- selections */}
@@ -378,6 +402,7 @@ export default function DashboardScreen() {
                 to a row at most, so nothing is out of sight.
               */}
               <View
+                onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
                 style={{
                   marginTop: 14,
                   flexDirection: 'row',
@@ -403,31 +428,19 @@ export default function DashboardScreen() {
                         width: selectionWidth,
                         borderRadius: 14,
                         backgroundColor: `${accent}14`,
-                        paddingVertical: 10,
-                        paddingHorizontal: 4,
+                        paddingVertical: 12,
+                        paddingHorizontal: 6,
                         alignItems: 'center',
                       }}
                     >
-                      <View
-                        style={{
-                          height: 32,
-                          width: 32,
-                          borderRadius: 11,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: '#ffffffcc',
-                        }}
-                      >
-                        <Text style={{ fontSize: 16 }}>
-                          {sel.subject?.icon ?? sel.level.icon}
-                        </Text>
-                      </View>
-
+                      {/* No symbol. The tile carried a subject emoji that told
+                          a reader nothing the words under it did not, and it
+                          was taking the height the words needed to be read at
+                          a sensible size. */}
                       <Text
                         numberOfLines={1}
                         style={{
-                          marginTop: 6,
-                          fontSize: 12,
+                          fontSize: 13,
                           letterSpacing: 0.2,
                           fontFamily: theme.family.displayBold,
                           color: sel.exam?.color ?? VIOLET,
@@ -438,7 +451,9 @@ export default function DashboardScreen() {
                       <Text
                         numberOfLines={1}
                         style={{
-                          fontSize: 13,
+                          marginTop: 1,
+                          fontSize: 18,
+                          lineHeight: 24,
                           fontFamily: theme.family.displayBold,
                           color: INK,
                         }}
@@ -450,10 +465,10 @@ export default function DashboardScreen() {
                       <Text
                         numberOfLines={2}
                         style={{
-                          marginTop: 1,
+                          marginTop: 2,
                           textAlign: 'center',
-                          fontSize: 12,
-                          lineHeight: 15,
+                          fontSize: 13,
+                          lineHeight: 17,
                           fontFamily: theme.family.body,
                           color: accent,
                         }}
